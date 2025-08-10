@@ -42,9 +42,6 @@ npx wrangler login
 ```bash
 # 创建生产环境KV
 wrangler kv namespace create "CLASH_KV"
-
-# 创建预览环境KV
-wrangler kv namespace create "CLASH_KV" --preview
 ```
 
 ### 4. 更新wrangler.toml （删除.example后缀）
@@ -54,7 +51,6 @@ wrangler kv namespace create "CLASH_KV" --preview
 [[kv_namespaces]]
 binding = "CLASH_KV"
 id = "你的KV命名空间ID"
-preview_id = "你的preview KV命名空间ID"
 ```
 ```
 # 给Worker更名 (可选)
