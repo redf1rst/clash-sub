@@ -5,4 +5,3 @@ compatibility_date = "2025-08-01"
 [[kv_namespaces]]
 binding = "CLASH_KV"
 id = "你的KV命名空间ID"
-preview_id = "你的preview KV命名空间ID"
