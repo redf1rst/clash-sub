@@ -1,0 +1,8 @@
+name = "clash-sub"
+main = "src/index.js"
+compatibility_date = "2024-08-10"
+
+[[kv_namespaces]]
+binding = "CLASH_KV"
+id = "1aee99556c974600a70f9b75f84faf11"
+preview_id = "ff7a368c517f4895abab0bb54c5b21f9"
