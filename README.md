@@ -1,6 +1,7 @@
 # Clash订阅生成器
 
 一个部署在Cloudflare Workers上的Clash订阅生成器，支持节点整合和订阅整合,将收集到的节点或者订阅装换成一个链接。
+
 *本项目由Claude Code生成 (包括README)*
 
 ## 功能特性
