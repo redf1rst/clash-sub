@@ -47,7 +47,7 @@ wrangler kv namespace create "CLASH_KV"
 wrangler kv namespace create "CLASH_KV" --preview
 ```
 
-### 4. 更新wrangler.toml
+### 4. 更新wrangler.toml （删除.example后缀）
 (并删除wrangler.jsonc)
 将上一步获得的KV命名空间ID填入wrangler.toml文件中：
 ```toml
