@@ -36,13 +36,6 @@ npm install
 
 # 登录 wrangler
 npx wrangler login
-
-# 给Worker更名 (可选)
-# 打开根目录下的 wrangler.toml
-name = "clash-sub" # <--- 你可以修改这个名称
-main = "src/index.js"
-compatibility_date = "2025-08-08"
-# ...
 ```
 
 ### 3. 创建KV命名空间
@@ -62,6 +55,11 @@ wrangler kv namespace create "CLASH_KV" --preview
 binding = "CLASH_KV"
 id = "你的KV命名空间ID"
 preview_id = "你的preview KV命名空间ID"
+```
+```
+# 给Worker更名 (可选)
+name = "clash-sub" # <--- 你可以修改这个名称
+...
 ```
 
 ### 5. 部署
