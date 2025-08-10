@@ -1,6 +1,6 @@
 name = "clash-sub"
 main = "src/index.js"
-compatibility_date = "2024-08-10"
+compatibility_date = "2025-08-10"
 
 [[kv_namespaces]]
 binding = "CLASH_KV"
