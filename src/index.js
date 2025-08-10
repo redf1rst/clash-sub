@@ -1345,6 +1345,7 @@ function getHTML(request) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clash订阅生成器</title>
+    <link rel="icon" type="image/x-icon" href="https://edit-upload-pic.cdn.bcebos.com/6a89208680a1adc1836e202b67bd704f.jpeg?authorization=bce-auth-v1%2FALTAKh1mxHnNIyeO93hiasKJqq%2F2025-08-10T21%3A40%3A33Z%2F3600%2Fhost%2Fbe6bddf7401873cc9cf1bd12373393a65394c96b540f47de8ef108ed4d9110ef">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css" />
     <style>
         * {
