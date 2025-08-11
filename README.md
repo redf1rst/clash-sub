@@ -4,19 +4,20 @@
 
 *本项目由Claude Code生成 (包括README)*
 
-<div style="text-align: center;">
-  <figure style="margin: 0;"> <!-- 移除 figure 默认的上下外边距 -->
-    <img src="https://github.com/redf1rst/clash-sub/blob/main/img/proxysub.png?raw=true" alt="代理订阅界面" width="500" style="display: block; margin: 0 auto;">
-    <figcaption style="font-size: 0.9em; margin-top: 5px;">节点整合-Proxysub</figcaption> <!-- 移除默认外边距，并添加一个小的顶部间距，您可以调整 5px -->
-  </figure>
-</div>
+<p align="center">
+  <img src="https://github.com/redf1rst/clash-sub/blob/main/img/proxysub.png?raw=true" alt="代理订阅界面" width="500">
+  <br>
+  <em>节点整合-Proxysub</em>
+</p>
 
-<div style="text-align: center; margin-top: 30px;"> <!-- 这个 margin-top 用于控制两个图片块之间的距离 -->
-  <figure style="margin: 0;"> <!-- 移除 figure 默认的上下外边距 -->
-    <img src="https://github.com/redf1rst/clash-sub/blob/main/img/submerge.png?raw=true" alt="订阅整合界面" width="500" style="display: block; margin: 0 auto;">
-    <figcaption style="font-size: 0.9em; margin-top: 5px;">订阅整合-SubMerge</figcaption> <!-- 移除默认外边距，并添加一个小的顶部间距，您可以调整 5px -->
-  </figure>
-</div>
+<br>
+
+<p align="center">
+  <img src="https://github.com/redf1rst/clash-sub/blob/main/img/submerge.png?raw=true" alt="订阅整合界面" width="500">
+  <br>
+  <em>订阅整合-SubMerge</em>
+</p>
+
 
 
 ## 功能特性
