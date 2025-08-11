@@ -354,7 +354,7 @@ async function addSubscription(data, env) {
 			// 获取订阅信息（包括名称、流量、到期时间）
 			const subInfo = await getSubscriptionInfo(subUrl);
 
-			// 检查订阅是否获取失败（403或502）
+			// 只有在真正获取失败（网络错误等）时才跳过
 			if (!subInfo.success) {
 				failedCount++;
 				continue; // 跳过获取失败的订阅
@@ -917,8 +917,17 @@ async function generateSubMergeConfig(env) {
 
 		// 按订阅名称中的序号排序
 		subscriptionPairs.sort((a, b) => {
-			const matchA = a.name.match(/^订阅(\d{2})$/);
-			const matchB = b.name.match(/^订阅(\d{2})$/);
+			// 从完整名称中提取基础名称进行排序
+			const extractBaseName = (fullName) => {
+				const baseNameMatch = fullName.match(/^([^[\(]+?)(?:\s*\[.*?\])?(?:\s*\(.*?\))?$/);
+				return baseNameMatch ? baseNameMatch[1].trim() : fullName;
+			};
+			
+			const baseNameA = extractBaseName(a.name);
+			const baseNameB = extractBaseName(b.name);
+			
+			const matchA = baseNameA.match(/^订阅(\d{2})$/);
+			const matchB = baseNameB.match(/^订阅(\d{2})$/);
 
 			if (matchA && matchB) {
 				const numberA = parseInt(matchA[1]);
@@ -927,12 +936,22 @@ async function generateSubMergeConfig(env) {
 			}
 
 			// 如果不匹配默认格式，按名称排序
-			return a.name.localeCompare(b.name);
+			return baseNameA.localeCompare(baseNameB);
 		});
 
 		// 重新构建排序后的数组
 		const sortedSubscriptions = subscriptionPairs.map(pair => pair.url);
-		const sortedSubscriptionNames = subscriptionPairs.map(pair => pair.name);
+		// 生成配置文件时，只使用基础名称（去掉流量和到期信息）
+		const sortedSubscriptionNames = subscriptionPairs.map(pair => {
+			// 从完整名称中提取基础名称
+			const fullName = pair.name;
+			// 匹配格式: 基础名称 [流量] (到期时间)
+			const baseNameMatch = fullName.match(/^([^[\(]+?)(?:\s*\[.*?\])?(?:\s*\(.*?\))?$/);
+			if (baseNameMatch) {
+				return baseNameMatch[1].trim();
+			}
+			return fullName;
+		});
 
 		// 根据example.yaml的完整配置格式
 		const baseConfig = {
@@ -1071,6 +1090,7 @@ async function generateSubMergeConfig(env) {
 		// 添加proxy-providers
 		if (sortedSubscriptions.length > 0) {
 			sortedSubscriptions.forEach((sub, index) => {
+				// 使用处理过的基础名称（已去掉流量和到期信息）
 				const providerName = sortedSubscriptionNames[index];
 				baseConfig['proxy-providers'][providerName] = {
 					type: 'http',
@@ -1461,30 +1481,42 @@ async function getSubscriptionInfo(subUrl) {
 	};
 
 	try {
-		// 使用简单的GET请求，避免HEAD请求兼容性问题
-		const response = await fetch(subUrl, {
-			method: 'GET',
+		// 首先尝试 HEAD 请求（更轻量，某些服务器只在 HEAD 请求时返回完整信息）
+		let response = await fetch(subUrl, {
+			method: 'HEAD',
 			headers: {
-				'User-Agent': 'Clash Verge'
+				'User-Agent': 'clash-verge/v1.8.1',
+				'Accept': 'application/octet-stream, application/x-yaml, text/plain, */*'
 			}
 		});
 
 		subInfo.statusCode = response.status;
 
-		// 检查是否是不允许的状态码
-		if (response.status === 403 || response.status === 502) {
-			subInfo.success = false;
-			return subInfo;
+		// 获取响应头
+		let contentDisposition = response.headers.get('content-disposition');
+		let userInfo = response.headers.get('subscription-userinfo');
+
+		// 如果 HEAD 请求没有获取到信息，尝试 GET 请求（但限制响应大小）
+		if (!contentDisposition && !userInfo) {
+			// 使用 GET 请求，但通过 Range 头部限制只获取部分内容
+			response = await fetch(subUrl, {
+				method: 'GET',
+				headers: {
+					'User-Agent': 'clash-verge/v1.8.1',
+					'Accept': 'application/octet-stream, application/x-yaml, text/plain, */*',
+					'Range': 'bytes=0-1024'  // 只请求前 1KB 数据
+				}
+			});
+
+			contentDisposition = response.headers.get('content-disposition');
+			userInfo = response.headers.get('subscription-userinfo');
 		}
 
-		// 只要请求成功就尝试解析头部
-		if (response.ok) {
-			const contentDisposition = response.headers.get('content-disposition');
-			const userInfo = response.headers.get('subscription-userinfo');
-			return parseHeaders(contentDisposition, userInfo, subInfo);
-		}
+		// 解析响应头
+		return parseHeaders(contentDisposition, userInfo, subInfo);
 
 	} catch (error) {
+		// 只有在网络错误或其他异常时才标记为失败
 		subInfo.success = false;
 	}
 
@@ -1495,33 +1527,68 @@ async function getSubscriptionInfo(subUrl) {
 function parseHeaders(contentDisposition, userInfo, subInfo) {
 	// 解析 Content-Disposition 获取订阅名称
 	if (contentDisposition) {
-		// 优先匹配 filename*=UTF-8''encoded_name 格式（RFC 5987）
-		const filenameStarMatch = contentDisposition.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+		// 先处理 filename*=UTF-8'' 格式（RFC 5987）
+		// 例如: filename*=UTF-8''%E9%9D%92%E4%BA%91%E6%A2%AF
+		const filenameStarMatch = contentDisposition.match(/filename\*\s*=\s*(?:UTF-8|utf-8)?''([^;]+)/i);
 		if (filenameStarMatch) {
 			try {
+				// URL 解码
 				subInfo.name = decodeURIComponent(filenameStarMatch[1]);
 			} catch (e) {
-				// 解码失败，忽略
+				// 解码失败，尝试作为原始值
+				subInfo.name = filenameStarMatch[1];
 			}
-		} else {
-			// 匹配标准 filename= 格式
+		}
+		
+		// 如果没有获取到名称，尝试标准 filename= 格式
+		if (!subInfo.name) {
+			// 匹配多种可能的格式:
+			// filename="name"
+			// filename='name'
+			// filename=name
 			const filenameMatch = contentDisposition.match(/filename\s*=\s*([^;]+)/i);
 			if (filenameMatch) {
 				let rawName = filenameMatch[1].trim();
-				// 移除前后的引号（如果有）
+				
+				// 移除可能的引号
 				if ((rawName.startsWith('"') && rawName.endsWith('"')) || 
 					(rawName.startsWith("'") && rawName.endsWith("'"))) {
 					rawName = rawName.slice(1, -1);
 				}
 				
 				if (rawName) {
-					try {
-						// 尝试URL解码（如果是编码的）
-						subInfo.name = decodeURIComponent(rawName);
-					} catch (e) {
-						// 解码失败则直接使用原始值
+					// 检查是否需要 URL 解码
+					if (rawName.includes('%')) {
+						try {
+							subInfo.name = decodeURIComponent(rawName);
+						} catch (e) {
+							// 解码失败则使用原始值
+							subInfo.name = rawName;
+						}
+					} else {
 						subInfo.name = rawName;
 					}
+				}
+			}
+		}
+		
+		// 额外处理：有些服务器可能使用非标准格式
+		// 例如: attachment; filename*=sub_name 或 attachment;filename=sub_name（无空格）
+		if (!subInfo.name) {
+			// 尝试更宽松的匹配
+			const looseMatch = contentDisposition.match(/filename\*?\s*=\s*([^\s;]+)/i);
+			if (looseMatch) {
+				let name = looseMatch[1];
+				// 移除可能的引号
+				name = name.replace(/^["']|["']$/g, '');
+				if (name.includes('%')) {
+					try {
+						subInfo.name = decodeURIComponent(name);
+					} catch (e) {
+						subInfo.name = name;
+					}
+				} else {
+					subInfo.name = name;
 				}
 			}
 		}
