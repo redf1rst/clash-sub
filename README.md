@@ -104,18 +104,14 @@ wrangler dev
 
 ### 节点整合
 1. 访问部署后的Worker URL
-2. 在"节点整合"标签页中输入一个或多个节点链接，每行一个
-3. 支持的协议格式：
-   - VMess: `vmess://base64编码的配置`
-   - VLess: `vless://uuid@server:port?参数#备注`
-   - Shadowsocks: `ss://base64编码@server:port#备注`
-   - Hysteria2: `hysteria2://password@server:port#备注`
-   - Trojan: `trojan://password@server:port?参数#备注`
-4. 复制生成的订阅链接到Clash客户端
+2. 在`节点整合`标签页中输入一个或多个节点链接，每行一个，点击添加节点
+3. 如果未能自动识别到地区，可以删除后手动选择地区添加
+4. 复制生成的订阅链接到Clash客户端 或 更新客户端订阅
 
 ### 订阅整合
-1. 在"订阅整合"标签页中输入一个或多个Clash订阅链接，每行一个
-2. 复制生成的整合订阅链接到Clash客户端
+1. 访问部署后的Worker URL
+2. 在`订阅整合`标签页中输入一个或多个订阅链接，每行一个，点击添加订阅
+3. 复制生成的整合订阅链接到Clash客户端 或 更新客户端订阅
 
 ## API接口
 
@@ -128,7 +124,7 @@ wrangler dev
 - `POST /api/submerge` - 管理订阅（添加/删除/清空）
 
 ### 配置生成
-- `GET /clash/proxies` - 生成节点配置文件
+- `GET /clash/proxies` - 生成节点订阅配置文件
 - `GET /clash/submerge` - 生成订阅整合配置文件
 
 ## 技术特点
