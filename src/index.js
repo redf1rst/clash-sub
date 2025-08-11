@@ -186,40 +186,68 @@ async function addProxy(data, env) {
 			const isIPv6 = proxyConfig.server.includes(':');
 			const suffix = isIPv6 ? '-IPv6' : '-IPv4';
 
-			// 计算序号 - 找到该地区所有节点的最大序号
-			let maxNumber = 0;
+			// 计算序号 - 找到该地区可用的最小序号，填补空缺
 			const regionPattern = new RegExp(`^${regionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d{2})-(IPv4|IPv6)$`);
+			const usedNumbers = new Set();
 
-			// 检查现有节点
+			// 检查现有节点使用的序号
 			proxies.forEach(p => {
 				const match = p.name.match(regionPattern);
 				if (match) {
 					const num = parseInt(match[1]);
-					if (num > maxNumber) {
-						maxNumber = num;
-					}
+					usedNumbers.add(num);
 				}
 			});
 
-			// 检查本次添加的节点
+			// 检查本次添加的节点使用的序号
 			addedProxies.forEach(p => {
 				const match = p.name.match(regionPattern);
 				if (match) {
 					const num = parseInt(match[1]);
-					if (num > maxNumber) {
-						maxNumber = num;
-					}
+					usedNumbers.add(num);
 				}
 			});
 
+			// 找到最小的可用序号（填补空缺）
+			let nodeNumber = 1;
+			while (usedNumbers.has(nodeNumber)) {
+				nodeNumber++;
+			}
+			usedNumbers.add(nodeNumber);
+
 			// 使用两位数字格式
-			const nodeNumber = String(maxNumber + 1).padStart(2, '0');
-			proxyConfig.name = `${regionName}${nodeNumber}${suffix}`;
+			const nodeNumberStr = String(nodeNumber).padStart(2, '0');
+			proxyConfig.name = `${regionName}${nodeNumberStr}${suffix}`;
 
 			proxies.push(proxyConfig);
 			addedProxies.push(proxyConfig);
 			successCount++;
 		}
+
+		// 对节点进行排序：先按地区缩写(A-Z)，再按序号排序
+		proxies.sort((a, b) => {
+			// 提取地区缩写和序号
+			const regionPatternForSort = /^([A-Z]{2}[^0-9]*?)(\d{2})-(IPv4|IPv6)$/;
+			const matchA = a.name.match(regionPatternForSort);
+			const matchB = b.name.match(regionPatternForSort);
+			
+			if (matchA && matchB) {
+				const regionA = matchA[1];
+				const regionB = matchB[1];
+				const numberA = parseInt(matchA[2]);
+				const numberB = parseInt(matchB[2]);
+				
+				// 首先按地区缩写排序
+				if (regionA !== regionB) {
+					return regionA.localeCompare(regionB);
+				}
+				// 地区相同时按序号排序
+				return numberA - numberB;
+			}
+			
+			// 如果匹配失败，按名称排序
+			return a.name.localeCompare(b.name);
+		});
 
 		await env.CLASH_KV?.put('proxies', JSON.stringify(proxies));
 
@@ -244,6 +272,32 @@ async function deleteProxy(index, env) {
 	try {
 		const proxies = JSON.parse(await env.CLASH_KV?.get('proxies') || '[]');
 		proxies.splice(index, 1);
+		
+		// 删除后也进行排序，保持一致性
+		proxies.sort((a, b) => {
+			// 提取地区缩写和序号
+			const regionPatternForSort = /^([A-Z]{2}[^0-9]*?)(\d{2})-(IPv4|IPv6)$/;
+			const matchA = a.name.match(regionPatternForSort);
+			const matchB = b.name.match(regionPatternForSort);
+			
+			if (matchA && matchB) {
+				const regionA = matchA[1];
+				const regionB = matchB[1];
+				const numberA = parseInt(matchA[2]);
+				const numberB = parseInt(matchB[2]);
+				
+				// 首先按地区缩写排序
+				if (regionA !== regionB) {
+					return regionA.localeCompare(regionB);
+				}
+				// 地区相同时按序号排序
+				return numberA - numberB;
+			}
+			
+			// 如果匹配失败，按名称排序
+			return a.name.localeCompare(b.name);
+		});
+		
 		await env.CLASH_KV?.put('proxies', JSON.stringify(proxies));
 
 		return new Response(JSON.stringify({ success: true }), {
@@ -309,17 +363,28 @@ async function addSubscription(data, env) {
 
 			// 如果没有获取到名称，使用默认命名
 			if (!subName) {
+				// 查找可用的最小序号，填补空缺
+				const usedNumbers = new Set();
+				subscriptionNames.forEach(name => {
+					const match = name.match(/^订阅(\d{2})$/);
+					if (match) {
+						usedNumbers.add(parseInt(match[1]));
+					}
+				});
+
+				// 找到最小的可用序号
 				let counter = 1;
-				do {
-					subName = `订阅${counter}`;
+				while (usedNumbers.has(counter)) {
 					counter++;
-				} while (subscriptionNames.includes(subName));
+				}
+
+				subName = `订阅${String(counter).padStart(2, '0')}`;
 			} else {
 				// 确保名称不重复
 				let originalName = subName;
 				let counter = 1;
 				while (subscriptionNames.includes(subName)) {
-					subName = `${originalName}${counter}`;
+					subName = `${originalName}${String(counter).padStart(2, '0')}`;
 					counter++;
 				}
 			}
@@ -330,8 +395,35 @@ async function addSubscription(data, env) {
 			successCount++;
 		}
 
-		await env.CLASH_KV?.put('subscriptions', JSON.stringify(subscriptions));
-		await env.CLASH_KV?.put('subscription_names', JSON.stringify(subscriptionNames));
+		// 对订阅进行排序：按序号由小到大排序
+		// 创建索引数组来保持订阅链接和名称的对应关系
+		const subscriptionPairs = subscriptions.map((url, index) => ({
+			url: url,
+			name: subscriptionNames[index],
+			index: index
+		}));
+
+		// 按订阅名称中的序号排序
+		subscriptionPairs.sort((a, b) => {
+			const matchA = a.name.match(/^订阅(\d{2})$/);
+			const matchB = b.name.match(/^订阅(\d{2})$/);
+			
+			if (matchA && matchB) {
+				const numberA = parseInt(matchA[1]);
+				const numberB = parseInt(matchB[1]);
+				return numberA - numberB;
+			}
+			
+			// 如果不匹配默认格式，按名称排序
+			return a.name.localeCompare(b.name);
+		});
+
+		// 重新构建排序后的数组
+		const sortedSubscriptions = subscriptionPairs.map(pair => pair.url);
+		const sortedSubscriptionNames = subscriptionPairs.map(pair => pair.name);
+
+		await env.CLASH_KV?.put('subscriptions', JSON.stringify(sortedSubscriptions));
+		await env.CLASH_KV?.put('subscription_names', JSON.stringify(sortedSubscriptionNames));
 
 		return new Response(JSON.stringify({
 			success: true,
@@ -358,8 +450,35 @@ async function deleteSubscription(index, env) {
 		subscriptions.splice(index, 1);
 		subscriptionNames.splice(index, 1);
 
-		await env.CLASH_KV?.put('subscriptions', JSON.stringify(subscriptions));
-		await env.CLASH_KV?.put('subscription_names', JSON.stringify(subscriptionNames));
+		// 删除后进行排序：按序号由小到大排序
+		// 创建索引数组来保持订阅链接和名称的对应关系
+		const subscriptionPairs = subscriptions.map((url, idx) => ({
+			url: url,
+			name: subscriptionNames[idx],
+			index: idx
+		}));
+
+		// 按订阅名称中的序号排序
+		subscriptionPairs.sort((a, b) => {
+			const matchA = a.name.match(/^订阅(\d{2})$/);
+			const matchB = b.name.match(/^订阅(\d{2})$/);
+			
+			if (matchA && matchB) {
+				const numberA = parseInt(matchA[1]);
+				const numberB = parseInt(matchB[1]);
+				return numberA - numberB;
+			}
+			
+			// 如果不匹配默认格式，按名称排序
+			return a.name.localeCompare(b.name);
+		});
+
+		// 重新构建排序后的数组
+		const sortedSubscriptions = subscriptionPairs.map(pair => pair.url);
+		const sortedSubscriptionNames = subscriptionPairs.map(pair => pair.name);
+
+		await env.CLASH_KV?.put('subscriptions', JSON.stringify(sortedSubscriptions));
+		await env.CLASH_KV?.put('subscription_names', JSON.stringify(sortedSubscriptionNames));
 
 		return new Response(JSON.stringify({ success: true }), {
 			headers: { 'Content-Type': 'application/json' }
@@ -392,6 +511,31 @@ async function clearSubscriptions(env) {
 async function generateProxiesConfig(env) {
 	try {
 		const proxies = JSON.parse(await env.CLASH_KV?.get('proxies') || '[]');
+
+		// 对节点进行排序：先按地区缩写(A-Z)，再按序号排序
+		proxies.sort((a, b) => {
+			// 提取地区缩写和序号
+			const regionPatternForSort = /^([A-Z]{2}[^0-9]*?)(\d{2})-(IPv4|IPv6)$/;
+			const matchA = a.name.match(regionPatternForSort);
+			const matchB = b.name.match(regionPatternForSort);
+			
+			if (matchA && matchB) {
+				const regionA = matchA[1];
+				const regionB = matchB[1];
+				const numberA = parseInt(matchA[2]);
+				const numberB = parseInt(matchB[2]);
+				
+				// 首先按地区缩写排序
+				if (regionA !== regionB) {
+					return regionA.localeCompare(regionB);
+				}
+				// 地区相同时按序号排序
+				return numberA - numberB;
+			}
+			
+			// 如果匹配失败，按名称排序
+			return a.name.localeCompare(b.name);
+		});
 
 		const config = {
 			// 全局配置 - 参照clash.yaml
@@ -787,6 +931,33 @@ async function generateSubMergeConfig(env) {
 		const subscriptions = JSON.parse(await env.CLASH_KV?.get('subscriptions') || '[]');
 		const subscriptionNames = JSON.parse(await env.CLASH_KV?.get('subscription_names') || '[]');
 
+		// 对订阅进行排序：按序号由小到大排序
+		// 创建索引数组来保持订阅链接和名称的对应关系
+		const subscriptionPairs = subscriptions.map((url, index) => ({
+			url: url,
+			name: subscriptionNames[index] || `provider${index + 1}`,
+			index: index
+		}));
+
+		// 按订阅名称中的序号排序
+		subscriptionPairs.sort((a, b) => {
+			const matchA = a.name.match(/^订阅(\d{2})$/);
+			const matchB = b.name.match(/^订阅(\d{2})$/);
+			
+			if (matchA && matchB) {
+				const numberA = parseInt(matchA[1]);
+				const numberB = parseInt(matchB[1]);
+				return numberA - numberB;
+			}
+			
+			// 如果不匹配默认格式，按名称排序
+			return a.name.localeCompare(b.name);
+		});
+
+		// 重新构建排序后的数组
+		const sortedSubscriptions = subscriptionPairs.map(pair => pair.url);
+		const sortedSubscriptionNames = subscriptionPairs.map(pair => pair.name);
+
 		// 根据example.yaml的完整配置格式
 		const baseConfig = {
 			// 全局配置
@@ -922,9 +1093,9 @@ async function generateSubMergeConfig(env) {
 		};
 
 		// 添加proxy-providers
-		if (subscriptions.length > 0) {
-			subscriptions.forEach((sub, index) => {
-				const providerName = subscriptionNames[index] || `provider${index + 1}`;
+		if (sortedSubscriptions.length > 0) {
+			sortedSubscriptions.forEach((sub, index) => {
+				const providerName = sortedSubscriptionNames[index];
 				baseConfig['proxy-providers'][providerName] = {
 					type: 'http',
 					url: sub,
@@ -940,7 +1111,7 @@ async function generateSubMergeConfig(env) {
 		}
 
 		// 添加proxy-groups (出站策略)
-		const allProviderNames = subscriptions.map((_, index) => subscriptionNames[index] || `provider${index + 1}`);
+		const allProviderNames = sortedSubscriptions.map((_, index) => sortedSubscriptionNames[index]);
 		baseConfig['proxy-groups'] = [
 			{ name: '🚀 默认代理', type: 'select', proxies: ['♻️ 台湾自动', '♻️ 日本自动', '♻️ 新加坡自动', '♻️ 美国自动', '♻️ 韩国自动', '♻️ 香港自动', '♻️ 澳洲自动', '♻️ 自动选择', '🔯 香港故转', '🔯 日本故转', '🔯 新加坡故转', '🔯 美国故转', '🇭🇰 香港节点', '🇹🇼 台湾节点', '🇯🇵 日本节点', '🇸🇬 新加坡节点', '🇺🇲 美国节点', '🇰🇷 韩国节点', '🇦🇺 澳洲节点', '🇬🇧 英国节点', '🇫🇷 法国节点', '🇩🇪 德国节点', '🌐 全部节点', '直连'] },
 			{ name: '🌐 全部节点', type: 'select', 'include-all': true },
