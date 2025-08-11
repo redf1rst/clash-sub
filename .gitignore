@@ -170,3 +170,4 @@ dist
 .wrangler/
 .vscode/settings.json
 wrangler.toml
+.claude/
