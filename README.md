@@ -4,6 +4,10 @@
 
 *本项目由Claude Code生成 (包括README)*
 
+!proxysub [<sup>1</sup>](https://edit-upload-pic.cdn.bcebos.com/6967ac2e24c6cbeeb1eb27155d858527.jpeg?authorization=bce-auth-v1%2FALTAKh1mxHnNIyeO93hiasKJqq%2F2025-08-11T07%3A09%3A41Z%2F3600%2Fhost%2F9c352ab91da926d51bfd4a2d74d437cf6699499d67c9679c8bc7a45e5ae7117b "节点整合-Proxysub")
+
+!SubMerge [<sup>2</sup>](https://edit-upload-pic.cdn.bcebos.com/f1af50bd7c7fb4ba640e67d9398cb921.jpeg?authorization=bce-auth-v1%2FALTAKh1mxHnNIyeO93hiasKJqq%2F2025-08-11T07%3A09%3A58Z%2F3600%2Fhost%2Fbb262d702a5a478f7101fcad38a6f7087fffb281d165a56c605782939047a94e "订阅整合-SubMerge")
+
 ## 功能特性
 
 ### 节点整合
