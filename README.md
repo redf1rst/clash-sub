@@ -8,7 +8,7 @@
   <table border="0" style="border-collapse: collapse;">
     <tr>
       <td align="center">
-        <img src="https://github.com/redf1rst/clash-sub/blob/main/img/proxysub.png?raw=true" alt="代理订阅界面" width="800">
+        <img src="https://github.com/redf1rst/clash-sub/blob/main/img/proxysub.png?raw=true" alt="代理订阅界面" width="700">
       </td>
     </tr>
     <tr>
@@ -25,7 +25,7 @@
   <table border="0" style="border-collapse: collapse;">
     <tr>
       <td align="center">
-        <img src="https://github.com/redf1rst/clash-sub/blob/main/img/submerge.png?raw=true" alt="订阅整合界面" width="800">
+        <img src="https://github.com/redf1rst/clash-sub/blob/main/img/submerge.png?raw=true" alt="订阅整合界面" width="700">
       </td>
     </tr>
     <tr>
@@ -36,7 +36,7 @@
   </table>
 </div>
 
-
+---
 
 ## 功能特性
 
