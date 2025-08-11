@@ -5,7 +5,7 @@
 *本项目由Claude Code生成 (包括README)*
 
 <div align="center">
-  <table>
+  <table border="0" style="border-collapse: collapse;">
     <tr>
       <td align="center">
         <img src="https://github.com/redf1rst/clash-sub/blob/main/img/proxysub.png?raw=true" alt="代理订阅界面" width="500">
@@ -22,7 +22,7 @@
 <br>
 
 <div align="center">
-  <table>
+  <table border="0" style="border-collapse: collapse;">
     <tr>
       <td align="center">
         <img src="https://github.com/redf1rst/clash-sub/blob/main/img/submerge.png?raw=true" alt="订阅整合界面" width="500">
