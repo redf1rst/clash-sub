@@ -4,19 +4,37 @@
 
 *本项目由Claude Code生成 (包括README)*
 
-<p align="center">
-  <img src="https://github.com/redf1rst/clash-sub/blob/main/img/proxysub.png?raw=true" alt="代理订阅界面" width="500">
-  <br>
-  <em>节点整合-Proxysub</em>
-</p>
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img src="https://github.com/redf1rst/clash-sub/blob/main/img/proxysub.png?raw=true" alt="代理订阅界面" width="500">
+      </td>
+    </tr>
+    <tr>
+      <td align="center" style="padding-top: 5px;">
+        <em><small>节点整合-Proxysub</small></em>
+      </td>
+    </tr>
+  </table>
+</div>
 
 <br>
 
-<p align="center">
-  <img src="https://github.com/redf1rst/clash-sub/blob/main/img/submerge.png?raw=true" alt="订阅整合界面" width="500">
-  <br>
-  <em>订阅整合-SubMerge</em>
-</p>
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img src="https://github.com/redf1rst/clash-sub/blob/main/img/submerge.png?raw=true" alt="订阅整合界面" width="500">
+      </td>
+    </tr>
+    <tr>
+      <td align="center" style="padding-top: 5px;">
+        <em><small>订阅整合-SubMerge</small></em>
+      </td>
+    </tr>
+  </table>
+</div>
 
 
 
