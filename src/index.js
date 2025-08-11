@@ -643,6 +643,7 @@ async function generateProxiesConfig(env) {
 				'DOMAIN-SUFFIX,adobestats.io,REJECT',
 				'DOMAIN-SUFFIX,cursor.sh,节点选择',
 				'DOMAIN-SUFFIX,cursorapi.com,节点选择',
+				'DOMAIN-SUFFIX,linux.do,DIRECT',
 				'GEOSITE,CN,DIRECT',
 				'RULE-SET,reject_ip,REJECT',
 				'RULE-SET,telegram_ip,Telegram',
@@ -1218,6 +1219,11 @@ async function generateSubMergeConfig(env) {
 			// 通用国内/国外流量
 			'RULE-SET,gfw_domain,🚀 默认代理',
 			'RULE-SET,geolocation-!cn,🚀 默认代理',
+			'DOMAIN-SUFFIX,linux.do,DIRECT',
+
+			// Adobe弹窗拦截
+			'DOMAIN-SUFFIX,adobe.io,REJECT',
+			'DOMAIN-SUFFIX,adobestats.io,REJECT',
 
 			// IP 规则
 			'GEOIP,CNcidr,🎯 直连/代理',
@@ -1248,10 +1254,6 @@ async function generateSubMergeConfig(env) {
 				'RULE-SET,STUN,💧 泄漏拦截',
 				'DOMAIN-KEYWORD,stun,💧 泄漏拦截',
 				'DOMAIN-KEYWORD,dnsleaktest,💧 泄漏拦截',
-
-				// Adobe弹窗拦截
-				'DOMAIN-SUFFIX,adobe.io,💧 泄漏拦截',
-				'DOMAIN-SUFFIX,adobestats.io,💧 泄漏拦截',
 
 				// 特殊协议和端口拦截
 				'DST-PORT,3478,💧 泄漏拦截',
