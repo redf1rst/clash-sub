@@ -230,13 +230,13 @@ async function addProxy(data, env) {
 			const regionPatternForSort = /^([A-Z]{2}[^0-9]*?)(\d{2})-(IPv4|IPv6)$/;
 			const matchA = a.name.match(regionPatternForSort);
 			const matchB = b.name.match(regionPatternForSort);
-			
+
 			if (matchA && matchB) {
 				const regionA = matchA[1];
 				const regionB = matchB[1];
 				const numberA = parseInt(matchA[2]);
 				const numberB = parseInt(matchB[2]);
-				
+
 				// 首先按地区缩写排序
 				if (regionA !== regionB) {
 					return regionA.localeCompare(regionB);
@@ -244,7 +244,7 @@ async function addProxy(data, env) {
 				// 地区相同时按序号排序
 				return numberA - numberB;
 			}
-			
+
 			// 如果匹配失败，按名称排序
 			return a.name.localeCompare(b.name);
 		});
@@ -272,20 +272,20 @@ async function deleteProxy(index, env) {
 	try {
 		const proxies = JSON.parse(await env.CLASH_KV?.get('proxies') || '[]');
 		proxies.splice(index, 1);
-		
+
 		// 删除后也进行排序，保持一致性
 		proxies.sort((a, b) => {
 			// 提取地区缩写和序号
 			const regionPatternForSort = /^([A-Z]{2}[^0-9]*?)(\d{2})-(IPv4|IPv6)$/;
 			const matchA = a.name.match(regionPatternForSort);
 			const matchB = b.name.match(regionPatternForSort);
-			
+
 			if (matchA && matchB) {
 				const regionA = matchA[1];
 				const regionB = matchB[1];
 				const numberA = parseInt(matchA[2]);
 				const numberB = parseInt(matchB[2]);
-				
+
 				// 首先按地区缩写排序
 				if (regionA !== regionB) {
 					return regionA.localeCompare(regionB);
@@ -293,11 +293,11 @@ async function deleteProxy(index, env) {
 				// 地区相同时按序号排序
 				return numberA - numberB;
 			}
-			
+
 			// 如果匹配失败，按名称排序
 			return a.name.localeCompare(b.name);
 		});
-		
+
 		await env.CLASH_KV?.put('proxies', JSON.stringify(proxies));
 
 		return new Response(JSON.stringify({ success: true }), {
@@ -407,13 +407,13 @@ async function addSubscription(data, env) {
 		subscriptionPairs.sort((a, b) => {
 			const matchA = a.name.match(/^订阅(\d{2})$/);
 			const matchB = b.name.match(/^订阅(\d{2})$/);
-			
+
 			if (matchA && matchB) {
 				const numberA = parseInt(matchA[1]);
 				const numberB = parseInt(matchB[1]);
 				return numberA - numberB;
 			}
-			
+
 			// 如果不匹配默认格式，按名称排序
 			return a.name.localeCompare(b.name);
 		});
@@ -462,13 +462,13 @@ async function deleteSubscription(index, env) {
 		subscriptionPairs.sort((a, b) => {
 			const matchA = a.name.match(/^订阅(\d{2})$/);
 			const matchB = b.name.match(/^订阅(\d{2})$/);
-			
+
 			if (matchA && matchB) {
 				const numberA = parseInt(matchA[1]);
 				const numberB = parseInt(matchB[1]);
 				return numberA - numberB;
 			}
-			
+
 			// 如果不匹配默认格式，按名称排序
 			return a.name.localeCompare(b.name);
 		});
@@ -518,13 +518,13 @@ async function generateProxiesConfig(env) {
 			const regionPatternForSort = /^([A-Z]{2}[^0-9]*?)(\d{2})-(IPv4|IPv6)$/;
 			const matchA = a.name.match(regionPatternForSort);
 			const matchB = b.name.match(regionPatternForSort);
-			
+
 			if (matchA && matchB) {
 				const regionA = matchA[1];
 				const regionB = matchB[1];
 				const numberA = parseInt(matchA[2]);
 				const numberB = parseInt(matchB[2]);
-				
+
 				// 首先按地区缩写排序
 				if (regionA !== regionB) {
 					return regionA.localeCompare(regionB);
@@ -532,7 +532,7 @@ async function generateProxiesConfig(env) {
 				// 地区相同时按序号排序
 				return numberA - numberB;
 			}
-			
+
 			// 如果匹配失败，按名称排序
 			return a.name.localeCompare(b.name);
 		});
@@ -943,13 +943,13 @@ async function generateSubMergeConfig(env) {
 		subscriptionPairs.sort((a, b) => {
 			const matchA = a.name.match(/^订阅(\d{2})$/);
 			const matchB = b.name.match(/^订阅(\d{2})$/);
-			
+
 			if (matchA && matchB) {
 				const numberA = parseInt(matchA[1]);
 				const numberB = parseInt(matchB[1]);
 				return numberA - numberB;
 			}
-			
+
 			// 如果不匹配默认格式，按名称排序
 			return a.name.localeCompare(b.name);
 		});
@@ -1973,7 +1973,7 @@ function getHTML(request) {
                 </div>
 
                 <div class="subscription-links">
-                    <h3>📋 节点订阅链接</h3>
+                    <h3>📋 节点整合订阅链接</h3>
                     <div class="link-item">
                         <strong>ProxySub配置</strong>
                         <div class="link-url" id="proxiesLink">${origin}/clash/proxies</div>
@@ -2002,7 +2002,7 @@ function getHTML(request) {
                 </div>
 
                 <div class="subscription-links">
-                    <h3>📋 整合订阅链接</h3>
+                    <h3>📋 订阅整合链接</h3>
                     <div class="link-item">
                         <strong>SubMerge配置</strong>
                         <div class="link-url" id="submergeLink">${origin}/clash/submerge</div>
