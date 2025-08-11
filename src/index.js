@@ -1,6 +1,6 @@
 ﻿// Clash订阅生成器 - Cloudflare Worker
 export default {
-	async fetch(request, env, ctx) {
+	async fetch(request, env) {
 		const url = new URL(request.url);
 		const path = url.pathname;
 
@@ -73,6 +73,10 @@ async function handleSubMergeAPI(request, env) {
 			});
 		}
 
+		if (url.searchParams.get('update') === 'true') {
+			return await updateSubscriptionNames(env);
+		}
+
 		const subscriptions = await env.CLASH_KV?.get('subscriptions') || '[]';
 		return new Response(subscriptions, {
 			headers: { 'Content-Type': 'application/json' }
@@ -130,7 +134,7 @@ async function addProxy(data, env) {
 			// 生成节点名称
 			let detectedRegion;
 			if (region === 'auto') {
-				detectedRegion = detectRegion(proxyConfig.server);
+				detectedRegion = await detectRegion(proxyConfig.server);
 			} else {
 				detectedRegion = region;
 			}
@@ -337,6 +341,7 @@ async function addSubscription(data, env) {
 
 		let successCount = 0;
 		let duplicateCount = 0;
+		let failedCount = 0;
 		const addedSubscriptions = [];
 
 		for (const subUrl of urls) {
@@ -346,48 +351,17 @@ async function addSubscription(data, env) {
 				continue; // 跳过重复的订阅
 			}
 
-			// 获取订阅名称
-			let subName = '';
-			try {
-				const response = await fetch(subUrl, { method: 'HEAD' });
-				const contentDisposition = response.headers.get('content-disposition');
-				if (contentDisposition) {
-					const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-					if (match && match[1]) {
-						subName = match[1].replace(/['"]/g, '');
-					}
-				}
-			} catch (error) {
-				// 忽略获取名称失败的情况
+			// 获取订阅信息（包括名称、流量、到期时间）
+			const subInfo = await getSubscriptionInfo(subUrl);
+
+			// 检查订阅是否获取失败（403或502）
+			if (!subInfo.success) {
+				failedCount++;
+				continue; // 跳过获取失败的订阅
 			}
 
-			// 如果没有获取到名称，使用默认命名
-			if (!subName) {
-				// 查找可用的最小序号，填补空缺
-				const usedNumbers = new Set();
-				subscriptionNames.forEach(name => {
-					const match = name.match(/^订阅(\d{2})$/);
-					if (match) {
-						usedNumbers.add(parseInt(match[1]));
-					}
-				});
-
-				// 找到最小的可用序号
-				let counter = 1;
-				while (usedNumbers.has(counter)) {
-					counter++;
-				}
-
-				subName = `订阅${String(counter).padStart(2, '0')}`;
-			} else {
-				// 确保名称不重复
-				let originalName = subName;
-				let counter = 1;
-				while (subscriptionNames.includes(subName)) {
-					subName = `${originalName}${String(counter).padStart(2, '0')}`;
-					counter++;
-				}
-			}
+			// 生成订阅名称
+			const subName = generateSubscriptionName(subInfo, subscriptionNames);
 
 			subscriptions.push(subUrl);
 			subscriptionNames.push(subName);
@@ -429,6 +403,7 @@ async function addSubscription(data, env) {
 			success: true,
 			successCount,
 			duplicateCount,
+			failedCount,
 			addedSubscriptions
 		}), {
 			headers: { 'Content-Type': 'application/json' }
@@ -1112,7 +1087,6 @@ async function generateSubMergeConfig(env) {
 		}
 
 		// 添加proxy-groups (出站策略)
-		const allProviderNames = sortedSubscriptions.map((_, index) => sortedSubscriptionNames[index]);
 		baseConfig['proxy-groups'] = [
 			{ name: '🚀 默认代理', type: 'select', proxies: ['♻️ 台湾自动', '♻️ 日本自动', '♻️ 新加坡自动', '♻️ 美国自动', '♻️ 韩国自动', '♻️ 香港自动', '♻️ 澳洲自动', '♻️ 自动选择', '🔯 香港故转', '🔯 日本故转', '🔯 新加坡故转', '🔯 美国故转', '🇭🇰 香港节点', '🇹🇼 台湾节点', '🇯🇵 日本节点', '🇸🇬 新加坡节点', '🇺🇲 美国节点', '🇰🇷 韩国节点', '🇦🇺 澳洲节点', '🇬🇧 英国节点', '🇫🇷 法国节点', '🇩🇪 德国节点', '🌐 全部节点', '直连'] },
 			{ name: '🌐 全部节点', type: 'select', 'include-all': true },
@@ -1374,9 +1348,309 @@ function parseTrojan(url) {
 	};
 }
 
+// 更新订阅名称
+async function updateSubscriptionNames(env) {
+	try {
+		const subscriptions = JSON.parse(await env.CLASH_KV?.get('subscriptions') || '[]');
+		const oldNames = JSON.parse(await env.CLASH_KV?.get('subscription_names') || '[]');
+		const newNames = [];
+		
+		// 存储已经使用的基础名称（不含流量和到期信息）以避免重复
+		const usedBaseNames = new Set();
+
+		for (let i = 0; i < subscriptions.length; i++) {
+			const subUrl = subscriptions[i];
+			const subInfo = await getSubscriptionInfo(subUrl);
+			
+			// 如果订阅获取失败，保持原有名称
+			if (!subInfo.success) {
+				if (oldNames[i]) {
+					newNames.push(oldNames[i]);
+				} else {
+					// 如果没有原有名称，生成默认名称
+					const usedNumbers = new Set();
+					newNames.forEach(name => {
+						const match = name.match(/^订阅(\d{2})(?:\s|\[|$)/);
+						if (match) {
+							usedNumbers.add(parseInt(match[1]));
+						}
+					});
+
+					let counter = 1;
+					while (usedNumbers.has(counter)) {
+						counter++;
+					}
+					newNames.push(`订阅${String(counter).padStart(2, '0')}`);
+				}
+				continue;
+			}
+			
+			// 提取旧名称的基础部分
+			let baseName = subInfo.name;
+			if (!baseName && oldNames[i]) {
+				// 从旧名称提取基础名称
+				const baseNameMatch = oldNames[i].match(/^([^[\(]+?)(?:\s*\[.*?\])?(?:\s*\(.*?\))?$/);
+				if (baseNameMatch) {
+					baseName = baseNameMatch[1].trim();
+				}
+			}
+			
+			// 如果还是没有基础名称，使用订阅编号
+			if (!baseName) {
+				const usedNumbers = new Set();
+				newNames.forEach(name => {
+					const match = name.match(/^订阅(\d{2})(?:\s|\[|$)/);
+					if (match) {
+						usedNumbers.add(parseInt(match[1]));
+					}
+				});
+
+				let counter = 1;
+				while (usedNumbers.has(counter)) {
+					counter++;
+				}
+				baseName = `订阅${String(counter).padStart(2, '0')}`;
+			}
+			
+			// 处理基础名称重复的情况
+			let uniqueBaseName = baseName;
+			let counter = 2;
+			while (usedBaseNames.has(uniqueBaseName)) {
+				uniqueBaseName = `${baseName}-${String(counter).padStart(2, '0')}`;
+				counter++;
+			}
+			usedBaseNames.add(uniqueBaseName);
+			
+			// 使用唯一的基础名称构造完整名称
+			const tempSubInfo = { ...subInfo, name: uniqueBaseName };
+			const newName = generateSubscriptionName(tempSubInfo, newNames);
+			newNames.push(newName);
+		}
+
+		// 保存更新后的名称
+		await env.CLASH_KV?.put('subscription_names', JSON.stringify(newNames));
+
+		return new Response(JSON.stringify({ 
+			success: true, 
+			message: '订阅名称更新成功',
+			updated: newNames.length 
+		}), {
+			headers: { 'Content-Type': 'application/json' }
+		});
+
+	} catch (error) {
+		return new Response(JSON.stringify({ 
+			success: false, 
+			message: '更新订阅名称失败: ' + error.message 
+		}), {
+			status: 500,
+			headers: { 'Content-Type': 'application/json' }
+		});
+	}
+}
+
+// 获取订阅信息（名称、流量、到期时间）
+async function getSubscriptionInfo(subUrl) {
+	const subInfo = {
+		name: '',
+		download: 0,
+		total: 0,
+		expire: null,
+		success: true,
+		statusCode: 0
+	};
+
+	try {
+		// 使用简单的GET请求，避免HEAD请求兼容性问题
+		const response = await fetch(subUrl, {
+			method: 'GET',
+			headers: {
+				'User-Agent': 'Clash Verge'
+			}
+		});
+
+		subInfo.statusCode = response.status;
+
+		// 检查是否是不允许的状态码
+		if (response.status === 403 || response.status === 502) {
+			subInfo.success = false;
+			return subInfo;
+		}
+
+		// 只要请求成功就尝试解析头部
+		if (response.ok) {
+			const contentDisposition = response.headers.get('content-disposition');
+			const userInfo = response.headers.get('subscription-userinfo');
+			return parseHeaders(contentDisposition, userInfo, subInfo);
+		}
+
+	} catch (error) {
+		subInfo.success = false;
+	}
+
+	return subInfo;
+}
+
+// 解析响应头的辅助函数
+function parseHeaders(contentDisposition, userInfo, subInfo) {
+	// 解析 Content-Disposition 获取订阅名称
+	if (contentDisposition) {
+		// 优先匹配 filename*=UTF-8''encoded_name 格式（RFC 5987）
+		const filenameStarMatch = contentDisposition.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+		if (filenameStarMatch) {
+			try {
+				subInfo.name = decodeURIComponent(filenameStarMatch[1]);
+			} catch (e) {
+				// 解码失败，忽略
+			}
+		} else {
+			// 匹配标准 filename= 格式
+			const filenameMatch = contentDisposition.match(/filename\s*=\s*([^;]+)/i);
+			if (filenameMatch) {
+				let rawName = filenameMatch[1].trim();
+				// 移除前后的引号（如果有）
+				if ((rawName.startsWith('"') && rawName.endsWith('"')) || 
+					(rawName.startsWith("'") && rawName.endsWith("'"))) {
+					rawName = rawName.slice(1, -1);
+				}
+				
+				if (rawName) {
+					try {
+						// 尝试URL解码（如果是编码的）
+						subInfo.name = decodeURIComponent(rawName);
+					} catch (e) {
+						// 解码失败则直接使用原始值
+						subInfo.name = rawName;
+					}
+				}
+			}
+		}
+	}
+
+	// 解析 Subscription-Userinfo 获取流量信息
+	if (userInfo) {
+		// 解析格式: upload=123; download=456; total=789; expire=1234567890
+		const parts = userInfo.split(';').map(part => part.trim());
+		for (const part of parts) {
+			const [key, value] = part.split('=').map(s => s.trim());
+			switch (key) {
+				case 'download':
+					subInfo.download = parseInt(value) || 0;
+					break;
+				case 'total':
+					subInfo.total = parseInt(value) || 0;
+					break;
+				case 'expire':
+					subInfo.expire = parseInt(value) || null;
+					break;
+			}
+		}
+	}
+
+	return subInfo;
+}
+
+// 生成订阅名称
+function generateSubscriptionName(subInfo, existingNames) {
+	let baseName = subInfo.name;
+	
+	// 如果没有获取到名称，使用默认命名
+	if (!baseName) {
+		// 查找可用的最小序号，填补空缺
+		const usedNumbers = new Set();
+		existingNames.forEach(name => {
+			const match = name.match(/^订阅(\d{2})(?:\s|\[|$)/);
+			if (match) {
+				usedNumbers.add(parseInt(match[1]));
+			}
+		});
+
+		// 找到最小的可用序号
+		let counter = 1;
+		while (usedNumbers.has(counter)) {
+			counter++;
+		}
+		baseName = `订阅${String(counter).padStart(2, '0')}`;
+	}
+
+	// 构建完整名称
+	let fullName = baseName;
+	
+	// 添加流量信息
+	if (subInfo.download > 0 && subInfo.total > 0) {
+		const downloadGiB = (subInfo.download / (1024 * 1024 * 1024)).toFixed(2);
+		const totalGiB = (subInfo.total / (1024 * 1024 * 1024)).toFixed(1);
+		fullName += ` [${downloadGiB}GiB/${totalGiB}GiB]`;
+	}
+	
+	// 添加到期时间
+	if (subInfo.expire) {
+		const expireDate = new Date(subInfo.expire * 1000);
+		const year = expireDate.getFullYear();
+		const month = String(expireDate.getMonth() + 1).padStart(2, '0');
+		const day = String(expireDate.getDate()).padStart(2, '0');
+		fullName += ` (${year}-${month}-${day}到期)`;
+	}
+
+	// 处理重复名称
+	let finalName = fullName;
+	let counter = 2;
+	while (existingNames.includes(finalName)) {
+		// 从基础名称开始构建，避免重复添加编号
+		let numberedBaseName = `${baseName}-${String(counter).padStart(2, '0')}`;
+		finalName = numberedBaseName;
+		
+		// 重新添加流量和到期信息
+		if (subInfo.download > 0 && subInfo.total > 0) {
+			const downloadGiB = (subInfo.download / (1024 * 1024 * 1024)).toFixed(2);
+			const totalGiB = (subInfo.total / (1024 * 1024 * 1024)).toFixed(1);
+			finalName += ` [${downloadGiB}GiB/${totalGiB}GiB]`;
+		}
+		
+		if (subInfo.expire) {
+			const expireDate = new Date(subInfo.expire * 1000);
+			const year = expireDate.getFullYear();
+			const month = String(expireDate.getMonth() + 1).padStart(2, '0');
+			const day = String(expireDate.getDate()).padStart(2, '0');
+			finalName += ` (${year}-${month}-${day}到期)`;
+		}
+		
+		counter++;
+	}
+
+	return finalName;
+}
+
 // 检测地区
-function detectRegion(serverAddress) {
-	// 地区关键词映射
+async function detectRegion(serverAddress) {
+	try {
+		// 调用IP-API获取地理位置信息
+		const apiUrl = `http://ip-api.com/json/${encodeURIComponent(serverAddress)}?fields=status,country,countryCode`;
+		const response = await fetch(apiUrl);
+		
+		if (!response.ok) {
+			throw new Error(`HTTP error! status: ${response.status}`);
+		}
+		
+		const data = await response.json();
+		
+		// 检查API响应状态
+		if (data.status === 'success' && data.countryCode) {
+			return data.countryCode;
+		}
+		
+		// 如果API失败，回退到原来的关键词识别方式
+		return detectRegionByKeywords(serverAddress);
+		
+	} catch (error) {
+		// 网络错误或其他异常时，回退到关键词识别
+		console.warn('IP-API failed, falling back to keyword detection:', error.message);
+		return detectRegionByKeywords(serverAddress);
+	}
+}
+
+// 关键词地区检测（作为备用方案）
+function detectRegionByKeywords(serverAddress) {
 	const regionKeywords = {
 		'HK': ['hk', 'hong', 'kong', '香港', '港', 'hongkong'],
 		'TW': ['tw', 'taiwan', 'tai', '台湾', '台', 'taipei'],
@@ -1422,10 +1696,8 @@ function detectRegion(serverAddress) {
 		'FI': ['fi', 'finland', 'helsinki', '芬兰', '赫尔辛基']
 	};
 
-	// 将服务器地址转换为小写进行匹配
 	const lowerAddress = serverAddress.toLowerCase();
 
-	// 遍历所有地区，查找匹配的关键词
 	for (const [region, keywords] of Object.entries(regionKeywords)) {
 		for (const keyword of keywords) {
 			if (lowerAddress.includes(keyword.toLowerCase())) {
@@ -1434,17 +1706,14 @@ function detectRegion(serverAddress) {
 		}
 	}
 
-	// 如果没有匹配到任何关键词，尝试从域名中提取国家代码
 	const domainMatch = serverAddress.match(/\.([a-z]{2})$/i);
 	if (domainMatch) {
 		const countryCode = domainMatch[1].toUpperCase();
-		// 检查是否是已知的国家代码
 		if (regionKeywords[countryCode]) {
 			return countryCode;
 		}
 	}
 
-	// 如果仍然没有匹配，返回默认值
 	return 'Unknown';
 }
 
@@ -1841,6 +2110,11 @@ function getHTML(request) {
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
 
         .empty-state {
             text-align: center;
@@ -1992,6 +2266,7 @@ function getHTML(request) {
                 </div>
 
                 <button class="btn" onclick="addSubscription()">添加订阅</button>
+                <button class="btn" onclick="updateSubscriptionNames()">更新订阅名称</button>
                 <button class="btn danger" onclick="clearSubscriptions()">清空所有订阅</button>
 
                 <div id="subMessage" class="message"></div>
@@ -2024,6 +2299,8 @@ function getHTML(request) {
         window.addEventListener('load', function() {
             loadProxies();
             loadSubscriptions();
+            // 启动订阅名称定时更新（每小时）
+            startSubscriptionNameUpdater();
         });
 
         // 切换标签页
@@ -2235,6 +2512,9 @@ function getHTML(request) {
                     if (result.duplicateCount > 0) {
                         message += '，' + result.duplicateCount + ' 个重复订阅已跳过';
                     }
+                    if (result.failedCount > 0) {
+                        message += '，' + result.failedCount + ' 个订阅添加失败';
+                    }
                     showMessage('subMessage', message);
                     document.getElementById('subUrl').value = '';
                     loadSubscriptions();
@@ -2366,6 +2646,49 @@ function getHTML(request) {
                     linkElement.style.color = '';
                 }, 1000);
             });
+        }
+
+        // 启动订阅名称定时更新器
+        function startSubscriptionNameUpdater() {
+            // 每小时更新一次订阅名称 (3600000毫秒 = 1小时)
+            setInterval(async () => {
+                try {
+                    const response = await fetch('/api/submerge?update=true');
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success) {
+                            console.log('订阅名称自动更新成功:', result.updated + ' 个订阅已更新');
+                            // 如果当前页面显示的是订阅整合，刷新列表
+                            if (document.getElementById('submerge').classList.contains('active')) {
+                                loadSubscriptions();
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.warn('订阅名称自动更新失败:', error.message);
+                }
+            }, 3600000); // 1小时 = 3600000毫秒
+        }
+
+        // 手动更新订阅名称
+        async function updateSubscriptionNames() {
+            try {
+                showMessage('subMessage', '正在更新订阅名称...', 'info');
+                const response = await fetch('/api/submerge?update=true');
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        showMessage('subMessage', '订阅名称更新成功，更新了 ' + result.updated + ' 个订阅');
+                        loadSubscriptions();
+                    } else {
+                        showMessage('subMessage', result.message, 'error');
+                    }
+                } else {
+                    showMessage('subMessage', '更新请求失败', 'error');
+                }
+            } catch (error) {
+                showMessage('subMessage', '更新订阅名称失败', 'error');
+            }
         }
     </script>
 </body>
