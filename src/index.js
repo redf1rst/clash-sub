@@ -1259,7 +1259,7 @@ async function generateSubMergeConfig(env) {
 			{ name: '♻️ 韩国自动', type: 'url-test', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*((?i)🇰🇷|韩国|韓國|首尔|釜山|\\b(KR|Korea)\\b)).*$' },
 			{ name: '♻️ 台湾自动', type: 'url-test', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*((?i)🇹🇼|台湾|台北|新北|高雄|\\b(TW|Taiwan|Tai wan)\\b)).*$' },
 			{ name: '♻️ 澳洲自动', type: 'url-test', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\b(AU|AUS|Australia)\\b)).*$' },
-			{ name: '♻️ 自动选择', type: 'url-test', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*(.))(?!.*((?i)群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|作者|加入|\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\b|(\d{4}-\d{2}-\d{2}|\d+G))).*$' }
+			{ name: '♻️ 自动选择', type: 'url-test', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*(.))(?!.*((?i)群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|作者|加入|\\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\\b|(\\d{4}-\\d{2}-\\d{2}|\\d+G))).*$' }
 		];
 
 		// 添加rule-providers (规则集)
