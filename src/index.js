@@ -161,7 +161,7 @@ async function addProxy(data, env) {
 				'NP': 'NP尼泊尔',
 				'KZ': 'KZ哈萨克斯坦',
 				'UZ': 'UZ乌兹别克斯坦',
-				
+
 				// 美洲
 				'US': 'US美国',
 				'CA': 'CA加拿大',
@@ -178,7 +178,7 @@ async function addProxy(data, env) {
 				'UY': 'UY乌拉圭',
 				'CR': 'CR哥斯达黎加',
 				'PA': 'PA巴拿马',
-				
+
 				// 欧洲 - 西欧
 				'UK': 'UK英国',
 				'GB': 'GB英国',
@@ -191,7 +191,7 @@ async function addProxy(data, env) {
 				'AT': 'AT奥地利',
 				'CH': 'CH瑞士',
 				'LI': 'LI列支敦士登',
-				
+
 				// 欧洲 - 南欧
 				'IT': 'IT意大利',
 				'ES': 'ES西班牙',
@@ -203,7 +203,7 @@ async function addProxy(data, env) {
 				'SM': 'SM圣马力诺',
 				'VA': 'VA梵蒂冈',
 				'MC': 'MC摩纳哥',
-				
+
 				// 欧洲 - 北欧
 				'SE': 'SE瑞典',
 				'NO': 'NO挪威',
@@ -213,7 +213,7 @@ async function addProxy(data, env) {
 				'EE': 'EE爱沙尼亚',
 				'LV': 'LV拉脱维亚',
 				'LT': 'LT立陶宛',
-				
+
 				// 欧洲 - 东欧
 				'RU': 'RU俄罗斯',
 				'UA': 'UA乌克兰',
@@ -225,7 +225,7 @@ async function addProxy(data, env) {
 				'BG': 'BG保加利亚',
 				'BY': 'BY白俄罗斯',
 				'MD': 'MD摩尔多瓦',
-				
+
 				// 欧洲 - 巴尔干地区
 				'RS': 'RS塞尔维亚',
 				'HR': 'HR克罗地亚',
@@ -235,12 +235,12 @@ async function addProxy(data, env) {
 				'MK': 'MK北马其顿',
 				'AL': 'AL阿尔巴尼亚',
 				'XK': 'XK科索沃',
-				
+
 				// 欧洲 - 高加索地区
 				'GE': 'GE格鲁吉亚',
 				'AM': 'AM亚美尼亚',
 				'AZ': 'AZ阿塞拜疆',
-				
+
 				// 中东
 				'TR': 'TR土耳其',
 				'AE': 'AE阿联酋',
@@ -256,7 +256,7 @@ async function addProxy(data, env) {
 				'IQ': 'IQ伊拉克',
 				'IR': 'IR伊朗',
 				'YE': 'YE也门',
-				
+
 				// 非洲
 				'ZA': 'ZA南非',
 				'EG': 'EG埃及',
@@ -278,14 +278,14 @@ async function addProxy(data, env) {
 				'BW': 'BW博茨瓦纳',
 				'MU': 'MU毛里求斯',
 				'SC': 'SC塞舌尔',
-				
+
 				// 大洋洲
 				'AU': 'AU澳洲',
 				'NZ': 'NZ新西兰',
 				'FJ': 'FJ斐济',
 				'PG': 'PG巴新',
 				'NC': 'NC新喀里多尼亚',
-				
+
 				// 其他
 				'Unknown': 'Unknown未知'
 			};
@@ -1259,7 +1259,7 @@ async function generateSubMergeConfig(env) {
 			{ name: '♻️ 韩国自动', type: 'url-test', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*((?i)🇰🇷|韩国|韓國|首尔|釜山|\\b(KR|Korea)\\b)).*$' },
 			{ name: '♻️ 台湾自动', type: 'url-test', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*((?i)🇹🇼|台湾|台北|新北|高雄|\\b(TW|Taiwan|Tai wan)\\b)).*$' },
 			{ name: '♻️ 澳洲自动', type: 'url-test', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\b(AU|AUS|Australia)\\b)).*$' },
-			{ name: '♻️ 自动选择', type: 'url-test', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)^((?!(直连)).)*$' }
+			{ name: '♻️ 自动选择', type: 'url-test', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*(.))(?!.*((?i)群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|作者|加入|\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\b|(\d{4}-\d{2}-\d{2}|\d+G))).*$' }
 		];
 
 		// 添加rule-providers (规则集)
