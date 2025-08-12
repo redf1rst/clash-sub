@@ -171,3 +171,5 @@ dist
 .vscode/settings.json
 wrangler.toml
 .claude/
+proxy_format_check.md
+proxy_analysis_process.md
