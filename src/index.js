@@ -1014,23 +1014,20 @@ async function generateProxiesConfig(env) {
 	}
 }
 
-// 生成订阅整合配置
+// 生成订阅整合配置 - 使用新的 submerge-config.yaml 格式
 async function generateSubMergeConfig(env) {
 	try {
 		const subscriptions = JSON.parse(await env.CLASH_KV?.get('subscriptions') || '[]');
 		const subscriptionNames = JSON.parse(await env.CLASH_KV?.get('subscription_names') || '[]');
 
-		// 对订阅进行排序：按序号由小到大排序
-		// 创建索引数组来保持订阅链接和名称的对应关系
+		// 对订阅进行排序
 		const subscriptionPairs = subscriptions.map((url, index) => ({
 			url: url,
 			name: subscriptionNames[index] || `provider${index + 1}`,
 			index: index
 		}));
 
-		// 按订阅名称中的序号排序
 		subscriptionPairs.sort((a, b) => {
-			// 从完整名称中提取基础名称进行排序
 			const extractBaseName = (fullName) => {
 				const baseNameMatch = fullName.match(/^([^[\(]+?)(?:\s*\[.*?\])?(?:\s*\(.*?\))?$/);
 				return baseNameMatch ? baseNameMatch[1].trim() : fullName;
@@ -1048,168 +1045,136 @@ async function generateSubMergeConfig(env) {
 				return numberA - numberB;
 			}
 
-			// 如果不匹配默认格式，按名称排序
 			return baseNameA.localeCompare(baseNameB);
 		});
 
-		// 重新构建排序后的数组
 		const sortedSubscriptions = subscriptionPairs.map(pair => pair.url);
-		// 生成配置文件时，只使用基础名称（去掉流量和到期信息）
-		const sortedSubscriptionNames = subscriptionPairs.map(pair => {
-			// 从完整名称中提取基础名称
-			const fullName = pair.name;
-			// 匹配格式: 基础名称 [流量] (到期时间)
-			const baseNameMatch = fullName.match(/^([^[\(]+?)(?:\s*\[.*?\])?(?:\s*\(.*?\))?$/);
-			if (baseNameMatch) {
-				return baseNameMatch[1].trim();
-			}
-			return fullName;
-		});
 
-		// 根据example.yaml的完整配置格式
-		const baseConfig = {
-			// 全局配置submerge
-			port: 7890,
-			'socks-port': 7891,
-			'redir-port': 7892,
-			'mixed-port': 7893,
-			'tproxy-port': 7894,
-			'allow-lan': true,
-			'bind-address': '*',
-			ipv6: false,
-			'unified-delay': true,
-			'tcp-concurrent': true,
-			'log-level': 'info',
-			'find-process-mode': 'off',
-			'global-client-fingerprint': 'chrome',
-			'keep-alive-idle': 600,
-			'keep-alive-interval': 15,
-			'disable-keep-alive': false,
-			profile: {
-				'store-selected': true,
-				'store-fake-ip': true
-			},
-			mode: 'rule',
-			'geodata-mode': false,
-			'geodata-loader': 'standard',
-			'geo-auto-update': true,
-			'geo-update-interval': 24,
+		// 根据新的 submerge-config.yaml 格式构建配置
+		const config = {};
 
-			// 节点信息
-			proxies: [
-				{ name: '直连', type: 'direct' }
-			],
+		// 基础配置
+		config.port = 7890;
+		config['socks-port'] = 7891;
+		config['redir-port'] = 7892;
+		config['mixed-port'] = 7893;
+		config['tproxy-port'] = 7894;
+		config['allow-lan'] = true;
+		config['bind-address'] = '*';
+		config.ipv6 = false;
+		config['unified-delay'] = true;
+		config['tcp-concurrent'] = true;
+		config['log-level'] = 'info';
+		config['find-process-mode'] = 'off';
+		config['global-client-fingerprint'] = 'chrome';
+		config['keep-alive-idle'] = 600;
+		config['keep-alive-interval'] = 15;
+		config['disable-keep-alive'] = false;
+		config.profile = {
+			'store-selected': true,
+			'store-fake-ip': true
+		};
+		config.mode = 'rule';
+		config['geodata-mode'] = false;
+		config['geodata-loader'] = 'standard';
+		config['geo-auto-update'] = true;
+		config['geo-update-interval'] = 24;
 
-			// 嗅探
-			sniffer: {
-				enable: true,
-				'force-dns-mapping': true,
-				'parse-pure-ip': true,
-				'override-destination': true,
-				sniff: {
-					HTTP: {
-						ports: [80, '8080-8880'],
-						'override-destination': true
-					},
-					TLS: {
-						ports: [443, 8443]
-					},
-					QUIC: {
-						ports: [443, 8443]
-					}
+		// 嗅探配置
+		config.sniffer = {
+			enable: true,
+			'force-dns-mapping': true,
+			'parse-pure-ip': true,
+			'override-destination': true,
+			sniff: {
+				HTTP: {
+					ports: [80, '8080-8880'],
+					'override-destination': true
 				},
-				'force-domain': ['+.v2ex.com'],
-				'skip-domain': ['+.baidu.com', 'Mijia.Cloud.com'],
-				'skip-src-address': ['192.168.0.3/32'],
-				'skip-dst-address': ['192.168.0.3/32']
-			},
-
-			// 入站
-			tun: {
-				enable: true,
-				stack: 'mixed',
-				'dns-hijack': ['any:53', 'tcp://any:53'],
-				'auto-route': true,
-				'auto-redirect': true,
-				'auto-detect-interface': true,
-				device: 'utun0',
-				mtu: 1500,
-				'strict-route': true,
-				gso: true,
-				'gso-max-size': 65536,
-				'udp-timeout': 300,
-				'endpoint-independent-nat': false
-			},
-
-			// DNS模块
-			dns: {
-				enable: true,
-				listen: '0.0.0.0:1053',
-				ipv6: false,
-				'respect-rules': true,
-				'enhanced-mode': 'fake-ip',
-				'fake-ip-range': '28.0.0.1/8',
-				'fake-ip-filter-mode': 'blacklist',
-				'fake-ip-filter': [
-					'rule-set:private_domain,cn_domain',
-					'+.msftconnecttest.com',
-					'+.msftncsi.com',
-					'time.*.com',
-					'+.market.xiaomi.com',
-					'dns.alidns.com',
-					'cloudflare-dns.com',
-					'dns.google',
-					'dns.adguard-dns.com',
-					'dns.nextdns.io',
-					'public.dns.iij.jp',
-					'dns0.eu',
-					'dns.18bit.cn',
-					'2025.dns1.top',
-					'dns.ipv4dns.com'
-				],
-				'default-nameserver': [
-					'223.5.5.5',
-					'223.6.6.6'
-				],
-				'proxy-server-nameserver': [
-					'https://223.5.5.5/dns-query',
-					'https://223.6.6.6/dns-query'
-				],
-				nameserver: [
-					'223.5.5.5',
-					'119.29.29.29'
-				],
-				'nameserver-policy': {
-					'+.jp': ['https://public.dns.iij.jp/dns-query#h3=true'],
-					'+.hk': ['quic://dns.nextdns.io'],
-					'+.eu': ['quic://dns0.eu']
+				TLS: {
+					ports: [443, 8443]
+				},
+				QUIC: {
+					ports: [443, 8443]
 				}
 			},
-
-			'proxy-providers': {},
-			'proxy-groups': [],
-			'rule-providers': {},
-			rules: [],
-			'sub-rules': {}
+			'force-domain': ['+.v2ex.com'],
+			'skip-domain': ['+.baidu.com', 'Mijia.Cloud.com'],
+			'skip-src-address': ['192.168.0.3/32'],
+			'skip-dst-address': ['192.168.0.3/32']
 		};
 
-		// 添加rule-anchor (锚点定义)
-		baseConfig['rule-anchor'] = {
-			ip: { type: 'http', interval: 3600, behavior: 'ipcidr', format: 'mrs' },
-			domain: { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs' },
-			class: { type: 'http', interval: 3600, behavior: 'classical', format: 'yaml' },
-			RuleSet: { type: 'http', behavior: 'classical', interval: 3600, format: 'yaml', proxy: 'Proxy' }
+		// 入站配置
+		config.tun = {
+			enable: true,
+			stack: 'mixed',
+			'dns-hijack': ['any:53', 'tcp://any:53'],
+			'auto-route': true,
+			'auto-redirect': true,
+			'auto-detect-interface': true,
+			device: 'utun0',
+			mtu: 1500,
+			'strict-route': true,
+			gso: true,
+			'gso-max-size': 65536,
+			'udp-timeout': 300,
+			'endpoint-independent-nat': false
 		};
 
-		// 添加proxy-providers
+		// DNS模块
+		config.dns = {
+			enable: true,
+			listen: '0.0.0.0:1053',
+			ipv6: false,
+			'respect-rules': true,
+			'enhanced-mode': 'fake-ip',
+			'fake-ip-range': '28.0.0.1/8',
+			'fake-ip-filter-mode': 'blacklist',
+			'fake-ip-filter': [
+				'rule-set:private_domain,cn_domain',
+				'+.msftconnecttest.com',
+				'+.msftncsi.com',
+				'time.*.com',
+				'+.market.xiaomi.com',
+				'dns.alidns.com',
+				'cloudflare-dns.com',
+				'dns.google',
+				'dns.adguard-dns.com',
+				'dns.nextdns.io',
+				'public.dns.iij.jp',
+				'dns0.eu',
+				'dns.18bit.cn',
+				'2025.dns1.top',
+				'dns.ipv4dns.com'
+			],
+			'default-nameserver': [
+				'223.5.5.5',
+				'223.6.6.6'
+			],
+			'proxy-server-nameserver': [
+				'https://223.5.5.5/dns-query',
+				'https://223.6.6.6/dns-query'
+			],
+			nameserver: [
+				'223.5.5.5',
+				'119.29.29.29'
+			],
+			'nameserver-policy': {
+				'+.jp': ['https://public.dns.iij.jp/dns-query#h3=true'],
+				'+.hk': ['quic://dns.nextdns.io'],
+				'+.eu': ['quic://dns0.eu']
+			}
+		};
+
+		// 机场订阅
+		config['proxy-providers'] = {};
 		if (sortedSubscriptions.length > 0) {
 			sortedSubscriptions.forEach((sub, index) => {
-				// 使用处理过的基础名称（已去掉流量和到期信息）
-				const providerName = sortedSubscriptionNames[index];
-				baseConfig['proxy-providers'][providerName] = {
-					type: 'http',
+				const providerName = `provider${index + 1}`;
+				config['proxy-providers'][providerName] = {
 					url: sub,
-					interval: 86400,
+					type: 'http',
+					interval: 3600,
 					'health-check': {
 						enable: true,
 						url: 'https://www.gstatic.com/generate_204',
@@ -1220,164 +1185,591 @@ async function generateSubMergeConfig(env) {
 			});
 		}
 
-		// 添加proxy-groups (出站策略)
-		baseConfig['proxy-groups'] = [
-			{ name: '🚀 默认代理', type: 'select', proxies: ['♻️ 台湾自动', '♻️ 日本自动', '♻️ 新加坡自动', '♻️ 美国自动', '♻️ 韩国自动', '♻️ 香港自动', '♻️ 澳洲自动', '♻️ 自动选择', '🔯 香港故转', '🔯 日本故转', '🔯 新加坡故转', '🔯 美国故转', '🇭🇰 香港节点', '🇹🇼 台湾节点', '🇯🇵 日本节点', '🇸🇬 新加坡节点', '🇺🇲 美国节点', '🇰🇷 韩国节点', '🇦🇺 澳洲节点', '🇬🇧 英国节点', '🇫🇷 法国节点', '🇩🇪 德国节点', '🌐 全部节点', '直连'] },
-			{ name: '🌐 全部节点', type: 'select', 'include-all': true },
-			{ name: '🪟 Microsoft', type: 'select', proxies: ['直连', '🚀 默认代理'] },
-			{ name: '🍎 Apple', type: 'select', proxies: ['直连', '🚀 默认代理'] },
-			{ name: '🍀 Google', type: 'select', proxies: ['♻️ 台湾自动', '♻️ 日本自动', '♻️ 美国自动', '♻️ 新加坡自动', '🇹🇼 台湾节点', '🇯🇵 日本节点', '🇸🇬 新加坡节点', '🇺🇲 美国节点', '直连'] },
-			{ name: '🤖 ChatGPT', type: 'select', proxies: ['♻️ 台湾自动', '♻️ 日本自动', '♻️ 美国自动', '♻️ 新加坡自动', '♻️ 自动选择', '🇹🇼 台湾节点', '🇯🇵 日本节点', '🇸🇬 新加坡节点', '🇺🇲 美国节点', '直连'] },
-			{ name: '🎯 直连/代理', type: 'select', proxies: ['直连', '🚀 默认代理'] },
-			{ name: '☁️ CDN服务', type: 'select', proxies: ['♻️ 自动选择', '♻️ 台湾自动', '♻️ 香港自动', '♻️ 日本自动', '♻️ 新加坡自动', '♻️ 美国自动', '🌐 全部节点', '直连'] },
-			{ name: '✈️ Speedtest', type: 'select', proxies: ['♻️ 自动选择', '♻️ 香港自动', '♻️ 日本自动', '♻️ 新加坡自动', '♻️ 美国自动', '🌐 全部节点', '直连'] },
-			{ name: '🐟 漏网之鱼', type: 'select', proxies: ['🚀 默认代理', '直连'] },
-			{ name: '🪧 广告拦截', type: 'select', proxies: ['🚫 静默拒绝', '🚫 拒绝连接', '⚪ 绕过连接'] },
-			{ name: '💧 泄漏拦截', type: 'select', proxies: ['🚫 静默拒绝', '🚫 拒绝连接', '⚪ 绕过连接'] },
-			{ name: '🎯 全球直连', type: 'select', hidden: true, proxies: ['直连'] },
-			{ name: '🚫 拒绝连接', type: 'select', hidden: true, proxies: ['REJECT'] },
-			{ name: '🚫 静默拒绝', type: 'select', hidden: true, proxies: ['REJECT-DROP'] },
-			{ name: '⚪ 绕过连接', type: 'select', hidden: true, proxies: ['PASS'] },
-			{ name: '🇭🇰 香港节点', type: 'select', 'include-all': true, filter: '^(?!.*10x)(?=.*((?i)🇭🇰|香港|九龙|新界|\\b(HK|HongKong|Hong Kong)\\b)).*$' },
-			{ name: '🇯🇵 日本节点', type: 'select', 'include-all': true, filter: '^(?!.*10x)(?=.*((?i)🇯🇵|日本|东京|大阪|京都|名古屋|埼玉|\\b(JP|Japan)\\b)).*$' },
-			{ name: '🇸🇬 新加坡节点', type: 'select', 'include-all': true, filter: '^(?!.*10x)(?=.*((?i)🇸🇬|新加坡|新加坡|\\b(SG|Singapore)\\b)).*$' },
-			{ name: '🇺🇲 美国节点', type: 'select', 'include-all': true, filter: '^(?!.*10x)(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|\\b(US|United States|America)\\b)).*$' },
-			{ name: '🇰🇷 韩国节点', type: 'select', 'include-all': true, filter: '^(?!.*10x)(?=.*((?i)🇰🇷|韩国|韓國|首尔|釜山|\\b(KR|Korea)\\b)).*$' },
-			{ name: '🇬🇧 英国节点', type: 'select', 'include-all': true, filter: '^(?!.*10x)(?=.*((?i)🇬🇧|英国|伦敦|曼彻斯特|\\b(UK|United Kingdom|Britain)\\b)).*$' },
-			{ name: '🇫🇷 法国节点', type: 'select', 'include-all': true, filter: '^(?!.*10x)(?=.*((?i)🇫🇷|法国|巴黎|马赛|\\b(FR|France)\\b)).*$' },
-			{ name: '🇩🇪 德国节点', type: 'select', 'include-all': true, filter: '^(?!.*10x)(?=.*((?i)🇩🇪|德国|柏林|法兰克福|慕尼黑|\\b(DE|Germany)\\b)).*$' },
-			{ name: '🇹🇼 台湾节点', type: 'select', 'include-all': true, filter: '^(?!.*10x)(?=.*((?i)🇹🇼|台湾|台北|新北|高雄|\\b(TW|Taiwan|Tai wan)\\b)).*$' },
-			{ name: '🇦🇺 澳洲节点', type: 'select', 'include-all': true, filter: '^(?!.*10x)(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\b(AU|AUS|Australia)\\b)).*$' },
-			{ name: '🔯 香港故转', type: 'fallback', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*((?i)🇭🇰|香港|九龙|新界|\\b(HK|HongKong|Hong Kong)\\b)).*$' },
-			{ name: '🔯 日本故转', type: 'fallback', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*((?i)🇯🇵|日本|东京|大阪|京都|名古屋|埼玉|\\b(JP|Japan)\\b)).*$' },
-			{ name: '🔯 新加坡故转', type: 'fallback', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*((?i)🇸🇬|新加坡|新加坡|\\b(SG|Singapore)\\b)).*$' },
-			{ name: '🔯 美国故转', type: 'fallback', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|\\b(US|United States|America)\\b)).*$' },
-			{ name: '♻️ 香港自动', type: 'url-test', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*((?i)🇭🇰|香港|九龙|新界|\\b(HK|HongKong|Hong Kong)\\b)).*$' },
-			{ name: '♻️ 日本自动', type: 'url-test', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*((?i)🇯🇵|日本|东京|大阪|京都|名古屋|埼玉|\\b(JP|Japan)\\b)).*$' },
-			{ name: '♻️ 新加坡自动', type: 'url-test', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*((?i)🇸🇬|新加坡|新加坡|\\b(SG|Singapore)\\b)).*$' },
-			{ name: '♻️ 美国自动', type: 'url-test', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|\\b(US|United States|America)\\b)).*$' },
-			{ name: '♻️ 韩国自动', type: 'url-test', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*((?i)🇰🇷|韩国|韓國|首尔|釜山|\\b(KR|Korea)\\b)).*$' },
-			{ name: '♻️ 台湾自动', type: 'url-test', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*((?i)🇹🇼|台湾|台北|新北|高雄|\\b(TW|Taiwan|Tai wan)\\b)).*$' },
-			{ name: '♻️ 澳洲自动', type: 'url-test', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\b(AU|AUS|Australia)\\b)).*$' },
-			{ name: '♻️ 自动选择', type: 'url-test', 'include-all': true, tolerance: 20, interval: 300, filter: '^(?!.*10x)(?=.*(.))(?!.*((?i)群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|作者|加入|\\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\\b)).*$' }
+		// 出站策略
+		config['proxy-groups'] = [
+			{
+				name: '🚀默认代理',
+				type: 'select',
+				proxies: [
+					'♻️🇯🇵日本自动',
+					'♻️🇸🇬新加坡自动',
+					'♻️🇨🇳台湾自动',
+					'♻️🇺🇲美国自动',
+					'♻️🇰🇷韩国自动',
+					'♻️🇫🇷法国自动',
+					'♻️🇬🇧英国自动',
+					'♻️🇦🇺澳洲自动',
+					'♻️自动选择',
+					'🇯🇵日本节点',
+					'🇨🇳台湾节点',
+					'🇸🇬新加坡节点',
+					'🇺🇲美国节点',
+					'🇰🇷韩国节点',
+					'🇬🇧英国节点',
+					'🇫🇷法国节点',
+					'🇩🇪德国节点',
+					'🇦🇺澳洲节点',
+					'🔯日本故转',
+					'🔯新加坡故转',
+					'🔯美国故转',
+					'🔯香港故转',
+					'🌐全部节点',
+					'DIRECT'
+				]
+			},
+			{
+				name: '微软服务',
+				type: 'select',
+				proxies: ['🤖AI', 'DIRECT']
+			},
+			{
+				name: '苹果服务',
+				type: 'select',
+				proxies: ['DIRECT', '🚀默认代理']
+			},
+			{
+				name: '🤖AI',
+				type: 'select',
+				proxies: [
+					'🚀默认代理',
+					'♻️🇯🇵日本自动',
+					'♻️🇸🇬新加坡自动',
+					'♻️🇨🇳台湾自动',
+					'♻️🇺🇲美国自动',
+					'♻️🇰🇷韩国自动',
+					'♻️🇫🇷法国自动',
+					'♻️🇬🇧英国自动',
+					'♻️🇦🇺澳洲自动',
+					'♻️自动选择',
+					'🇯🇵日本节点',
+					'🇨🇳台湾节点',
+					'🇸🇬新加坡节点',
+					'🇺🇲美国节点',
+					'🇰🇷韩国节点',
+					'🇬🇧英国节点',
+					'🇫🇷法国节点',
+					'🇩🇪德国节点',
+					'🇦🇺澳洲节点',
+					'🌐全部节点',
+					'DIRECT'
+				]
+			},
+			{
+				name: '🇯🇵日本节点',
+				type: 'select',
+				'include-all': true,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇯🇵|日本|东京|大阪|京都|名古屋|埼玉|\\\\b(JP|Japan)\\\\b)).*$'
+			},
+			{
+				name: '🇸🇬新加坡节点',
+				type: 'select',
+				'include-all': true,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇸🇬|新加坡|新加坡|\\\\b(SG|Singapore)\\\\b)).*$'
+			},
+			{
+				name: '🇺🇲美国节点',
+				type: 'select',
+				'include-all': true,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|\\\\b(US|United States|America)\\\\b)).*$'
+			},
+			{
+				name: '🇰🇷韩国节点',
+				type: 'select',
+				'include-all': true,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇰🇷|韩国|韓國|首尔|釜山|\\\\b(KR|Korea)\\\\b)).*$'
+			},
+			{
+				name: '🇬🇧英国节点',
+				type: 'select',
+				'include-all': true,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇬🇧|英国|伦敦|曼彻斯特|\\\\b(UK|United Kingdom|Britain)\\\\b)).*$'
+			},
+			{
+				name: '🇫🇷法国节点',
+				type: 'select',
+				'include-all': true,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇫🇷|法国|巴黎|马赛|\\\\b(FR|France)\\\\b)).*$'
+			},
+			{
+				name: '🇩🇪德国节点',
+				type: 'select',
+				'include-all': true,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇩🇪|德国|柏林|法兰克福|慕尼黑|\\\\b(DE|Germany)\\\\b)).*$'
+			},
+			{
+				name: '🇨🇳台湾节点',
+				type: 'select',
+				'include-all': true,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇹🇼|台湾|台北|新北|高雄|\\\\b(TW|Taiwan|Tai wan)\\\\b)).*$'
+			},
+			{
+				name: '🇦🇺澳洲节点',
+				type: 'select',
+				'include-all': true,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\\\b(AU|AUS|Australia)\\\\b)).*$'
+			},
+			{
+				name: '🇭🇰香港节点',
+				type: 'select',
+				'include-all': true,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇭🇰|香港|九龙|新界|\\\\b(HK|HongKong|Hong Kong)\\\\b)).*$'
+			},
+			{
+				name: '♻️🇨🇳台湾自动',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 20,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇹🇼|台湾|台北|新北|高雄|\\\\b(TW|Taiwan|Tai wan)\\\\b)).*$'
+			},
+			{
+				name: '♻️🇯🇵日本自动',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 20,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇯🇵|日本|东京|大阪|京都|名古屋|埼玉|\\\\b(JP|Japan)\\\\b)).*$'
+			},
+			{
+				name: '♻️🇸🇬新加坡自动',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 20,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇸🇬|新加坡|新加坡|\\\\b(SG|Singapore)\\\\b)).*$'
+			},
+			{
+				name: '♻️🇺🇲美国自动',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 20,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|\\\\b(US|United States|America)\\\\b)).*$'
+			},
+			{
+				name: '♻️🇰🇷韩国自动',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 20,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇰🇷|韩国|韓國|首尔|釜山|\\\\b(KR|Korea)\\\\b)).*$'
+			},
+			{
+				name: '♻️🇬🇧英国自动',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 20,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇬🇧|英国|伦敦|曼彻斯特|\\\\b(UK|United Kingdom|Britain)\\\\b)).*$'
+			},
+			{
+				name: '♻️🇫🇷法国自动',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 20,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇫🇷|法国|巴黎|马赛|\\\\b(FR|France)\\\\b)).*$'
+			},
+			{
+				name: '♻️🇩🇪德国自动',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 20,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇩🇪|德国|柏林|法兰克福|慕尼黑|\\\\b(DE|Germany)\\\\b)).*$'
+			},
+			{
+				name: '♻️🇦🇺澳洲自动',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 20,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\\\b(AU|AUS|Australia)\\\\b)).*$'
+			},
+			{
+				name: '♻️自动选择',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 20,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*(.))(?!.*((?i)群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|建议|备用|作者|加入|\\\\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\\\\b|(\\\\d{4}-\\\\d{2}-\\\\d{2}|\\\\d+G))).*$'
+			},
+			{
+				name: '♻️香港自动',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 20,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇭🇰|香港|九龙|新界|\\\\b(HK|HongKong|Hong Kong)\\\\b)).*$'
+			},
+			{
+				name: '🔯日本故转',
+				type: 'fallback',
+				'include-all': true,
+				tolerance: 20,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇯🇵|日本|东京|大阪|京都|名古屋|埼玉|\\\\b(JP|Japan)\\\\b)).*$'
+			},
+			{
+				name: '🔯新加坡故转',
+				type: 'fallback',
+				'include-all': true,
+				tolerance: 20,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇸🇬|新加坡|新加坡|\\\\b(SG|Singapore)\\\\b)).*$'
+			},
+			{
+				name: '🔯美国故转',
+				type: 'fallback',
+				'include-all': true,
+				tolerance: 20,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|\\\\b(US|United States|America)\\\\b)).*$'
+			},
+			{
+				name: '🔯香港故转',
+				type: 'fallback',
+				'include-all': true,
+				tolerance: 20,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇭🇰|香港|九龙|新界|\\\\b(HK|HongKong|Hong Kong)\\\\b)).*$'
+			},
+			{
+				name: '🌐全部节点',
+				type: 'select',
+				'include-all': true
+			},
+			{
+				name: '🚫 静默拒绝',
+				type: 'select',
+				hidden: true,
+				proxies: ['REJECT-DROP']
+			},
+			{
+				name: '⚪ 绕过连接',
+				type: 'select',
+				hidden: true,
+				proxies: ['PASS']
+			}
 		];
 
-		// 添加rule-providers (规则集)
-		baseConfig['rule-providers'] = {
+		// 规则集
+		config['rule-providers'] = {
 			// MetaCubeX 提供的通用域名规则集
-			private_domain: { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/private.mrs' },
-			ai: { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-!cn.mrs' },
-			youtube_domain: { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/youtube.mrs' },
-			google_domain: { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/google.mrs' },
-			github_domain: { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/github.mrs' },
-			telegram_domain: { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/telegram.mrs' },
-			netflix_domain: { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/netflix.mrs' },
-			paypal_domain: { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/paypal.mrs' },
-			onedrive_domain: { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/onedrive.mrs' },
-			microsoft_domain: { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft.mrs' },
-			apple_domain: { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple-cn.mrs' },
-			speedtest_domain: { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/ookla-speedtest.mrs' },
-			tiktok_domain: { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/tiktok.mrs' },
-			spotify_domain: { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/spotify.mrs' },
-			gfw_domain: { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/gfw.mrs' },
-			'geolocation-!cn': { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/geolocation-!cn.mrs' },
-			cn_domain: { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/cn.mrs' },
-
+			private_domain: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/private.mrs',
+				path: './ruleset/private_domain.mrs'
+			},
+			ai: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-!cn.mrs',
+				path: './ruleset/ai.mrs'
+			},
+			youtube_domain: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/youtube.mrs',
+				path: './ruleset/youtube_domain.mrs'
+			},
+			google_domain: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/google.mrs',
+				path: './ruleset/google_domain.mrs'
+			},
+			github_domain: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/github.mrs',
+				path: './ruleset/github_domain.mrs'
+			},
+			telegram_domain: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/telegram.mrs',
+				path: './ruleset/telegram_domain.mrs'
+			},
+			netflix_domain: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/netflix.mrs',
+				path: './ruleset/netflix_domain.mrs'
+			},
+			paypal_domain: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/paypal.mrs',
+				path: './ruleset/paypal_domain.mrs'
+			},
+			onedrive_domain: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/onedrive.mrs',
+				path: './ruleset/onedrive_domain.mrs'
+			},
+			microsoft_domain: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft.mrs',
+				path: './ruleset/microsoft_domain.mrs'
+			},
+			apple_domain: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple-cn.mrs',
+				path: './ruleset/apple_domain.mrs'
+			},
+			speedtest_domain: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/ookla-speedtest.mrs',
+				path: './ruleset/speedtest_domain.mrs'
+			},
+			tiktok_domain: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/tiktok.mrs',
+				path: './ruleset/tiktok_domain.mrs'
+			},
+			spotify_domain: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/spotify.mrs',
+				path: './ruleset/spotify_domain.mrs'
+			},
+			gfw_domain: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/gfw.mrs',
+				path: './ruleset/gfw_domain.mrs'
+			},
+			'geolocation-!cn': {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/geolocation-!cn.mrs',
+				path: './ruleset/geolocation-!cn.mrs'
+			},
+			cn_domain: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/cn.mrs',
+				path: './ruleset/cn_domain.mrs'
+			},
 			// MetaCubeX 提供的通用 IP 规则集
-			cn_ip: { type: 'http', interval: 3600, behavior: 'ipcidr', format: 'mrs', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/cn.mrs' },
-			google_ip: { type: 'http', interval: 3600, behavior: 'ipcidr', format: 'mrs', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/google.mrs' },
-			telegram_ip: { type: 'http', interval: 3600, behavior: 'ipcidr', format: 'mrs', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/telegram.mrs' },
-			netflix_ip: { type: 'http', interval: 3600, behavior: 'ipcidr', format: 'mrs', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/netflix.mrs' },
-
+			cn_ip: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'ipcidr',
+				format: 'mrs',
+				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/cn.mrs',
+				path: './ruleset/cn_ip.mrs'
+			},
+			google_ip: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'ipcidr',
+				format: 'mrs',
+				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/google.mrs',
+				path: './ruleset/google_ip.mrs'
+			},
+			telegram_ip: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'ipcidr',
+				format: 'mrs',
+				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/telegram.mrs',
+				path: './ruleset/telegram_ip.mrs'
+			},
+			netflix_ip: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'ipcidr',
+				format: 'mrs',
+				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/netflix.mrs',
+				path: './ruleset/netflix_ip.mrs'
+			},
 			// blackmatrix7 提供的补充规则集
-			ChinaMedia: { type: 'http', behavior: 'classical', interval: 3600, format: 'yaml', proxy: 'Proxy', url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/ChinaMedia/ChinaMedia.yaml', path: './ruleSet/ChinaMedia.yaml' },
-			LAN: { type: 'http', behavior: 'classical', interval: 3600, format: 'yaml', proxy: 'Proxy', url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Lan/Lan.yaml', path: './ruleSet/LAN.yaml' },
-			China: { type: 'http', behavior: 'classical', interval: 3600, format: 'yaml', proxy: 'Proxy', url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/ChinaMax/ChinaMax_Classical.yaml', path: './ruleSet/China.yaml' },
-
-			// 其他作者提供的规则集，使用 CDN 加速
-			Private: { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', proxy: '☁️ CDN服务', url: 'https://cdn.jsdmirror.com/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/private.mrs', path: './ruleset/Private_Domain.mrs' },
-			Fakeip_Filter: { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', proxy: '☁️ CDN服务', url: 'https://cdn.jsdmirror.com/gh/DustinWin/ruleset_geodata@mihomo-ruleset/fakeip-filter.mrs', path: './ruleset/Fakeip_Filter_Domain.mrs' },
-			'Advertising-ads': { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', proxy: '☁️ CDN服务', url: 'https://cdn.jsdmirror.com/gh/TG-Twilight/AWAvenue-Ads-Rule@main/Filters/AWAvenue-Ads-Rule-Clash.mrs', path: './ruleset/Advertising_ads_Domain.mrs' },
-			STUN: { type: 'http', interval: 3600, behavior: 'domain', format: 'mrs', proxy: '☁️ CDN服务', url: 'https://cdn.jsdmirror.com/gh/Kwisma/rules@main/rules/mihomo/STUN/STUN_Domain.mrs', path: './ruleset/STUN_Domain.mrs' },
-			CNcidr: { type: 'http', interval: 3600, behavior: 'ipcidr', format: 'mrs', proxy: '☁️ CDN服务', url: 'https://cdn.jsdmirror.com/gh/Kwisma/clash-rules@release/cncidr.mrs', path: './ruleset/CN_IP.mrs' }
+			ChinaMedia: {
+				type: 'http',
+				behavior: 'classical',
+				interval: 3600,
+				format: 'yaml',
+				proxy: '🚀默认代理',
+				url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/ChinaMedia/ChinaMedia.yaml',
+				path: './ruleset/ChinaMedia.yaml'
+			},
+			LAN: {
+				type: 'http',
+				behavior: 'classical',
+				interval: 3600,
+				format: 'yaml',
+				proxy: '🚀默认代理',
+				url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Lan/Lan.yaml',
+				path: './ruleset/LAN.yaml'
+			},
+			China: {
+				type: 'http',
+				behavior: 'classical',
+				interval: 3600,
+				format: 'yaml',
+				proxy: '🚀默认代理',
+				url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/ChinaMax/ChinaMax_Classical.yaml',
+				path: './ruleset/China.yaml'
+			},
+			// 其他作者提供的规则集，使用 CDN 加速并指定代理以确保下载
+			Private: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				proxy: '🚀默认代理',
+				url: 'https://cdn.jsdmirror.com/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/private.mrs',
+				path: './ruleset/Private.mrs'
+			},
+			Fakeip_Filter: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				proxy: '🚀默认代理',
+				url: 'https://cdn.jsdmirror.com/gh/DustinWin/ruleset_geodata@mihomo-ruleset/fakeip-filter.mrs',
+				path: './ruleset/Fakeip_Filter.mrs'
+			},
+			'Advertising-ads': {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				proxy: '🚀默认代理',
+				url: 'https://cdn.jsdmirror.com/gh/TG-Twilight/AWAvenue-Ads-Rule@main/Filters/AWAvenue-Ads-Rule-Clash.mrs',
+				path: './ruleset/Advertising-ads.mrs'
+			},
+			STUN: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				proxy: '🚀默认代理',
+				url: 'https://cdn.jsdmirror.com/gh/Kwisma/rules@main/rules/mihomo/STUN/STUN_Domain.mrs',
+				path: './ruleset/STUN.mrs'
+			},
+			CNcidr: {
+				type: 'http',
+				interval: 3600,
+				behavior: 'ipcidr',
+				format: 'mrs',
+				proxy: '🚀默认代理',
+				url: 'https://cdn.jsdmirror.com/gh/Kwisma/clash-rules@release/cncidr.mrs',
+				path: './ruleset/CNcidr.mrs'
+			}
 		};
 
-		// 添加rules (规则匹配)
-		baseConfig.rules = [
-			// 以下是主规则，顺序保持不变
-			'RULE-SET,Private,🎯 全球直连',
-			'RULE-SET,LAN,🎯 直连/代理',
-			'RULE-SET,Fakeip_Filter,🎯 全球直连',
-
-			// 特定服务规则
-			'RULE-SET,ai,🤖 ChatGPT',
-			'RULE-SET,github_domain,🚀 默认代理',
-			'RULE-SET,youtube_domain,🚀 默认代理',
-			'RULE-SET,google_domain,🍀 Google',
-			'RULE-SET,onedrive_domain,🚀 默认代理',
-			'RULE-SET,microsoft_domain,🪟 Microsoft',
-			'RULE-SET,tiktok_domain,🚀 默认代理',
-			'RULE-SET,telegram_domain,🚀 默认代理',
-			'RULE-SET,spotify_domain,🚀 默认代理',
-			'RULE-SET,netflix_domain,🚀 默认代理',
-			'RULE-SET,paypal_domain,🚀 默认代理',
-			'RULE-SET,apple_domain,🍎 Apple',
-			'RULE-SET,speedtest_domain,✈️ Speedtest',
-
-			// 通用国内/国外流量
-			'RULE-SET,gfw_domain,🚀 默认代理',
-			'RULE-SET,geolocation-!cn,🚀 默认代理',
-			'DOMAIN-SUFFIX,linux.do,DIRECT',
-
+		// 规则匹配
+		config.rules = [
+			'RULE-SET,Private,DIRECT',
+			'RULE-SET,LAN,DIRECT',
+			'RULE-SET,Fakeip_Filter,DIRECT',
 			// Adobe弹窗拦截
 			'DOMAIN-SUFFIX,adobe.io,REJECT',
 			'DOMAIN-SUFFIX,adobestats.io,REJECT',
-
+			// 特定服务规则
+			'RULE-SET,ai,🤖AI',
+			'RULE-SET,github_domain,🚀默认代理',
+			'RULE-SET,youtube_domain,🚀默认代理',
+			'RULE-SET,google_domain,🤖AI',
+			'RULE-SET,onedrive_domain,🚀默认代理',
+			'RULE-SET,microsoft_domain,微软服务',
+			'RULE-SET,tiktok_domain,🚀默认代理',
+			'RULE-SET,telegram_domain,🚀默认代理',
+			'RULE-SET,spotify_domain,🚀默认代理',
+			'RULE-SET,netflix_domain,🚀默认代理',
+			'RULE-SET,paypal_domain,🚀默认代理',
+			'RULE-SET,apple_domain,苹果服务',
+			'RULE-SET,speedtest_domain,🚀默认代理',
+			// 通用国内/国外流量
+			'RULE-SET,gfw_domain,🚀默认代理',
+			'RULE-SET,geolocation-!cn,🚀默认代理',
+			// Linuxdo/bilibili直连
+			'DOMAIN-SUFFIX,linux.do,DIRECT',
+			'DOMAIN-SUFFIX,bilibili.com,DIRECT',
 			// IP 规则
-			'GEOIP,CNcidr,🎯 直连/代理',
-			'RULE-SET,cn_ip,🎯 直连/代理',
-			'RULE-SET,google_ip,🍀 Google,no-resolve',
-			'RULE-SET,netflix_ip,🚀 默认代理,no-resolve',
-			'RULE-SET,telegram_ip,🚀 默认代理,no-resolve',
-
+			'GEOIP,CNcidr,DIRECT',
+			'RULE-SET,cn_ip,DIRECT',
+			'RULE-SET,google_ip,🚀默认代理,no-resolve',
+			'RULE-SET,netflix_ip,🚀默认代理,no-resolve',
+			'RULE-SET,telegram_ip,🚀默认代理,no-resolve',
 			// 国内域名规则
-			'RULE-SET,cn_domain,🎯 直连/代理',
-			'RULE-SET,ChinaMedia,🎯 直连/代理',
-			'RULE-SET,China,🎯 直连/代理',
-
+			'RULE-SET,cn_domain,DIRECT',
+			'RULE-SET,ChinaMedia,DIRECT',
+			'RULE-SET,China,DIRECT',
 			// 兜底规则
-			'MATCH,🐟 漏网之鱼'
+			'MATCH,🚀默认代理'
 		];
 
-		// 添加sub-rules (子规则)
-		baseConfig['sub-rules'] = {
+		// 子规则
+		config['sub-rules'] = {
 			'SUB-REJECT': [
 				// 广告和恶意域名拦截
-				'RULE-SET,Advertising-ads,🪧 广告拦截',
-				'DOMAIN-KEYWORD,ad,🪧 广告拦截',
-				'DOMAIN-KEYWORD,ads,🪧 广告拦截',
-				'DOMAIN-KEYWORD,analytics,🪧 广告拦截',
-				'DOMAIN-KEYWORD,doubleclick,🪧 广告拦截',
-				'DOMAIN-KEYWORD,googlesyndication,🪧 广告拦截',
-				'RULE-SET,STUN,💧 泄漏拦截',
-				'DOMAIN-KEYWORD,stun,💧 泄漏拦截',
-				'DOMAIN-KEYWORD,dnsleaktest,💧 泄漏拦截',
-
+				'RULE-SET,Advertising-ads,REJECT',
+				'DOMAIN-KEYWORD,ad,REJECT',
+				'DOMAIN-KEYWORD,ads,REJECT',
+				'DOMAIN-KEYWORD,analytics,REJECT',
+				'DOMAIN-KEYWORD,doubleclick,REJECT',
+				'DOMAIN-KEYWORD,googlesyndication,REJECT',
+				'RULE-SET,STUN,REJECT',
+				'DOMAIN-KEYWORD,stun,REJECT',
+				'DOMAIN-KEYWORD,dnsleaktest,REJECT',
 				// 特殊协议和端口拦截
-				'DST-PORT,3478,💧 泄漏拦截',
-				'DST-PORT,53,💧 泄漏拦截',
-				'DST-PORT,6881-6889,💧 泄漏拦截',
-
-				// 常用的 CDN 和规则集提供者直连，确保规则和应用加载速度
-				'DOMAIN,cdn.jsdmirror.com,☁️ CDN服务',
-				'DOMAIN,raw.githubusercontent.com,☁️ CDN服务',
-				'DOMAIN-SUFFIX,cdn.jsdelivr.net,☁️ CDN服务',
-				'DOMAIN-SUFFIX,cdnjs.cloudflare.com,☁️ CDN服务',
-				'DOMAIN-SUFFIX,gstatic.com,☁️ CDN服务'
+				'DST-PORT,3478,REJECT', // STUN 端口
+				'DST-PORT,53,REJECT', // DNS 端口，防止DNS泄漏
+				'DST-PORT,6881-6889,REJECT', // BitTorrent 端口
+				// 为常用的CDN和规则集提供代理
+				'DOMAIN,cdn.jsdmirror.com,🚀默认代理',
+				'DOMAIN,raw.githubusercontent.com,🚀默认代理',
+				'DOMAIN-SUFFIX,cdn.jsdelivr.net,🚀默认代理',
+				'DOMAIN-SUFFIX,cdnjs.cloudflare.com,🚀默认代理',
+				'DOMAIN-SUFFIX,gstatic.com,🚀默认代理'
 			]
 		};
 
-		const yamlContent = convertToYAML(baseConfig);
+		const yamlContent = convertToYAML(config);
 
 		return new Response(yamlContent, {
 			headers: {
