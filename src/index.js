@@ -1218,16 +1218,6 @@ async function generateSubMergeConfig(env) {
 				]
 			},
 			{
-				name: '微软服务',
-				type: 'select',
-				proxies: ['🤖AI', 'DIRECT']
-			},
-			{
-				name: '苹果服务',
-				type: 'select',
-				proxies: ['DIRECT', '🚀默认代理']
-			},
-			{
 				name: '🤖AI',
 				type: 'select',
 				proxies: [
@@ -1253,6 +1243,17 @@ async function generateSubMergeConfig(env) {
 					'🌐全部节点',
 					'DIRECT'
 				]
+			},
+
+			{
+				name: '微软服务',
+				type: 'select',
+				proxies: ['🤖AI', 'DIRECT']
+			},
+			{
+				name: '苹果服务',
+				type: 'select',
+				proxies: ['DIRECT', '🚀默认代理']
 			},
 			{
 				name: '🇯🇵日本节点',
@@ -1387,20 +1388,28 @@ async function generateSubMergeConfig(env) {
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\\\b(AU|AUS|Australia)\\\\b)).*$'
 			},
 			{
-				name: '♻️自动选择',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 20,
-				interval: 300,
-				'exclude-filter': '^(?=.*(.))(?!.*((?i)10x|6x|过滤|客户端|不要|付款|如果|群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|建议|备用|作者|加入|\\\\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\\\\b|(\\\\d{4}-\\\\d{2}-\\\\d{2}|\\\\d+G))).*$'
-			},
-			{
 				name: '♻️香港自动',
 				type: 'url-test',
 				'include-all': true,
 				tolerance: 20,
 				interval: 300,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇭🇰|香港|九龙|新界|\\\\b(HK|HongKong|Hong Kong)\\\\b)).*$'
+			},
+			{
+				name: '♻️自动选择',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 20,
+				interval: 300,
+				'exclude-filter': '^(?=.*((?i)10x|6x|过滤|客户端|不要|付款|如果|群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|建议|备用|作者|加入|\\\\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\\\\b|(\\\\d{4}-\\\\d{2}-\\\\d{2}|\\\\d+G))).*$'
+			},
+			{
+				name: '🌐全部节点',
+				type: 'select',
+				'include-all': true,
+				tolerance: 20,
+				interval: 300,
+				'exclude-filter': '^(?=.*((?i)10x|6x|过滤|客户端|不要|付款|如果|群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|建议|备用|作者|加入|\\\\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\\\\b|(\\\\d{4}-\\\\d{2}-\\\\d{2}|\\\\d+G))).*$'
 			},
 			{
 				name: '🔯日本故转',
@@ -1433,14 +1442,6 @@ async function generateSubMergeConfig(env) {
 				tolerance: 20,
 				interval: 300,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇭🇰|香港|九龙|新界|\\\\b(HK|HongKong|Hong Kong)\\\\b)).*$'
-			},
-			{
-				name: '🌐全部节点',
-				type: 'select',
-				'include-all': true,
-				tolerance: 20,
-				interval: 300,
-				'exclude-filter': '^(?=.*(.))(?!.*((?i)10x|6x|过滤|客户端|不要|付款|如果|群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|建议|备用|作者|加入|\\\\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\\\\b|(\\\\d{4}-\\\\d{2}-\\\\d{2}|\\\\d+G))).*$'
 			},
 			{
 				name: '🚫 静默拒绝',
