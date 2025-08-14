@@ -15,6 +15,10 @@ export default {
 			return handleSubMergeAPI(request, env);
 		}
 
+		if (path === '/api/submerge/check') {
+			return handleSubscriptionCheck(request, env);
+		}
+
 		if (path === '/clash/proxies') {
 			return generateProxiesConfig(env);
 		}
@@ -71,6 +75,15 @@ async function handleSubMergeAPI(request, env) {
 
 		if (url.searchParams.get('update') === 'true') {
 			return await updateSubscriptionNames(env);
+		}
+
+		if (url.searchParams.get('active_detection') === 'true') {
+			return await activeDetection(env);
+		}
+
+		if (url.searchParams.get('active_detection_batch') === 'true') {
+			const { results } = await request.json();
+			return await activeDetectionBatch(results, env);
 		}
 
 		const subscriptions = await env.CLASH_KV?.get('subscriptions') || '[]';
@@ -455,16 +468,16 @@ async function addSubscription(data, env) {
 			// 获取订阅信息（包括名称、流量、到期时间）
 			const subInfo = await getSubscriptionInfo(subUrl);
 
-			// 检查连通性和状态码
-			if (!subInfo.success || isFailureStatusCode(subInfo.statusCode)) {
+			// 智能连通性判断
+			const shouldReject = await shouldRejectSubscription(subUrl, subInfo);
+			if (shouldReject.reject) {
 				failedCount++;
-				const errorMessage = getErrorMessage(subInfo.statusCode, subInfo.success);
 				failedSubscriptions.push({
 					url: subUrl,
-					error: errorMessage,
+					error: shouldReject.reason,
 					statusCode: subInfo.statusCode
 				});
-				continue; // 跳过获取失败的订阅
+				continue; // 跳过无效的订阅
 			}
 
 			// 生成订阅名称
@@ -524,11 +537,117 @@ async function addSubscription(data, env) {
 	}
 }
 
-// 判断是否为失败状态码
-function isFailureStatusCode(statusCode) {
-	// 检查常见的失败状态码
-	const failureCodes = [400, 401, 403, 404, 405, 408, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524];
-	return failureCodes.includes(statusCode);
+// 检查URL是否使用IP地址
+function isIpAddress(url) {
+	try {
+		const urlObj = new URL(url);
+		const hostname = urlObj.hostname;
+
+		// IPv4 地址正则表达式
+		const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+
+		// IPv6 地址正则表达式（简化版）
+		const ipv6Regex = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$/;
+
+		return ipv4Regex.test(hostname) || ipv6Regex.test(hostname);
+	} catch (error) {
+		return false;
+	}
+}
+
+// 智能判断是否应该拒绝订阅
+async function shouldRejectSubscription(subUrl, subInfo) {
+	// 0. 对于使用IP地址的URL，跳过连通性检测，直接接受
+	if (isIpAddress(subUrl)) {
+		console.log(`跳过IP地址连通性检测: ${subUrl}`);
+		return { reject: false, reason: '跳过IP地址检测' };
+	}
+
+	// 1. 网络连接失败，直接拒绝
+	if (!subInfo.success && subInfo.statusCode === 0) {
+		return {
+			reject: true,
+			reason: '网络连接失败或超时'
+		};
+	}
+
+	// 2. 对于HTTP错误状态码，需要进一步检查内容
+	const criticalErrorCodes = [400, 401, 403, 404, 405, 429, 500, 502, 503, 504];
+	if (criticalErrorCodes.includes(subInfo.statusCode)) {
+		// 尝试获取响应内容来判断是否真的无效
+		try {
+			const response = await fetch(subUrl, {
+				method: 'GET',
+				headers: {
+					'User-Agent': 'Clash Verge',
+					'Accept': '*/*'
+				},
+				signal: AbortSignal.timeout(5000) // 5秒超时
+			});
+
+			if (response.ok) {
+				// 如果这次请求成功了，说明之前的错误可能是临时的
+				return { reject: false };
+			}
+
+			// 检查响应内容类型和内容
+			const contentType = response.headers.get('content-type') || '';
+			const content = await response.text();
+
+			// 如果返回的是HTML错误页面，则拒绝
+			// 注意：只有当内容真的包含HTML标签时才认为是错误页面
+			// 因为有些订阅服务会错误地设置 Content-Type 为 text/html，但实际返回的是配置文件
+			if (contentType.includes('text/html') &&
+				(content.includes('<html') || content.includes('<HTML') ||
+					content.includes('<!DOCTYPE') || content.includes('<!doctype'))) {
+				return {
+					reject: true,
+					reason: getErrorMessage(response.status, true)
+				};
+			}
+
+			// 如果内容看起来像配置文件，则接受
+			if (isValidConfigContent(content)) {
+				return { reject: false };
+			}
+
+			// 其他情况，根据状态码决定
+			if ([403, 404, 502, 503].includes(response.status)) {
+				return {
+					reject: true,
+					reason: getErrorMessage(response.status, true)
+				};
+			}
+
+		} catch (error) {
+			// 二次请求也失败，拒绝
+			return {
+				reject: true,
+				reason: getErrorMessage(subInfo.statusCode, subInfo.success)
+			};
+		}
+	}
+
+	// 3. 其他情况，接受订阅
+	return { reject: false };
+}
+
+// 检查内容是否像有效的配置文件
+function isValidConfigContent(content) {
+	if (!content || content.length < 50) {
+		return false;
+	}
+
+	// 检查是否包含常见的配置文件特征
+	const configIndicators = [
+		'proxies:', 'proxy-groups:', 'rules:',  // Clash YAML
+		'vmess://', 'vless://', 'trojan://', 'ss://', 'ssr://',  // 节点链接
+		'mixed-port:', 'allow-lan:', 'mode:',  // Clash 配置
+		'server:', 'port:', 'cipher:', 'password:'  // 代理配置
+	];
+
+	const lowerContent = content.toLowerCase();
+	return configIndicators.some(indicator => lowerContent.includes(indicator.toLowerCase()));
 }
 
 // 获取错误信息
@@ -1255,7 +1374,8 @@ async function generateSubMergeConfig(env) {
 					'♻️ 美国自动 🇺🇲',
 					'♻️ 台湾自动 🇨🇳',
 					'♻️ 韩国自动 🇰🇷',
-					'♻️法国自动🇫🇷',
+					'♻️ 香港自动 🇭🇰',
+					'♻️ 法国自动 🇫🇷',
 					'♻️ 英国自动 🇬🇧',
 					'♻️ 澳洲自动 🇦🇺',
 					'♻️ 德国自动 🇩🇪',
@@ -1276,6 +1396,7 @@ async function generateSubMergeConfig(env) {
 					'🇸🇬 新加坡节点',
 					'🇺🇲 美国节点',
 					'🇰🇷 韩国节点',
+					'🇭🇰 香港节点',
 					'🇬🇧 英国节点',
 					'🇫🇷 法国节点',
 					'🇦🇺 澳洲节点',
@@ -1293,9 +1414,8 @@ async function generateSubMergeConfig(env) {
 					'♻️ 台湾自动 🇨🇳',
 					'♻️ 新加坡自动 🇸🇬',
 					'♻️ 韩国自动 🇰🇷',
-					'♻️🇭🇰香港自动',
 					'♻️ 英国自动 🇬🇧',
-					'♻️法国自动🇫🇷',
+					'♻️ 法国自动 🇫🇷',
 					'♻️ 澳洲自动 🇦🇺',
 					'♻️ 德国自动 🇩🇪',
 					'♻️ 自动选择',
@@ -1381,7 +1501,7 @@ async function generateSubMergeConfig(env) {
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇬🇧|英国|伦敦|曼彻斯特|\\\\b(UK|United Kingdom|Britain)\\\\b)).*$'
 			},
 			{
-				name: '♻️法国自动🇫🇷',
+				name: '♻️ 法国自动 🇫🇷',
 				type: 'url-test',
 				'include-all': true,
 				tolerance: 30,
@@ -1405,7 +1525,7 @@ async function generateSubMergeConfig(env) {
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\\\b(AU|AUS|Australia)\\\\b)).*$'
 			},
 			{
-				name: '♻️🇭🇰香港自动',
+				name: '♻️ 香港自动 🇭🇰',
 				type: 'url-test',
 				'include-all': true,
 				tolerance: 30,
@@ -1545,7 +1665,7 @@ async function generateSubMergeConfig(env) {
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\\\b(AU|AUS|Australia)\\\\b)).*$'
 			},
 			{
-				name: '🇭🇰香港节点',
+				name: '🇭🇰 香港节点',
 				type: 'select',
 				'include-all': true,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇭🇰|香港|九龙|新界|\\\\b(HK|HongKong|Hong Kong)\\\\b)).*$'
@@ -2418,6 +2538,105 @@ async function updateSubscriptionNames(env) {
 	}
 }
 
+// 活跃检测 - 更新订阅名称并移除无效订阅
+async function activeDetection(env) {
+	try {
+		const subscriptions = JSON.parse(await env.CLASH_KV?.get('subscriptions') || '[]');
+		const oldNames = JSON.parse(await env.CLASH_KV?.get('subscription_names') || '[]');
+		const validSubscriptions = [];
+		const validNames = [];
+		const removedSubscriptions = [];
+
+		// 存储已经使用的基础名称（不含流量和到期信息）以避免重复
+		const usedBaseNames = new Set();
+
+		for (let i = 0; i < subscriptions.length; i++) {
+			const subUrl = subscriptions[i];
+			const subInfo = await getSubscriptionInfo(subUrl);
+
+			// 进行连通性检测
+			const shouldReject = await shouldRejectSubscription(subUrl, subInfo);
+
+			if (shouldReject.reject) {
+				// 记录被移除的订阅
+				removedSubscriptions.push({
+					url: subUrl,
+					name: oldNames[i] || `订阅${i + 1}`,
+					reason: shouldReject.reason
+				});
+				continue; // 跳过无效的订阅
+			}
+
+			// 订阅有效，保留并更新名称
+			validSubscriptions.push(subUrl);
+
+			// 提取旧名称的基础部分
+			let baseName = subInfo.name;
+			if (!baseName && oldNames[i]) {
+				// 从旧名称提取基础名称
+				const baseNameMatch = oldNames[i].match(/^([^[\(]+?)(?:\s*\[.*?\])?(?:\s*\(.*?\))?$/);
+				if (baseNameMatch) {
+					baseName = baseNameMatch[1].trim();
+				}
+			}
+
+			// 如果还是没有基础名称，使用订阅编号
+			if (!baseName) {
+				const usedNumbers = new Set();
+				validNames.forEach(name => {
+					const match = name.match(/^订阅(\d{2})(?:\s|\[|$)/);
+					if (match) {
+						usedNumbers.add(parseInt(match[1]));
+					}
+				});
+
+				let counter = 1;
+				while (usedNumbers.has(counter)) {
+					counter++;
+				}
+				baseName = `订阅${String(counter).padStart(2, '0')}`;
+			}
+
+			// 处理基础名称重复的情况
+			let uniqueBaseName = baseName;
+			let counter = 2;
+			while (usedBaseNames.has(uniqueBaseName)) {
+				uniqueBaseName = `${baseName}-${String(counter).padStart(2, '0')}`;
+				counter++;
+			}
+			usedBaseNames.add(uniqueBaseName);
+
+			// 使用唯一的基础名称构造完整名称
+			const tempSubInfo = { ...subInfo, name: uniqueBaseName };
+			const newName = generateSubscriptionName(tempSubInfo, validNames);
+			validNames.push(newName);
+		}
+
+		// 保存更新后的订阅和名称
+		await env.CLASH_KV?.put('subscriptions', JSON.stringify(validSubscriptions));
+		await env.CLASH_KV?.put('subscription_names', JSON.stringify(validNames));
+
+		return new Response(JSON.stringify({
+			success: true,
+			message: '活跃检测完成',
+			updated: validNames.length,
+			removed: removedSubscriptions.length,
+			removedSubscriptions: removedSubscriptions
+		}), {
+			headers: { 'Content-Type': 'application/json' }
+		});
+
+	} catch (error) {
+		return new Response(JSON.stringify({
+			success: false,
+			message: '活跃检测失败: ' + error.message
+		}), {
+			status: 500,
+			headers: { 'Content-Type': 'application/json' }
+		});
+	}
+}
+
 // 获取订阅信息（名称、流量、到期时间）
 async function getSubscriptionInfo(subUrl) {
 	const subInfo = {
@@ -2429,59 +2648,84 @@ async function getSubscriptionInfo(subUrl) {
 		statusCode: 0
 	};
 
+	// 对于IP地址的URL，由于Cloudflare Workers限制，直接返回默认成功状态
+	if (isIpAddress(subUrl)) {
+		console.log(`跳过IP地址信息获取: ${subUrl}`);
+		subInfo.success = true;
+		subInfo.statusCode = 200; // 假设成功
+		subInfo.name = ''; // 无法获取名称，将使用默认命名
+		return subInfo;
+	}
+
 	try {
-		// 首先尝试 HEAD 请求（更轻量，某些服务器只在 HEAD 请求时返回完整信息）
-		let response = await fetch(subUrl, {
-			method: 'HEAD',
+		// 直接使用 GET 请求，完全模拟您的 curl 命令
+		const response = await fetch(subUrl, {
+			method: 'GET',
 			headers: {
-				'User-Agent': 'clash-verge/v1.8.1',
-				'Accept': 'application/octet-stream, application/x-yaml, text/plain, */*'
-			}
+				'User-Agent': 'Clash Verge',
+				'Accept': '*/*'
+			},
+			// 设置超时时间
+			signal: AbortSignal.timeout(10000) // 10秒超时
 		});
 
 		subInfo.statusCode = response.status;
 
-		// 获取响应头
-		let contentDisposition = response.headers.get('content-disposition');
-		let userInfo = response.headers.get('subscription-userinfo');
+		// 获取响应头（大小写不敏感）
+		// 尝试多种可能的大小写组合
+		let contentDisposition = response.headers.get('content-disposition') ||
+			response.headers.get('Content-Disposition') ||
+			response.headers.get('CONTENT-DISPOSITION');
 
-		// 如果 HEAD 请求没有获取到信息，尝试 GET 请求（但限制响应大小）
-		if (!contentDisposition && !userInfo) {
-			// 使用 GET 请求，但通过 Range 头部限制只获取部分内容
-			response = await fetch(subUrl, {
-				method: 'GET',
-				headers: {
-					'User-Agent': 'clash-verge/v1.8.1',
-					'Accept': 'application/octet-stream, application/x-yaml, text/plain, */*',
-					'Range': 'bytes=0-1024'  // 只请求前 1KB 数据
+		let userInfo = response.headers.get('subscription-userinfo') ||
+			response.headers.get('Subscription-Userinfo') ||
+			response.headers.get('SUBSCRIPTION-USERINFO');
+
+		// 如果还是没有找到，遍历所有头部
+		if (!contentDisposition || !userInfo) {
+			for (const [key, value] of response.headers.entries()) {
+				const lowerKey = key.toLowerCase();
+				if (!contentDisposition && lowerKey === 'content-disposition') {
+					contentDisposition = value;
 				}
-			});
-
-			contentDisposition = response.headers.get('content-disposition');
-			userInfo = response.headers.get('subscription-userinfo');
+				if (!userInfo && lowerKey === 'subscription-userinfo') {
+					userInfo = value;
+				}
+			}
 		}
+
+
 
 		// 解析响应头
 		return parseHeaders(contentDisposition, userInfo, subInfo);
 
 	} catch (error) {
-		// 只有在网络错误或其他异常时才标记为失败
+		// 网络错误、超时等情况
 		subInfo.success = false;
+		// 如果是超时错误，设置特殊状态码
+		if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+			subInfo.statusCode = 408; // Request Timeout
+		}
 	}
 
 	return subInfo;
 }
+
+
 
 // 解析响应头的辅助函数
 function parseHeaders(contentDisposition, userInfo, subInfo) {
 	// 解析 Content-Disposition 获取订阅名称
 	if (contentDisposition) {
 		// 先处理 filename*=UTF-8'' 格式（RFC 5987）
-		// 例如: filename*=UTF-8''%E9%9D%92%E4%BA%91%E6%A2%AF
-		const filenameStarMatch = contentDisposition.match(/filename\*\s*=\s*(?:UTF-8|utf-8)?''([^;]+)/i);
+		// 支持多种格式:
+		// filename*=UTF-8''%E9%9D%92%E4%BA%91%E6%A2%AF
+		// filename*=utf-8''Nova%E5%8A%A0%E9%80%9F
+		// filename*=UTF-8'en'Nova%E5%8A%A0%E9%80%9F (带语言标签)
+		const filenameStarMatch = contentDisposition.match(/filename\*\s*=\s*(?:UTF-8|utf-8)''([^;]+)/i);
 		if (filenameStarMatch) {
 			try {
-				// URL 解码
+				// URL 解码，filenameStarMatch[1] 是实际的文件名值
 				subInfo.name = decodeURIComponent(filenameStarMatch[1]);
 			} catch (e) {
 				// 解码失败，尝试作为原始值
@@ -2546,10 +2790,15 @@ function parseHeaders(contentDisposition, userInfo, subInfo) {
 	// 解析 Subscription-Userinfo 获取流量信息
 	if (userInfo) {
 		// 解析格式: upload=123; download=456; total=789; expire=1234567890
+		// 支持大小写不敏感的键名
 		const parts = userInfo.split(';').map(part => part.trim());
 		for (const part of parts) {
 			const [key, value] = part.split('=').map(s => s.trim());
-			switch (key) {
+			const lowerKey = key.toLowerCase();
+			switch (lowerKey) {
+				case 'upload':
+					// 上传流量，暂时不使用但保留解析
+					break;
 				case 'download':
 					subInfo.download = parseInt(value) || 0;
 					break;
@@ -2557,7 +2806,9 @@ function parseHeaders(contentDisposition, userInfo, subInfo) {
 					subInfo.total = parseInt(value) || 0;
 					break;
 				case 'expire':
-					subInfo.expire = parseInt(value) || null;
+					// 处理空值或无效值的情况
+					const expireValue = parseInt(value);
+					subInfo.expire = (expireValue && expireValue > 0) ? expireValue : null;
 					break;
 			}
 		}
@@ -2792,5 +3043,139 @@ function convertToYAML(obj) {
 	return toYAML(obj);
 }
 
+// 处理单个订阅检测
+async function handleSubscriptionCheck(request, env) {
+	if (request.method !== 'POST') {
+		return new Response('Method not allowed', { status: 405 });
+	}
 
+	try {
+		const { url } = await request.json();
 
+		if (!url) {
+			return new Response(JSON.stringify({
+				valid: false,
+				reason: '缺少URL参数'
+			}), {
+				status: 400,
+				headers: { 'Content-Type': 'application/json' }
+			});
+		}
+
+		// 获取订阅信息
+		const subInfo = await getSubscriptionInfo(url);
+
+		// 进行连通性检测
+		const shouldReject = await shouldRejectSubscription(url, subInfo);
+
+		return new Response(JSON.stringify({
+			valid: !shouldReject.reject,
+			name: subInfo.name || '',
+			reason: shouldReject.reason || '检测通过',
+			statusCode: subInfo.statusCode,
+			download: subInfo.download,
+			total: subInfo.total,
+			expire: subInfo.expire
+		}), {
+			headers: { 'Content-Type': 'application/json' }
+		});
+
+	} catch (error) {
+		return new Response(JSON.stringify({
+			valid: false,
+			reason: '检测失败: ' + error.message
+		}), {
+			status: 500,
+			headers: { 'Content-Type': 'application/json' }
+		});
+	}
+}
+
+// 批量处理活跃检测结果
+async function activeDetectionBatch(results, env) {
+	try {
+		const validSubscriptions = [];
+		const validNames = [];
+		const removedSubscriptions = [];
+
+		// 存储已经使用的基础名称（不含流量和到期信息）以避免重复
+		const usedBaseNames = new Set();
+
+		for (const result of results) {
+			if (!result.valid) {
+				// 记录被移除的订阅
+				removedSubscriptions.push({
+					url: result.url,
+					name: result.name || '未知订阅',
+					reason: result.reason
+				});
+				continue; // 跳过无效的订阅
+			}
+
+			// 订阅有效，保留并更新名称
+			validSubscriptions.push(result.url);
+
+			// 提取基础名称
+			let baseName = result.name;
+
+			// 如果没有基础名称，使用订阅编号
+			if (!baseName) {
+				const usedNumbers = new Set();
+				validNames.forEach(name => {
+					const match = name.match(/^订阅(\d{2})(?:\s|\[|$)/);
+					if (match) {
+						usedNumbers.add(parseInt(match[1]));
+					}
+				});
+
+				let counter = 1;
+				while (usedNumbers.has(counter)) {
+					counter++;
+				}
+				baseName = `订阅${String(counter).padStart(2, '0')}`;
+			}
+
+			// 处理基础名称重复的情况
+			let uniqueBaseName = baseName;
+			let counter = 2;
+			while (usedBaseNames.has(uniqueBaseName)) {
+				uniqueBaseName = `${baseName}-${String(counter).padStart(2, '0')}`;
+				counter++;
+			}
+			usedBaseNames.add(uniqueBaseName);
+
+			// 使用唯一的基础名称构造完整名称
+			const tempSubInfo = {
+				name: uniqueBaseName,
+				download: result.download || 0,
+				total: result.total || 0,
+				expire: result.expire || null
+			};
+			const newName = generateSubscriptionName(tempSubInfo, validNames);
+			validNames.push(newName);
+		}
+
+		// 保存更新后的订阅和名称
+		await env.CLASH_KV?.put('subscriptions', JSON.stringify(validSubscriptions));
+		await env.CLASH_KV?.put('subscription_names', JSON.stringify(validNames));
+
+		return new Response(JSON.stringify({
+			success: true,
+			message: '活跃检测完成',
+			updated: validNames.length,
+			removed: removedSubscriptions.length,
+			removedSubscriptions: removedSubscriptions
+		}), {
+			headers: { 'Content-Type': 'application/json' }
+		});
+
+	} catch (error) {
+		return new Response(JSON.stringify({
+			success: false,
+			message: '批量处理失败: ' + error.message
+		}), {
+			status: 500,
+			headers: { 'Content-Type': 'application/json' }
+		});
+	}
+}
