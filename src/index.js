@@ -656,89 +656,72 @@ async function generateProxiesConfig(env) {
 					icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Proxy.png'
 				},
 				{
-					name: '媒体服务',
+					name: 'AI服务',
 					type: 'select',
-					proxies: ['节点选择', 'DIRECT', ...proxies.map(p => p.name)],
-					icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Netflix.png'
+					proxies: ['节点选择', 'DIRECT'],
+					icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ChatGPT.png'
 				},
 				{
 					name: '微软服务',
 					type: 'select',
-					proxies: ['节点选择', 'DIRECT', ...proxies.map(p => p.name)],
+					proxies: ['节点选择', 'DIRECT'],
 					icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Microsoft.png'
 				},
 				{
 					name: '苹果服务',
 					type: 'select',
-					proxies: ['节点选择', 'DIRECT', ...proxies.map(p => p.name)],
+					proxies: ['DIRECT', '节点选择'],
 					icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Apple.png'
 				},
-				{
-					name: 'CDN服务',
-					type: 'select',
-					proxies: ['节点选择', 'DIRECT', ...proxies.map(p => p.name)],
-					icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/OneDrive.png'
-				},
-				{
-					name: 'AI服务',
-					type: 'select',
-					proxies: ['节点选择', 'DIRECT', ...proxies.map(p => p.name)],
-					icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ChatGPT.png'
-				},
-				{
-					name: 'Telegram',
-					type: 'select',
-					proxies: ['节点选择', 'DIRECT', ...proxies.map(p => p.name)],
-					icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Telegram.png'
-				}
 			],
 
 			// 规则配置 - 参照clash.yaml
 			rules: [
+				'RULE-SET,reject_ip,REJECT',
 				'RULE-SET,reject_non_ip,REJECT',
 				'RULE-SET,reject_domainset,REJECT',
 				'RULE-SET,reject_extra_domainset,REJECT',
 				'RULE-SET,reject_non_ip_drop,REJECT-DROP',
 				'RULE-SET,reject_non_ip_no_drop,REJECT',
-				'RULE-SET,telegram_non_ip,Telegram',
-				'RULE-SET,apple_cdn,苹果服务',
-				'RULE-SET,apple_cn_non_ip,苹果服务',
-				'RULE-SET,microsoft_cdn_non_ip,微软服务',
-				'RULE-SET,apple_services,苹果服务',
-				'RULE-SET,microsoft_non_ip,微软服务',
-				'RULE-SET,download_domainset,CDN服务',
-				'RULE-SET,download_non_ip,CDN服务',
-				'RULE-SET,cdn_domainset,CDN服务',
-				'RULE-SET,cdn_non_ip,CDN服务',
-				'RULE-SET,stream_non_ip,媒体服务',
-				'RULE-SET,ai_non_ip,AI服务',
-				'RULE-SET,global_non_ip,节点选择',
-				'RULE-SET,domestic_non_ip,DIRECT',
-				'RULE-SET,direct_non_ip,DIRECT',
-				'RULE-SET,lan_non_ip,DIRECT',
 				'RULE-SET,advertising-ads,REJECT',
+				'DOMAIN-SUFFIX,adobe.io,REJECT',
+				'DOMAIN-SUFFIX,adobestats.io,REJECT',
 				'DOMAIN-KEYWORD,ad,REJECT',
 				'DOMAIN-KEYWORD,ads,REJECT',
 				'DOMAIN-KEYWORD,analytics,REJECT',
 				'DOMAIN-KEYWORD,doubleclick,REJECT',
 				'DOMAIN-KEYWORD,googlesyndication,REJECT',
-				'DOMAIN,cdn.jsdmirror.com,CDN服务',
-				'DOMAIN,raw.githubusercontent.com,CDN服务',
-				'DOMAIN-SUFFIX,cdn.jsdelivr.net,CDN服务',
-				'DOMAIN-SUFFIX,cdnjs.cloudflare.com,CDN服务',
-				'DOMAIN-SUFFIX,gstatic.com,CDN服务',
-				'DOMAIN-SUFFIX,adobe.io,REJECT',
-				'DOMAIN-SUFFIX,adobestats.io,REJECT',
 				'DOMAIN-SUFFIX,cursor.sh,节点选择',
 				'DOMAIN-SUFFIX,cursorapi.com,节点选择',
 				'DOMAIN-SUFFIX,linux.do,DIRECT',
-				'GEOSITE,CN,DIRECT',
-				'RULE-SET,reject_ip,REJECT',
-				'RULE-SET,telegram_ip,Telegram',
-				'RULE-SET,stream_ip,媒体服务',
+				'DOMAIN-SUFFIX,bilibili.com,DIRECT',
+				'RULE-SET,apple_cdn,苹果服务',
+				'RULE-SET,apple_cn_non_ip,苹果服务',
+				'RULE-SET,apple_services,苹果服务',
+				'RULE-SET,microsoft_cdn_non_ip,微软服务',
+				'RULE-SET,microsoft_non_ip,微软服务',
+				'RULE-SET,download_domainset,节点选择',
+				'RULE-SET,download_non_ip,节点选择',
+				'RULE-SET,cdn_domainset,节点选择',
+				'RULE-SET,cdn_non_ip,节点选择',
+				'RULE-SET,stream_ip,节点选择',
+				'RULE-SET,stream_non_ip,节点选择',
+				'RULE-SET,telegram_ip,节点选择',
+				'RULE-SET,telegram_non_ip,节点选择',
+				'RULE-SET,ai_non_ip,AI服务',
+				'RULE-SET,global_non_ip,节点选择',
+				'RULE-SET,domestic_non_ip,DIRECT',
+				'RULE-SET,direct_non_ip,DIRECT',
 				'RULE-SET,lan_ip,DIRECT',
+				'RULE-SET,lan_non_ip,DIRECT',
 				'RULE-SET,domestic_ip,DIRECT',
 				'RULE-SET,china_ip,DIRECT',
+				'DOMAIN,cdn.jsdmirror.com,节点选择',
+				'DOMAIN,raw.githubusercontent.com,节点选择',
+				'DOMAIN-SUFFIX,cdn.jsdelivr.net,节点选择',
+				'DOMAIN-SUFFIX,cdnjs.cloudflare.com,节点选择',
+				'DOMAIN-SUFFIX,gstatic.com,节点选择',
+				'GEOSITE,CN,DIRECT',
 				'GEOIP,LAN,DIRECT',
 				'GEOIP,CN,DIRECT',
 				'MATCH,节点选择'
@@ -1713,6 +1696,9 @@ async function generateSubMergeConfig(env) {
 			// Adobe弹窗拦截
 			'DOMAIN-SUFFIX,adobe.io,REJECT',
 			'DOMAIN-SUFFIX,adobestats.io,REJECT',
+			// Linuxdo/bilibili直连
+			'DOMAIN-SUFFIX,linux.do,DIRECT',
+			'DOMAIN-SUFFIX,bilibili.com,DIRECT',
 			// 特定服务规则
 			'RULE-SET,ai,🤖AI',
 			'RULE-SET,github_domain,🚀默认代理',
@@ -1730,9 +1716,6 @@ async function generateSubMergeConfig(env) {
 			// 通用国内/国外流量
 			'RULE-SET,gfw_domain,🚀默认代理',
 			'RULE-SET,geolocation-!cn,🚀默认代理',
-			// Linuxdo/bilibili直连
-			'DOMAIN-SUFFIX,linux.do,DIRECT',
-			'DOMAIN-SUFFIX,bilibili.com,DIRECT',
 			// IP 规则
 			'GEOIP,CNcidr,DIRECT',
 			'RULE-SET,cn_ip,DIRECT',
