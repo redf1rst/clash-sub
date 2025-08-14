@@ -1171,39 +1171,39 @@ async function generateSubMergeConfig(env) {
 		// 出站策略
 		config['proxy-groups'] = [
 			{
-				name: '🚀默认代理',
+				name: '🚀 默认代理',
 				type: 'select',
 				proxies: [
-					'♻️日本自动🇯🇵',
-					'♻️新加坡自动🇸🇬',
-					'♻️美国自动🇺🇲',
-					'♻️台湾自动🇨🇳',
-					'♻️韩国自动🇰🇷',
+					'♻️ 日本自动 🇯🇵',
+					'♻️ 新加坡自动 🇸🇬',
+					'♻️ 美国自动 🇺🇲',
+					'♻️ 台湾自动 🇨🇳',
+					'♻️ 韩国自动 🇰🇷',
 					'♻️法国自动🇫🇷',
-					'♻️英国自动🇬🇧',
-					'♻️澳洲自动🇦🇺',
-					'♻️德国自动🇩🇪',
-					'♻️自动选择',
-					'🔯日本故障转移🇯🇵',
-					'🔯新加坡故障转移🇸🇬',
-					'🔯美国故障转移🇺🇸',
-					'🔯台湾故障转移🇨🇳',
-					'🔯韩国故障转移🇰🇷',
-					'🔯香港故障转移🇭🇰',
-					'🔯英国故障转移🇬🇧',
-					'🔯法国故障转移🇫🇷',
-					'🔯澳洲故障转移🇦🇺',
-					'🔯德国故障转移🇩🇪',
-					'🌐全部节点',
-					'🇯🇵日本节点',
-					'🇨🇳台湾节点',
-					'🇸🇬新加坡节点',
-					'🇺🇲美国节点',
-					'🇰🇷韩国节点',
-					'🇬🇧英国节点',
-					'🇫🇷法国节点',
-					'🇦🇺澳洲节点',
-					'🇩🇪德国节点',
+					'♻️ 英国自动 🇬🇧',
+					'♻️ 澳洲自动 🇦🇺',
+					'♻️ 德国自动 🇩🇪',
+					'♻️ 自动选择',
+					'🔯 日本故障转移 🇯🇵',
+					'🔯 新加坡故障转移 🇸🇬',
+					'🔯 美国故障转移 🇺🇸',
+					'🔯 台湾故障转移 🇨🇳',
+					'🔯 韩国故障转移 🇰🇷',
+					'🔯 香港故障转移 🇭🇰',
+					'🔯 英国故障转移 🇬🇧',
+					'🔯 法国故障转移 🇫🇷',
+					'🔯 澳洲故障转移 🇦🇺',
+					'🔯 德国故障转移 🇩🇪',
+					'🌐 全部节点',
+					'🇯🇵 日本节点',
+					'🇨🇳 台湾节点',
+					'🇸🇬 新加坡节点',
+					'🇺🇲 美国节点',
+					'🇰🇷 韩国节点',
+					'🇬🇧 英国节点',
+					'🇫🇷 法国节点',
+					'🇦🇺 澳洲节点',
+					'🇩🇪 德国节点',
 					'DIRECT'
 				]
 			},
@@ -1211,37 +1211,37 @@ async function generateSubMergeConfig(env) {
 				name: '🤖AI',
 				type: 'select',
 				proxies: [
-					'🚀默认代理',
-					'♻️日本自动🇯🇵',
-					'♻️美国自动🇺🇲',
-					'♻️台湾自动🇨🇳',
-					'♻️新加坡自动🇸🇬',
-					'♻️韩国自动🇰🇷',
+					'🚀 默认代理',
+					'♻️ 日本自动 🇯🇵',
+					'♻️ 美国自动 🇺🇲',
+					'♻️ 台湾自动 🇨🇳',
+					'♻️ 新加坡自动 🇸🇬',
+					'♻️ 韩国自动 🇰🇷',
 					'♻️🇭🇰香港自动',
-					'♻️英国自动🇬🇧',
+					'♻️ 英国自动 🇬🇧',
 					'♻️法国自动🇫🇷',
-					'♻️澳洲自动🇦🇺',
-					'♻️德国自动🇩🇪',
-					'♻️自动选择',
-					'🔯日本故障转移🇯🇵',
-					'🔯新加坡故障转移🇸🇬',
-					'🔯美国故障转移🇺🇸',
-					'🔯台湾故障转移🇨🇳',
-					'🔯韩国故障转移🇰🇷',
-					'🔯英国故障转移🇬🇧',
-					'🔯法国故障转移🇫🇷',
-					'🔯澳洲故障转移🇦🇺',
-					'🔯德国故障转移🇩🇪',
-					'🇯🇵日本节点',
-					'🇨🇳台湾节点',
-					'🇸🇬新加坡节点',
-					'🇺🇲美国节点',
-					'🇰🇷韩国节点',
-					'🇬🇧英国节点',
-					'🇫🇷法国节点',
-					'🇦🇺澳洲节点',
-					'🇩🇪德国节点',
-					'🌐全部节点',
+					'♻️ 澳洲自动 🇦🇺',
+					'♻️ 德国自动 🇩🇪',
+					'♻️ 自动选择',
+					'🔯 日本故障转移 🇯🇵',
+					'🔯 新加坡故障转移 🇸🇬',
+					'🔯 美国故障转移 🇺🇸',
+					'🔯 台湾故障转移 🇨🇳',
+					'🔯 韩国故障转移 🇰🇷',
+					'🔯 英国故障转移 🇬🇧',
+					'🔯 法国故障转移 🇫🇷',
+					'🔯 澳洲故障转移 🇦🇺',
+					'🔯 德国故障转移 🇩🇪',
+					'🇯🇵 日本节点',
+					'🇨🇳 台湾节点',
+					'🇸🇬 新加坡节点',
+					'🇺🇲 美国节点',
+					'🇰🇷 韩国节点',
+					'🇬🇧 英国节点',
+					'🇫🇷 法国节点',
+					'🇦🇺 澳洲节点',
+					'🇩🇪 德国节点',
+					'🌐 全部节点',
 					'DIRECT'
 				]
 			},
@@ -1254,10 +1254,10 @@ async function generateSubMergeConfig(env) {
 			{
 				name: '苹果服务',
 				type: 'select',
-				proxies: ['DIRECT', '🚀默认代理']
+				proxies: ['DIRECT', '🚀 默认代理']
 			},
 			{
-				name: '♻️台湾自动🇨🇳',
+				name: '♻️ 台湾自动 🇨🇳',
 				type: 'url-test',
 				'include-all': true,
 				tolerance: 30,
@@ -1265,7 +1265,7 @@ async function generateSubMergeConfig(env) {
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇹🇼|台湾|台北|新北|高雄|\\\\b(TW|Taiwan|Tai wan)\\\\b)).*$'
 			},
 			{
-				name: '♻️日本自动🇯🇵',
+				name: '♻️ 日本自动 🇯🇵',
 				type: 'url-test',
 				'include-all': true,
 				tolerance: 30,
@@ -1273,7 +1273,7 @@ async function generateSubMergeConfig(env) {
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇯🇵|日本|东京|大阪|京都|名古屋|埼玉|\\\\b(JP|Japan)\\\\b)).*$'
 			},
 			{
-				name: '♻️新加坡自动🇸🇬',
+				name: '♻️ 新加坡自动 🇸🇬',
 				type: 'url-test',
 				'include-all': true,
 				tolerance: 30,
@@ -1281,7 +1281,7 @@ async function generateSubMergeConfig(env) {
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇸🇬|新加坡|新加坡|\\\\b(SG|Singapore)\\\\b)).*$'
 			},
 			{
-				name: '♻️美国自动🇺🇲',
+				name: '♻️ 美国自动 🇺🇲',
 				type: 'url-test',
 				'include-all': true,
 				tolerance: 30,
@@ -1289,7 +1289,7 @@ async function generateSubMergeConfig(env) {
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|\\\\b(US|United States|America)\\\\b)).*$'
 			},
 			{
-				name: '♻️韩国自动🇰🇷',
+				name: '♻️ 韩国自动 🇰🇷',
 				type: 'url-test',
 				'include-all': true,
 				tolerance: 30,
@@ -1297,7 +1297,7 @@ async function generateSubMergeConfig(env) {
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇰🇷|韩国|韓國|首尔|釜山|\\\\b(KR|Korea)\\\\b)).*$'
 			},
 			{
-				name: '♻️英国自动🇬🇧',
+				name: '♻️ 英国自动 🇬🇧',
 				type: 'url-test',
 				'include-all': true,
 				tolerance: 30,
@@ -1313,7 +1313,7 @@ async function generateSubMergeConfig(env) {
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇫🇷|法国|巴黎|马赛|\\\\b(FR|France)\\\\b)).*$'
 			},
 			{
-				name: '♻️德国自动🇩🇪',
+				name: '♻️ 德国自动 🇩🇪',
 				type: 'url-test',
 				'include-all': true,
 				tolerance: 30,
@@ -1321,7 +1321,7 @@ async function generateSubMergeConfig(env) {
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇩🇪|德国|柏林|法兰克福|慕尼黑|\\\\b(DE|Germany)\\\\b)).*$'
 			},
 			{
-				name: '♻️澳洲自动🇦🇺',
+				name: '♻️ 澳洲自动 🇦🇺',
 				type: 'url-test',
 				'include-all': true,
 				tolerance: 30,
@@ -1337,7 +1337,7 @@ async function generateSubMergeConfig(env) {
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇭🇰|香港|九龙|新界|\\\\b(HK|HongKong|Hong Kong)\\\\b)).*$'
 			},
 			{
-				name: '♻️自动选择',
+				name: '♻️ 自动选择',
 				type: 'url-test',
 				'include-all': true,
 				tolerance: 30,
@@ -1345,125 +1345,125 @@ async function generateSubMergeConfig(env) {
 				'exclude-filter': '^(?=.*((?i)10x|6x|过滤|客户端|不要|付款|如果|群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|建议|备用|作者|加入|\\\\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\\\\b|(\\\\d{4}-\\\\d{2}-\\\\d{2}|\\\\d+G))).*$'
 			},
 			{
-				name: '🔯日本故障转移🇯🇵',
+				name: '🔯 日本故障转移 🇯🇵',
 				type: 'fallback',
 				'include-all': true,
 				interval: 300,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇯🇵|日本|东京|大阪|京都|名古屋|埼玉|\\\\b(JP|Japan)\\\\b)).*$'
 			},
 			{
-				name: '🔯新加坡故障转移🇸🇬',
+				name: '🔯 新加坡故障转移 🇸🇬',
 				type: 'fallback',
 				'include-all': true,
 				interval: 300,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇸🇬|新加坡|新加坡|\\\\b(SG|Singapore)\\\\b)).*$'
 			},
 			{
-				name: '🔯美国故障转移🇺🇸',
+				name: '🔯 美国故障转移 🇺🇸',
 				type: 'fallback',
 				'include-all': true,
 				interval: 300,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|\\\\b(US|United States|America)\\\\b)).*$'
 			},
 			{
-				name: '🔯台湾故障转移🇨🇳',
+				name: '🔯 台湾故障转移 🇨🇳',
 				type: 'fallback',
 				'include-all': true,
 				interval: 300,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇹🇼|台湾|台北|新北|高雄|\\\\b(TW|Taiwan|Tai wan)\\\\b)).*$'
 			},
 			{
-				name: '🔯香港故障转移🇭🇰',
+				name: '🔯 香港故障转移 🇭🇰',
 				type: 'fallback',
 				'include-all': true,
 				interval: 300,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇭🇰|香港|九龙|新界|\\\\b(HK|HongKong|Hong Kong)\\\\b)).*$'
 			},
 			{
-				name: '🔯韩国故障转移🇰🇷',
+				name: '🔯 韩国故障转移 🇰🇷',
 				type: 'fallback',
 				'include-all': true,
 				interval: 300,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇰🇷|韩国|韓國|首尔|釜山|\\\\b(KR|Korea)\\\\b)).*$'
 			},
 			{
-				name: '🔯英国故障转移🇬🇧',
+				name: '🔯 英国故障转移 🇬🇧',
 				type: 'fallback',
 				'include-all': true,
 				interval: 300,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇬🇧|英国|伦敦|曼彻斯特|\\\\b(UK|United Kingdom|Britain)\\\\b)).*$'
 			},
 			{
-				name: '🔯法国故障转移🇫🇷',
+				name: '🔯 法国故障转移 🇫🇷',
 				type: 'fallback',
 				'include-all': true,
 				interval: 300,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇫🇷|法国|巴黎|马赛|\\\\b(FR|France)\\\\b)).*$'
 			},
 			{
-				name: '🔯德国故障转移🇩🇪',
+				name: '🔯 德国故障转移 🇩🇪',
 				type: 'fallback',
 				'include-all': true,
 				interval: 300,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇩🇪|德国|柏林|法兰克福|慕尼黑|\\\\b(DE|Germany)\\\\b)).*$'
 			},
 			{
-				name: '🔯澳洲故障转移🇦🇺',
+				name: '🔯 澳洲故障转移 🇦🇺',
 				type: 'fallback',
 				'include-all': true,
 				interval: 300,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\\\b(AU|AUS|Australia)\\\\b)).*$'
 			},
 			{
-				name: '🇯🇵日本节点',
+				name: '🇯🇵 日本节点',
 				type: 'select',
 				'include-all': true,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇯🇵|日本|东京|大阪|京都|名古屋|埼玉|\\\\b(JP|Japan)\\\\b)).*$'
 			},
 			{
-				name: '🇸🇬新加坡节点',
+				name: '🇸🇬 新加坡节点',
 				type: 'select',
 				'include-all': true,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇸🇬|新加坡|新加坡|\\\\b(SG|Singapore)\\\\b)).*$'
 			},
 			{
-				name: '🇺🇲美国节点',
+				name: '🇺🇲 美国节点',
 				type: 'select',
 				'include-all': true,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|\\\\b(US|United States|America)\\\\b)).*$'
 			},
 			{
-				name: '🇰🇷韩国节点',
+				name: '🇰🇷 韩国节点',
 				type: 'select',
 				'include-all': true,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇰🇷|韩国|韓國|首尔|釜山|\\\\b(KR|Korea)\\\\b)).*$'
 			},
 			{
-				name: '🇬🇧英国节点',
+				name: '🇬🇧 英国节点',
 				type: 'select',
 				'include-all': true,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇬🇧|英国|伦敦|曼彻斯特|\\\\b(UK|United Kingdom|Britain)\\\\b)).*$'
 			},
 			{
-				name: '🇫🇷法国节点',
+				name: '🇫🇷 法国节点',
 				type: 'select',
 				'include-all': true,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇫🇷|法国|巴黎|马赛|\\\\b(FR|France)\\\\b)).*$'
 			},
 			{
-				name: '🇩🇪德国节点',
+				name: '🇩🇪 德国节点',
 				type: 'select',
 				'include-all': true,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇩🇪|德国|柏林|法兰克福|慕尼黑|\\\\b(DE|Germany)\\\\b)).*$'
 			},
 			{
-				name: '🇨🇳台湾节点',
+				name: '🇨🇳 台湾节点',
 				type: 'select',
 				'include-all': true,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇹🇼|台湾|台北|新北|高雄|\\\\b(TW|Taiwan|Tai wan)\\\\b)).*$'
 			},
 			{
-				name: '🇦🇺澳洲节点',
+				name: '🇦🇺 澳洲节点',
 				type: 'select',
 				'include-all': true,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\\\b(AU|AUS|Australia)\\\\b)).*$'
@@ -1475,7 +1475,7 @@ async function generateSubMergeConfig(env) {
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇭🇰|香港|九龙|新界|\\\\b(HK|HongKong|Hong Kong)\\\\b)).*$'
 			},
 			{
-				name: '🌐全部节点',
+				name: '🌐 全部节点',
 				type: 'select',
 				'include-all': true,
 				'exclude-filter': '^(?=.*((?i)10x|6x|过滤|客户端|不要|付款|如果|群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|建议|备用|作者|加入|\\\\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\\\\b|(\\\\d{4}-\\\\d{2}-\\\\d{2}|\\\\d+G))).*$'
@@ -1660,7 +1660,7 @@ async function generateSubMergeConfig(env) {
 				behavior: 'classical',
 				interval: 3600,
 				format: 'yaml',
-				proxy: '🚀默认代理',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/ChinaMedia/ChinaMedia.yaml',
 				path: './ruleset/ChinaMedia.yaml'
 			},
@@ -1669,7 +1669,7 @@ async function generateSubMergeConfig(env) {
 				behavior: 'classical',
 				interval: 3600,
 				format: 'yaml',
-				proxy: '🚀默认代理',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Lan/Lan.yaml',
 				path: './ruleset/LAN.yaml'
 			},
@@ -1678,7 +1678,7 @@ async function generateSubMergeConfig(env) {
 				behavior: 'classical',
 				interval: 3600,
 				format: 'yaml',
-				proxy: '🚀默认代理',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/ChinaMax/ChinaMax_Classical.yaml',
 				path: './ruleset/China.yaml'
 			},
@@ -1688,7 +1688,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
-				proxy: '🚀默认代理',
+				proxy: '🚀 默认代理',
 				url: 'https://cdn.jsdmirror.com/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/private.mrs',
 				path: './ruleset/Private.mrs'
 			},
@@ -1697,7 +1697,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
-				proxy: '🚀默认代理',
+				proxy: '🚀 默认代理',
 				url: 'https://cdn.jsdmirror.com/gh/DustinWin/ruleset_geodata@mihomo-ruleset/fakeip-filter.mrs',
 				path: './ruleset/Fakeip_Filter.mrs'
 			},
@@ -1706,7 +1706,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
-				proxy: '🚀默认代理',
+				proxy: '🚀 默认代理',
 				url: 'https://cdn.jsdmirror.com/gh/TG-Twilight/AWAvenue-Ads-Rule@main/Filters/AWAvenue-Ads-Rule-Clash.mrs',
 				path: './ruleset/Advertising-ads.mrs'
 			},
@@ -1715,7 +1715,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
-				proxy: '🚀默认代理',
+				proxy: '🚀 默认代理',
 				url: 'https://cdn.jsdmirror.com/gh/Kwisma/rules@main/rules/mihomo/STUN/STUN_Domain.mrs',
 				path: './ruleset/STUN.mrs'
 			},
@@ -1724,7 +1724,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'ipcidr',
 				format: 'mrs',
-				proxy: '🚀默认代理',
+				proxy: '🚀 默认代理',
 				url: 'https://cdn.jsdmirror.com/gh/Kwisma/clash-rules@release/cncidr.mrs',
 				path: './ruleset/CNcidr.mrs'
 			}
@@ -1742,33 +1742,33 @@ async function generateSubMergeConfig(env) {
 			'DOMAIN-SUFFIX,codebuddy.ai,🤖AI',
 			// 特定服务规则
 			'RULE-SET,ai,🤖AI',
-			'RULE-SET,github_domain,🚀默认代理',
-			'RULE-SET,youtube_domain,🚀默认代理',
+			'RULE-SET,github_domain,🚀 默认代理',
+			'RULE-SET,youtube_domain,🚀 默认代理',
 			'RULE-SET,google_domain,🤖AI',
-			'RULE-SET,onedrive_domain,🚀默认代理',
+			'RULE-SET,onedrive_domain,🚀 默认代理',
 			'RULE-SET,microsoft_domain,微软服务',
-			'RULE-SET,tiktok_domain,🚀默认代理',
-			'RULE-SET,telegram_domain,🚀默认代理',
-			'RULE-SET,spotify_domain,🚀默认代理',
-			'RULE-SET,netflix_domain,🚀默认代理',
-			'RULE-SET,paypal_domain,🚀默认代理',
+			'RULE-SET,tiktok_domain,🚀 默认代理',
+			'RULE-SET,telegram_domain,🚀 默认代理',
+			'RULE-SET,spotify_domain,🚀 默认代理',
+			'RULE-SET,netflix_domain,🚀 默认代理',
+			'RULE-SET,paypal_domain,🚀 默认代理',
 			'RULE-SET,apple_domain,苹果服务',
-			'RULE-SET,speedtest_domain,🚀默认代理',
+			'RULE-SET,speedtest_domain,🚀 默认代理',
 			// 通用国内/国外流量
-			'RULE-SET,gfw_domain,🚀默认代理',
-			'RULE-SET,geolocation-!cn,🚀默认代理',
+			'RULE-SET,gfw_domain,🚀 默认代理',
+			'RULE-SET,geolocation-!cn,🚀 默认代理',
 			// IP 规则
 			'GEOIP,CNcidr,DIRECT',
 			'RULE-SET,cn_ip,DIRECT',
-			'RULE-SET,google_ip,🚀默认代理,no-resolve',
-			'RULE-SET,netflix_ip,🚀默认代理,no-resolve',
-			'RULE-SET,telegram_ip,🚀默认代理,no-resolve',
+			'RULE-SET,google_ip,🚀 默认代理,no-resolve',
+			'RULE-SET,netflix_ip,🚀 默认代理,no-resolve',
+			'RULE-SET,telegram_ip,🚀 默认代理,no-resolve',
 			// 国内域名规则
 			'RULE-SET,cn_domain,DIRECT',
 			'RULE-SET,ChinaMedia,DIRECT',
 			'RULE-SET,China,DIRECT',
 			// 兜底规则
-			'MATCH,🚀默认代理'
+			'MATCH,🚀 默认代理'
 		];
 
 		// 子规则
@@ -1789,11 +1789,11 @@ async function generateSubMergeConfig(env) {
 				'DST-PORT,53,REJECT', // DNS 端口，防止DNS泄漏
 				'DST-PORT,6881-6889,REJECT', // BitTorrent 端口
 				// 为常用的CDN和规则集提供代理
-				'DOMAIN,cdn.jsdmirror.com,🚀默认代理',
-				'DOMAIN,raw.githubusercontent.com,🚀默认代理',
-				'DOMAIN-SUFFIX,cdn.jsdelivr.net,🚀默认代理',
-				'DOMAIN-SUFFIX,cdnjs.cloudflare.com,🚀默认代理',
-				'DOMAIN-SUFFIX,gstatic.com,🚀默认代理'
+				'DOMAIN,cdn.jsdmirror.com,🚀 默认代理',
+				'DOMAIN,raw.githubusercontent.com,🚀 默认代理',
+				'DOMAIN-SUFFIX,cdn.jsdelivr.net,🚀 默认代理',
+				'DOMAIN-SUFFIX,cdnjs.cloudflare.com,🚀 默认代理',
+				'DOMAIN-SUFFIX,gstatic.com,🚀 默认代理'
 			]
 		};
 
