@@ -169,8 +169,8 @@ dist
 !.env.example
 .wrangler/
 .vscode/settings.json
-wrangler.toml
 .claude/
 proxy_format_check.md
 proxy_analysis_process.md
 *.yaml
+wrangler.jsonc
