@@ -888,7 +888,7 @@ async function generateProxiesConfig(env) {
 				'DOMAIN-KEYWORD,googlesyndication,REJECT',
 				'DOMAIN-SUFFIX,cursor.sh,节点选择',
 				'DOMAIN-SUFFIX,cursorapi.com,节点选择',
-				'DOMAIN-SUFFIX,linux.do,DIRECT',
+				//'DOMAIN-SUFFIX,linux.do,DIRECT',
 				'DOMAIN-SUFFIX,bilibili.com,DIRECT',
 				'RULE-SET,apple_cdn,苹果服务',
 				'RULE-SET,apple_cn_non_ip,苹果服务',
@@ -1933,7 +1933,7 @@ async function generateSubMergeConfig(env) {
 			'RULE-SET,Fakeip_Filter,DIRECT',
 			'DOMAIN-SUFFIX,adobe.io,REJECT',
 			'DOMAIN-SUFFIX,adobestats.io,REJECT',
-			'DOMAIN-SUFFIX,linux.do,DIRECT',
+			//'DOMAIN-SUFFIX,linux.do,DIRECT',
 			'DOMAIN-SUFFIX,bilibili.com,DIRECT',
 			'DOMAIN-SUFFIX,codebuddy.ai,🤖AI',
 			// 特定服务规则

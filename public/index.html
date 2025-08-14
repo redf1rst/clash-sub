@@ -504,6 +504,102 @@
         .btn:disabled:hover {
             background: #6c757d;
         }
+
+        /* 复制链接区域样式 */
+        .copy-links-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .copy-link-single {
+            display: flex;
+            justify-content: center;
+            margin: 0 0 20px 0;
+        }
+
+        .copy-links-container .link-item,
+        .copy-link-single .link-item {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .copy-link-single .link-item {
+            width: 100%;
+            max-width: 750px;
+        }
+
+        .copy-links-container .link-item:hover,
+        .copy-link-single .link-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .copy-links-container .link-item strong,
+        .copy-link-single .link-item strong {
+            font-size: 15px;
+            color: #1976d2;
+            margin-bottom: 6px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .copy-links-container .link-url,
+        .copy-link-single .link-url {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid #90caf9;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            word-break: break-all;
+            color: #424242;
+            flex: 1;
+            margin-bottom: 8px;
+            min-height: 28px;
+            display: flex;
+            align-items: center;
+            line-height: 1.3;
+        }
+
+        .copy-links-container .btn,
+        .copy-link-single .btn {
+            background: #1976d2;
+            color: white;
+            border: none;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 6px 16px;
+            height: 30px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .copy-links-container .btn:hover,
+        .copy-link-single .btn:hover {
+            background: #1565c0;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(25, 118, 210, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .copy-links-container {
+                grid-template-columns: 1fr;
+                gap: 12px;
+                margin: 15px 0;
+            }
+
+            .copy-link-single .link-item {
+                max-width: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -521,6 +617,15 @@
         <div class="content">
             <!-- 节点整合部分 -->
             <div id="proxies" class="section active">
+                <!-- 节点整合复制链接 -->
+                <div class="copy-link-single">
+                    <div class="link-item">
+                        <strong>节点整合订阅</strong>
+                        <div class="link-url" id="proxiesLinkTop"></div>
+                        <button class="btn success" onclick="copyLink('proxiesLinkTop')">复制链接</button>
+                    </div>
+                </div>
+
                 <div class="input-group">
                     <label for="proxyUrl">添加节点链接（支持批量添加，每行一个链接）</label>
                     <textarea id="proxyUrl" placeholder="支持 vmess://, vless://, ss://, hysteria2://, trojan:// 等协议，每行一个链接"></textarea>
@@ -598,18 +703,19 @@
                     </div>
                 </div>
 
-                <div class="subscription-links">
-                    <h3>📋 节点整合订阅链接</h3>
-                    <div class="link-item">
-                        <strong>ProxySub配置</strong>
-                        <div class="link-url" id="proxiesLink"></div>
-                        <button class="btn success" onclick="copyLink('proxiesLink')">复制链接</button>
-                    </div>
-                </div>
             </div>
 
             <!-- 订阅整合部分 -->
             <div id="submerge" class="section">
+                <!-- 订阅整合复制链接 -->
+                <div class="copy-link-single">
+                    <div class="link-item">
+                        <strong>订阅整合链接</strong>
+                        <div class="link-url" id="submergeLinkTop"></div>
+                        <button class="btn success" onclick="copyLink('submergeLinkTop')">复制链接</button>
+                    </div>
+                </div>
+
                 <div class="input-group">
                     <label for="subUrl">添加订阅链接（支持批量添加，每行一个链接）</label>
                     <textarea id="subUrl" placeholder="输入Clash订阅链接，支持批量添加，每行一个链接"></textarea>
@@ -643,14 +749,6 @@
                     </div>
                 </div>
 
-                <div class="subscription-links">
-                    <h3>📋 订阅整合链接</h3>
-                    <div class="link-item">
-                        <strong>SubMerge配置</strong>
-                        <div class="link-url" id="submergeLink"></div>
-                        <button class="btn success" onclick="copyLink('submergeLink')">复制链接</button>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -666,8 +764,12 @@
         window.addEventListener('load', function() {
             // 设置订阅链接
             const origin = window.location.origin;
-            document.getElementById('proxiesLink').textContent = origin + '/clash/proxies';
-            document.getElementById('submergeLink').textContent = origin + '/clash/submerge';
+            const proxiesUrl = origin + '/clash/proxies';
+            const submergeUrl = origin + '/clash/submerge';
+
+            // 设置顶部复制链接
+            document.getElementById('proxiesLinkTop').textContent = proxiesUrl;
+            document.getElementById('submergeLinkTop').textContent = submergeUrl;
 
             loadProxies();
             loadSubscriptions();
