@@ -443,6 +443,7 @@ async function addSubscription(data, env) {
 		let duplicateCount = 0;
 		let failedCount = 0;
 		const addedSubscriptions = [];
+		const failedSubscriptions = [];
 
 		for (const subUrl of urls) {
 			// 检查重复订阅
@@ -454,9 +455,15 @@ async function addSubscription(data, env) {
 			// 获取订阅信息（包括名称、流量、到期时间）
 			const subInfo = await getSubscriptionInfo(subUrl);
 
-			// 只有在真正获取失败（网络错误等）时才跳过
-			if (!subInfo.success) {
+			// 检查连通性和状态码
+			if (!subInfo.success || isFailureStatusCode(subInfo.statusCode)) {
 				failedCount++;
+				const errorMessage = getErrorMessage(subInfo.statusCode, subInfo.success);
+				failedSubscriptions.push({
+					url: subUrl,
+					error: errorMessage,
+					statusCode: subInfo.statusCode
+				});
 				continue; // 跳过获取失败的订阅
 			}
 
@@ -504,7 +511,8 @@ async function addSubscription(data, env) {
 			successCount,
 			duplicateCount,
 			failedCount,
-			addedSubscriptions
+			addedSubscriptions,
+			failedSubscriptions
 		}), {
 			headers: { 'Content-Type': 'application/json' }
 		});
@@ -513,6 +521,57 @@ async function addSubscription(data, env) {
 			status: 500,
 			headers: { 'Content-Type': 'application/json' }
 		});
+	}
+}
+
+// 判断是否为失败状态码
+function isFailureStatusCode(statusCode) {
+	// 检查常见的失败状态码
+	const failureCodes = [400, 401, 403, 404, 405, 408, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524];
+	return failureCodes.includes(statusCode);
+}
+
+// 获取错误信息
+function getErrorMessage(statusCode, success) {
+	if (!success) {
+		return '网络连接失败或超时';
+	}
+
+	switch (statusCode) {
+		case 400:
+			return '请求格式错误 (400)';
+		case 401:
+			return '未授权访问 (401)';
+		case 403:
+			return '访问被禁止 (403)';
+		case 404:
+			return '订阅链接不存在 (404)';
+		case 405:
+			return '请求方法不允许 (405)';
+		case 408:
+			return '请求超时 (408)';
+		case 429:
+			return '请求过于频繁 (429)';
+		case 500:
+			return '服务器内部错误 (500)';
+		case 502:
+			return '网关错误 (502)';
+		case 503:
+			return '服务不可用 (503)';
+		case 504:
+			return '网关超时 (504)';
+		case 520:
+			return 'Cloudflare 未知错误 (520)';
+		case 521:
+			return '服务器拒绝连接 (521)';
+		case 522:
+			return '连接超时 (522)';
+		case 523:
+			return '源服务器不可达 (523)';
+		case 524:
+			return '源服务器超时 (524)';
+		default:
+			return `HTTP错误 (${statusCode})`;
 	}
 }
 
@@ -587,7 +646,7 @@ async function generateProxiesConfig(env) {
 	try {
 		const proxies = JSON.parse(await env.CLASH_KV?.get('proxies') || '[]');
 
-		// 对节点进行排序：先按地区缩写(A-Z)，再按序号排序
+		// 对节点进行排序：优先级地区 + 其他地区按字母顺序
 		proxies.sort((a, b) => {
 			// 提取地区缩写和序号
 			const regionPatternForSort = /^([A-Z]{2}[^0-9]*?)(\d{2})-(IPv4|IPv6)$/;
@@ -600,7 +659,28 @@ async function generateProxiesConfig(env) {
 				const numberA = parseInt(matchA[2]);
 				const numberB = parseInt(matchB[2]);
 
-				// 首先按地区缩写排序
+				// 定义优先级地区顺序
+				const priorityRegions = ['US', 'JP', 'TW', 'SG', 'KR', 'HK', 'AU', 'FR', 'GB', 'DE'];
+				const priorityA = priorityRegions.indexOf(regionA);
+				const priorityB = priorityRegions.indexOf(regionB);
+
+				// 如果两个都是优先级地区
+				if (priorityA !== -1 && priorityB !== -1) {
+					if (priorityA !== priorityB) {
+						return priorityA - priorityB; // 按优先级顺序排序
+					}
+					return numberA - numberB; // 优先级相同时按序号排序
+				}
+
+				// 如果只有一个是优先级地区
+				if (priorityA !== -1 && priorityB === -1) {
+					return -1; // A 是优先级地区，排在前面
+				}
+				if (priorityA === -1 && priorityB !== -1) {
+					return 1; // B 是优先级地区，排在前面
+				}
+
+				// 如果两个都不是优先级地区，按字母顺序排序
 				if (regionA !== regionB) {
 					return regionA.localeCompare(regionB);
 				}

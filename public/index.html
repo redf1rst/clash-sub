@@ -267,7 +267,8 @@
             background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
             border: 2px solid #27ae60;
             box-shadow: 0 4px 8px rgba(39, 174, 96, 0.2);
-            animation: highlightPulse 2s ease-in-out;
+            animation: highlightPulse 3s ease-in-out;
+            scroll-margin-top: 20px; /* 滚动时的顶部边距 */
         }
 
         @keyframes highlightPulse {
@@ -275,9 +276,17 @@
                 transform: scale(1);
                 box-shadow: 0 4px 8px rgba(39, 174, 96, 0.2);
             }
-            50% {
+            25% {
                 transform: scale(1.02);
                 box-shadow: 0 6px 12px rgba(39, 174, 96, 0.3);
+            }
+            50% {
+                transform: scale(1);
+                box-shadow: 0 4px 8px rgba(39, 174, 96, 0.2);
+            }
+            75% {
+                transform: scale(1.01);
+                box-shadow: 0 5px 10px rgba(39, 174, 96, 0.25);
             }
             100% {
                 transform: scale(1);
@@ -732,12 +741,19 @@
             }
 
             let html = '';
+            let firstNewlyAddedIndex = -1;
+
             for (let i = 0; i < proxies.length; i++) {
                 const proxy = proxies[i];
                 const isNewlyAdded = newlyAddedProxies.has(proxy.name);
                 const highlightClass = isNewlyAdded ? ' newly-added' : '';
 
-                html += '<div class="list-item' + highlightClass + '">';
+                // 记录第一个新添加节点的位置
+                if (isNewlyAdded && firstNewlyAddedIndex === -1) {
+                    firstNewlyAddedIndex = i;
+                }
+
+                html += '<div class="list-item' + highlightClass + '" data-index="' + i + '">';
                 html += '<div class="item-info">';
                 html += '<div class="item-name">' + proxy.name + '</div>';
                 html += '<div class="item-details">' + proxy.server + ':' + proxy.port + ' (' + proxy.type.toUpperCase() + ')</div>';
@@ -747,13 +763,26 @@
             }
             listEl.innerHTML = html;
 
-            // 3秒后移除高亮效果
+            // 滚动到第一个新添加的节点
+            if (firstNewlyAddedIndex !== -1) {
+                setTimeout(() => {
+                    const firstNewItem = listEl.querySelector('[data-index="' + firstNewlyAddedIndex + '"]');
+                    if (firstNewItem) {
+                        firstNewItem.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center'
+                        });
+                    }
+                }, 100);
+            }
+
+            // 8秒后移除高亮效果
             setTimeout(() => {
                 newlyAddedProxies.clear();
                 document.querySelectorAll('.list-item.newly-added').forEach(item => {
                     item.classList.remove('newly-added');
                 });
-            }, 3000);
+            }, 8000);
         }
 
         // 添加订阅
@@ -782,8 +811,19 @@
                     }
                     if (result.failedCount > 0) {
                         message += '，' + result.failedCount + ' 个订阅添加失败';
+
+                        // 显示失败订阅的详细信息
+                        if (result.failedSubscriptions && result.failedSubscriptions.length > 0) {
+                            let failedDetails = '\n\n失败的订阅链接：\n';
+                            result.failedSubscriptions.forEach((failed, index) => {
+                                failedDetails += `${index + 1}. ${failed.url}\n   错误：${failed.error}\n`;
+                            });
+                            message += failedDetails;
+                        }
                     }
-                    showMessage('subMessage', message);
+
+                    const messageType = result.failedCount > 0 ? 'info' : 'success';
+                    showMessage('subMessage', message, messageType);
                     document.getElementById('subUrl').value = '';
 
                     // 标记新添加的订阅用于高亮显示
@@ -876,13 +916,20 @@
             }
 
             let html = '';
+            let firstNewlyAddedIndex = -1;
+
             for (let i = 0; i < subscriptions.length; i++) {
                 const sub = subscriptions[i];
                 const name = subscriptionNames[i] || ('订阅' + (i + 1));
                 const isNewlyAdded = newlyAddedSubscriptions.has(name);
                 const highlightClass = isNewlyAdded ? ' newly-added' : '';
 
-                html += '<div class="list-item' + highlightClass + '">';
+                // 记录第一个新添加订阅的位置
+                if (isNewlyAdded && firstNewlyAddedIndex === -1) {
+                    firstNewlyAddedIndex = i;
+                }
+
+                html += '<div class="list-item' + highlightClass + '" data-index="' + i + '">';
                 html += '<div class="item-info">';
                 html += '<div class="item-name">' + name + '</div>';
                 html += '<div class="item-details">' + sub + '</div>';
@@ -892,13 +939,26 @@
             }
             listEl.innerHTML = html;
 
-            // 3秒后移除高亮效果
+            // 滚动到第一个新添加的订阅
+            if (firstNewlyAddedIndex !== -1) {
+                setTimeout(() => {
+                    const firstNewItem = listEl.querySelector('[data-index="' + firstNewlyAddedIndex + '"]');
+                    if (firstNewItem) {
+                        firstNewItem.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center'
+                        });
+                    }
+                }, 100);
+            }
+
+            // 8秒后移除高亮效果
             setTimeout(() => {
                 newlyAddedSubscriptions.clear();
                 document.querySelectorAll('.list-item.newly-added').forEach(item => {
                     item.classList.remove('newly-added');
                 });
-            }, 3000);
+            }, 8000);
         }
 
         // 复制链接
