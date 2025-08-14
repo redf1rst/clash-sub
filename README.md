@@ -78,17 +78,23 @@ npx wrangler login
 wrangler kv namespace create "CLASH_KV"
 ```
 
-### 4. 更新wrangler.toml （删除.example后缀）
-将上一步获得的KV命名空间ID填入wrangler.toml文件中：
-```toml
-[[kv_namespaces]]
-binding = "CLASH_KV"
-id = "你的KV命名空间ID"
+### 4. 更新wrangler.jsonc 配置文件 (删除.example)
+将上一步获得的KV命名空间ID填入wrangler.jsonc文件中：
+```jsonc
+{
+  "kv_namespaces": [
+    {
+      "binding": "CLASH_KV",
+      "id": "你的KV命名空间ID"
+    }
+  ]
+}
 ```
 ```
 # 给Worker更名 (可选)
-name = "clash-sub" # <--- 你可以修改这个名称
-...
+{
+  "name": "clash-sub" // <--- 你可以修改这个名称
+}
 ```
 
 ### 5. 部署
