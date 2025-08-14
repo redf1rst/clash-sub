@@ -1174,15 +1174,27 @@ async function generateSubMergeConfig(env) {
 				name: '🚀默认代理',
 				type: 'select',
 				proxies: [
-					'♻️🇯🇵日本自动',
-					'♻️🇸🇬新加坡自动',
-					'♻️🇨🇳台湾自动',
-					'♻️🇺🇲美国自动',
-					'♻️🇰🇷韩国自动',
-					'♻️🇫🇷法国自动',
-					'♻️🇬🇧英国自动',
-					'♻️🇦🇺澳洲自动',
+					'♻️日本自动🇯🇵',
+					'♻️新加坡自动🇸🇬',
+					'♻️美国自动🇺🇲',
+					'♻️台湾自动🇨🇳',
+					'♻️韩国自动🇰🇷',
+					'♻️法国自动🇫🇷',
+					'♻️英国自动🇬🇧',
+					'♻️澳洲自动🇦🇺',
+					'♻️德国自动🇩🇪',
 					'♻️自动选择',
+					'🔯日本故障转移🇯🇵',
+					'🔯新加坡故障转移🇸🇬',
+					'🔯美国故障转移🇺🇸',
+					'🔯台湾故障转移🇨🇳',
+					'🔯韩国故障转移🇰🇷',
+					'🔯香港故障转移🇭🇰',
+					'🔯英国故障转移🇬🇧',
+					'🔯法国故障转移🇫🇷',
+					'🔯澳洲故障转移🇦🇺',
+					'🔯德国故障转移🇩🇪',
+					'🌐全部节点',
 					'🇯🇵日本节点',
 					'🇨🇳台湾节点',
 					'🇸🇬新加坡节点',
@@ -1190,13 +1202,8 @@ async function generateSubMergeConfig(env) {
 					'🇰🇷韩国节点',
 					'🇬🇧英国节点',
 					'🇫🇷法国节点',
-					'🇩🇪德国节点',
 					'🇦🇺澳洲节点',
-					'🔯日本故转',
-					'🔯新加坡故转',
-					'🔯美国故转',
-					'🔯香港故转',
-					'🌐全部节点',
+					'🇩🇪德国节点',
 					'DIRECT'
 				]
 			},
@@ -1205,15 +1212,26 @@ async function generateSubMergeConfig(env) {
 				type: 'select',
 				proxies: [
 					'🚀默认代理',
-					'♻️🇯🇵日本自动',
-					'♻️🇸🇬新加坡自动',
-					'♻️🇨🇳台湾自动',
-					'♻️🇺🇲美国自动',
-					'♻️🇰🇷韩国自动',
-					'♻️🇫🇷法国自动',
-					'♻️🇬🇧英国自动',
-					'♻️🇦🇺澳洲自动',
+					'♻️日本自动🇯🇵',
+					'♻️美国自动🇺🇲',
+					'♻️台湾自动🇨🇳',
+					'♻️新加坡自动🇸🇬',
+					'♻️韩国自动🇰🇷',
+					'♻️🇭🇰香港自动',
+					'♻️英国自动🇬🇧',
+					'♻️法国自动🇫🇷',
+					'♻️澳洲自动🇦🇺',
+					'♻️德国自动🇩🇪',
 					'♻️自动选择',
+					'🔯日本故障转移🇯🇵',
+					'🔯新加坡故障转移🇸🇬',
+					'🔯美国故障转移🇺🇸',
+					'🔯台湾故障转移🇨🇳',
+					'🔯韩国故障转移🇰🇷',
+					'🔯英国故障转移🇬🇧',
+					'🔯法国故障转移🇫🇷',
+					'🔯澳洲故障转移🇦🇺',
+					'🔯德国故障转移🇩🇪',
 					'🇯🇵日本节点',
 					'🇨🇳台湾节点',
 					'🇸🇬新加坡节点',
@@ -1221,8 +1239,8 @@ async function generateSubMergeConfig(env) {
 					'🇰🇷韩国节点',
 					'🇬🇧英国节点',
 					'🇫🇷法国节点',
-					'🇩🇪德国节点',
 					'🇦🇺澳洲节点',
+					'🇩🇪德国节点',
 					'🌐全部节点',
 					'DIRECT'
 				]
@@ -1237,6 +1255,164 @@ async function generateSubMergeConfig(env) {
 				name: '苹果服务',
 				type: 'select',
 				proxies: ['DIRECT', '🚀默认代理']
+			},
+			{
+				name: '♻️台湾自动🇨🇳',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 30,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇹🇼|台湾|台北|新北|高雄|\\\\b(TW|Taiwan|Tai wan)\\\\b)).*$'
+			},
+			{
+				name: '♻️日本自动🇯🇵',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 30,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇯🇵|日本|东京|大阪|京都|名古屋|埼玉|\\\\b(JP|Japan)\\\\b)).*$'
+			},
+			{
+				name: '♻️新加坡自动🇸🇬',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 30,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇸🇬|新加坡|新加坡|\\\\b(SG|Singapore)\\\\b)).*$'
+			},
+			{
+				name: '♻️美国自动🇺🇲',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 30,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|\\\\b(US|United States|America)\\\\b)).*$'
+			},
+			{
+				name: '♻️韩国自动🇰🇷',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 30,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇰🇷|韩国|韓國|首尔|釜山|\\\\b(KR|Korea)\\\\b)).*$'
+			},
+			{
+				name: '♻️英国自动🇬🇧',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 30,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇬🇧|英国|伦敦|曼彻斯特|\\\\b(UK|United Kingdom|Britain)\\\\b)).*$'
+			},
+			{
+				name: '♻️法国自动🇫🇷',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 30,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇫🇷|法国|巴黎|马赛|\\\\b(FR|France)\\\\b)).*$'
+			},
+			{
+				name: '♻️德国自动🇩🇪',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 30,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇩🇪|德国|柏林|法兰克福|慕尼黑|\\\\b(DE|Germany)\\\\b)).*$'
+			},
+			{
+				name: '♻️澳洲自动🇦🇺',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 30,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\\\b(AU|AUS|Australia)\\\\b)).*$'
+			},
+			{
+				name: '♻️🇭🇰香港自动',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 30,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇭🇰|香港|九龙|新界|\\\\b(HK|HongKong|Hong Kong)\\\\b)).*$'
+			},
+			{
+				name: '♻️自动选择',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 30,
+				interval: 300,
+				'exclude-filter': '^(?=.*((?i)10x|6x|过滤|客户端|不要|付款|如果|群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|建议|备用|作者|加入|\\\\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\\\\b|(\\\\d{4}-\\\\d{2}-\\\\d{2}|\\\\d+G))).*$'
+			},
+			{
+				name: '🔯日本故障转移🇯🇵',
+				type: 'fallback',
+				'include-all': true,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇯🇵|日本|东京|大阪|京都|名古屋|埼玉|\\\\b(JP|Japan)\\\\b)).*$'
+			},
+			{
+				name: '🔯新加坡故障转移🇸🇬',
+				type: 'fallback',
+				'include-all': true,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇸🇬|新加坡|新加坡|\\\\b(SG|Singapore)\\\\b)).*$'
+			},
+			{
+				name: '🔯美国故障转移🇺🇸',
+				type: 'fallback',
+				'include-all': true,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|\\\\b(US|United States|America)\\\\b)).*$'
+			},
+			{
+				name: '🔯台湾故障转移🇨🇳',
+				type: 'fallback',
+				'include-all': true,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇹🇼|台湾|台北|新北|高雄|\\\\b(TW|Taiwan|Tai wan)\\\\b)).*$'
+			},
+			{
+				name: '🔯香港故障转移🇭🇰',
+				type: 'fallback',
+				'include-all': true,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇭🇰|香港|九龙|新界|\\\\b(HK|HongKong|Hong Kong)\\\\b)).*$'
+			},
+			{
+				name: '🔯韩国故障转移🇰🇷',
+				type: 'fallback',
+				'include-all': true,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇰🇷|韩国|韓國|首尔|釜山|\\\\b(KR|Korea)\\\\b)).*$'
+			},
+			{
+				name: '🔯英国故障转移🇬🇧',
+				type: 'fallback',
+				'include-all': true,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇬🇧|英国|伦敦|曼彻斯特|\\\\b(UK|United Kingdom|Britain)\\\\b)).*$'
+			},
+			{
+				name: '🔯法国故障转移🇫🇷',
+				type: 'fallback',
+				'include-all': true,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇫🇷|法国|巴黎|马赛|\\\\b(FR|France)\\\\b)).*$'
+			},
+			{
+				name: '🔯德国故障转移🇩🇪',
+				type: 'fallback',
+				'include-all': true,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇩🇪|德国|柏林|法兰克福|慕尼黑|\\\\b(DE|Germany)\\\\b)).*$'
+			},
+			{
+				name: '🔯澳洲故障转移🇦🇺',
+				type: 'fallback',
+				'include-all': true,
+				interval: 300,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\\\b(AU|AUS|Australia)\\\\b)).*$'
 			},
 			{
 				name: '🇯🇵日本节点',
@@ -1299,144 +1475,10 @@ async function generateSubMergeConfig(env) {
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇭🇰|香港|九龙|新界|\\\\b(HK|HongKong|Hong Kong)\\\\b)).*$'
 			},
 			{
-				name: '♻️🇨🇳台湾自动',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 20,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇹🇼|台湾|台北|新北|高雄|\\\\b(TW|Taiwan|Tai wan)\\\\b)).*$'
-			},
-			{
-				name: '♻️🇯🇵日本自动',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 20,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇯🇵|日本|东京|大阪|京都|名古屋|埼玉|\\\\b(JP|Japan)\\\\b)).*$'
-			},
-			{
-				name: '♻️🇸🇬新加坡自动',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 20,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇸🇬|新加坡|新加坡|\\\\b(SG|Singapore)\\\\b)).*$'
-			},
-			{
-				name: '♻️🇺🇲美国自动',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 20,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|\\\\b(US|United States|America)\\\\b)).*$'
-			},
-			{
-				name: '♻️🇰🇷韩国自动',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 20,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇰🇷|韩国|韓國|首尔|釜山|\\\\b(KR|Korea)\\\\b)).*$'
-			},
-			{
-				name: '♻️🇬🇧英国自动',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 20,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇬🇧|英国|伦敦|曼彻斯特|\\\\b(UK|United Kingdom|Britain)\\\\b)).*$'
-			},
-			{
-				name: '♻️🇫🇷法国自动',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 20,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇫🇷|法国|巴黎|马赛|\\\\b(FR|France)\\\\b)).*$'
-			},
-			{
-				name: '♻️🇩🇪德国自动',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 20,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇩🇪|德国|柏林|法兰克福|慕尼黑|\\\\b(DE|Germany)\\\\b)).*$'
-			},
-			{
-				name: '♻️🇦🇺澳洲自动',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 20,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\\\b(AU|AUS|Australia)\\\\b)).*$'
-			},
-			{
-				name: '♻️香港自动',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 20,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇭🇰|香港|九龙|新界|\\\\b(HK|HongKong|Hong Kong)\\\\b)).*$'
-			},
-			{
-				name: '♻️自动选择',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 20,
-				interval: 300,
-				'exclude-filter': '^(?=.*((?i)10x|6x|过滤|客户端|不要|付款|如果|群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|建议|备用|作者|加入|\\\\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\\\\b|(\\\\d{4}-\\\\d{2}-\\\\d{2}|\\\\d+G))).*$'
-			},
-			{
 				name: '🌐全部节点',
 				type: 'select',
 				'include-all': true,
-				tolerance: 20,
-				interval: 300,
 				'exclude-filter': '^(?=.*((?i)10x|6x|过滤|客户端|不要|付款|如果|群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|建议|备用|作者|加入|\\\\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\\\\b|(\\\\d{4}-\\\\d{2}-\\\\d{2}|\\\\d+G))).*$'
-			},
-			{
-				name: '🔯日本故转',
-				type: 'fallback',
-				'include-all': true,
-				tolerance: 20,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇯🇵|日本|东京|大阪|京都|名古屋|埼玉|\\\\b(JP|Japan)\\\\b)).*$'
-			},
-			{
-				name: '🔯新加坡故转',
-				type: 'fallback',
-				'include-all': true,
-				tolerance: 20,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇸🇬|新加坡|新加坡|\\\\b(SG|Singapore)\\\\b)).*$'
-			},
-			{
-				name: '🔯美国故转',
-				type: 'fallback',
-				'include-all': true,
-				tolerance: 20,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|\\\\b(US|United States|America)\\\\b)).*$'
-			},
-			{
-				name: '🔯香港故转',
-				type: 'fallback',
-				'include-all': true,
-				tolerance: 20,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇭🇰|香港|九龙|新界|\\\\b(HK|HongKong|Hong Kong)\\\\b)).*$'
-			},
-			{
-				name: '🚫 静默拒绝',
-				type: 'select',
-				hidden: true,
-				proxies: ['REJECT-DROP']
-			},
-			{
-				name: '⚪ 绕过连接',
-				type: 'select',
-				hidden: true,
-				proxies: ['PASS']
 			}
 		];
 
@@ -1693,12 +1735,11 @@ async function generateSubMergeConfig(env) {
 			'RULE-SET,Private,DIRECT',
 			'RULE-SET,LAN,DIRECT',
 			'RULE-SET,Fakeip_Filter,DIRECT',
-			// Adobe弹窗拦截
 			'DOMAIN-SUFFIX,adobe.io,REJECT',
 			'DOMAIN-SUFFIX,adobestats.io,REJECT',
-			// Linuxdo/bilibili直连
 			'DOMAIN-SUFFIX,linux.do,DIRECT',
 			'DOMAIN-SUFFIX,bilibili.com,DIRECT',
+			'DOMAIN-SUFFIX,codebuddy.ai,🤖AI',
 			// 特定服务规则
 			'RULE-SET,ai,🤖AI',
 			'RULE-SET,github_domain,🚀默认代理',
