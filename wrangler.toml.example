@@ -1,7 +1,0 @@
-name = "clash-sub"
-main = "src/index.js"
-compatibility_date = "2025-08-08"
-
-[[kv_namespaces]]
-binding = "CLASH_KV"
-id = "你的KV命名空间ID"
