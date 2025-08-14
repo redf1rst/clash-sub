@@ -1358,7 +1358,7 @@ async function generateSubMergeConfig(env) {
 						url: 'https://www.gstatic.com/generate_204',
 						interval: 300
 					},
-					proxy: '直连'
+					proxy: 'DIRECT'
 				};
 			});
 		}
