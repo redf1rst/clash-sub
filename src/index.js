@@ -897,6 +897,7 @@ async function generateProxiesConfig(env) {
 				'DOMAIN-SUFFIX,linux.do,Linux DO',
 				'DOMAIN-SUFFIX,bilibili.com,DIRECT',
 				'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
+				'DOMAIN-SUFFIX,github.com,🚀 默认代理',
 				'RULE-SET,apple_cdn,苹果服务',
 				'RULE-SET,apple_cn_non_ip,苹果服务',
 				'RULE-SET,apple_services,苹果服务',
@@ -1956,6 +1957,7 @@ async function generateSubMergeConfig(env) {
 			'DOMAIN-SUFFIX,bilibili.com,DIRECT',
 			'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
 			'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
+			'DOMAIN-SUFFIX,github.com,🚀 默认代理',
 			// 特定服务规则
 			'RULE-SET,ai,AI服务',
 			'RULE-SET,github_domain,🚀 默认代理',
