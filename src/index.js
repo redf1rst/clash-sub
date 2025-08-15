@@ -555,6 +555,64 @@ function isIpAddress(url) {
 	}
 }
 
+// 定义三种标准 Clash 客户端请求头
+const CLASH_USER_AGENTS = [
+	{
+		name: 'Clash.Meta',
+		headers: {
+			'User-Agent': 'Clash.Meta',
+			'Accept': '*/*',
+			'Accept-Encoding': 'gzip'
+		}
+	},
+	{
+		name: 'mihomo',
+		headers: {
+			'User-Agent': 'mihomo',
+			'Accept': '*/*',
+			'Accept-Encoding': 'gzip, deflate',
+			'Connection': 'keep-alive'
+		}
+	},
+	{
+		name: 'clash-verge',
+		headers: {
+			'User-Agent': 'clash-verge/v2.3.0',
+			'Accept': '*/*',
+			'Accept-Encoding': 'gzip'
+		}
+	}
+];
+
+// 使用多种请求头轮询获取订阅
+async function fetchWithUserAgentRotation(url, timeout = 5000) {
+	let lastError = null;
+
+	for (const userAgent of CLASH_USER_AGENTS) {
+		try {
+			const response = await fetch(url, {
+				method: 'GET',
+				headers: userAgent.headers,
+				signal: AbortSignal.timeout(timeout)
+			});
+
+			// 如果请求成功，返回响应和使用的 User-Agent 信息
+			return {
+				response,
+				userAgent: userAgent.name,
+				success: true
+			};
+		} catch (error) {
+			lastError = error;
+			console.log(`${userAgent.name} 请求失败: ${error.message}`);
+			// 继续尝试下一个 User-Agent
+		}
+	}
+
+	// 所有 User-Agent 都失败了
+	throw lastError || new Error('所有请求头都失败');
+}
+
 // 智能判断是否应该拒绝订阅
 async function shouldRejectSubscription(subUrl, subInfo) {
 	// 0. 对于使用IP地址的URL，跳过连通性检测，直接接受
@@ -574,25 +632,19 @@ async function shouldRejectSubscription(subUrl, subInfo) {
 	// 2. 对于HTTP错误状态码，需要进一步检查内容
 	const criticalErrorCodes = [400, 401, 403, 404, 405, 429, 500, 502, 503, 504];
 	if (criticalErrorCodes.includes(subInfo.statusCode)) {
-		// 尝试获取响应内容来判断是否真的无效
+		// 使用轮询方式尝试获取响应内容来判断是否真的无效
 		try {
-			const response = await fetch(subUrl, {
-				method: 'GET',
-				headers: {
-					'User-Agent': 'Clash Verge',
-					'Accept': '*/*'
-				},
-				signal: AbortSignal.timeout(5000) // 5秒超时
-			});
+			const result = await fetchWithUserAgentRotation(subUrl, 5000);
 
-			if (response.ok) {
+			if (result.response.ok) {
 				// 如果这次请求成功了，说明之前的错误可能是临时的
+				console.log(`使用 ${result.userAgent} 重试成功`);
 				return { reject: false };
 			}
 
 			// 检查响应内容类型和内容
-			const contentType = response.headers.get('content-type') || '';
-			const content = await response.text();
+			const contentType = result.response.headers.get('content-type') || '';
+			const content = await result.response.text();
 
 			// 如果返回的是HTML错误页面，则拒绝
 			// 注意：只有当内容真的包含HTML标签时才认为是错误页面
@@ -2702,18 +2754,14 @@ async function getSubscriptionInfo(subUrl) {
 	}
 
 	try {
-		// 直接使用 GET 请求，完全模拟您的 curl 命令
-		const response = await fetch(subUrl, {
-			method: 'GET',
-			headers: {
-				'User-Agent': 'Clash Verge',
-				'Accept': '*/*'
-			},
-			// 设置超时时间
-			signal: AbortSignal.timeout(10000) // 10秒超时
-		});
+		// 使用轮询方式尝试不同的 User-Agent
+		const result = await fetchWithUserAgentRotation(subUrl, 10000);
+		const response = result.response;
 
 		subInfo.statusCode = response.status;
+		subInfo.success = response.ok; // 200-299 范围内的状态码被认为是成功的
+
+		console.log(`订阅 ${subUrl} 使用 ${result.userAgent} 请求成功`);
 
 		// 获取响应头（大小写不敏感）
 		// 尝试多种可能的大小写组合
