@@ -857,6 +857,12 @@ async function generateProxiesConfig(env) {
 					icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ChatGPT.png'
 				},
 				{
+					name: 'Linux DO',
+					type: 'select',
+					proxies: ['节点选择', 'DIRECT'],
+					icon: 'https://edit-upload-pic.cdn.bcebos.com/26173e4a31c69a7c7bf843eeec70e1e0.jpeg?authorization=bce-auth-v1%2FALTAKh1mxHnNIyeO93hiasKJqq%2F2025-08-15T08%3A35%3A39Z%2F3600%2Fhost%2Fd6bff9c1010358e2a7ffd2915d3d7da2bf43bd76a9252e591ff085847855daf4'
+				},
+				{
 					name: '微软服务',
 					type: 'select',
 					proxies: ['节点选择', 'DIRECT'],
@@ -888,8 +894,9 @@ async function generateProxiesConfig(env) {
 				'DOMAIN-KEYWORD,googlesyndication,REJECT',
 				'DOMAIN-SUFFIX,cursor.sh,节点选择',
 				'DOMAIN-SUFFIX,cursorapi.com,节点选择',
-				//'DOMAIN-SUFFIX,linux.do,DIRECT',
+				'DOMAIN-SUFFIX,linux.do,Linux DO',
 				'DOMAIN-SUFFIX,bilibili.com,DIRECT',
+				'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
 				'RULE-SET,apple_cdn,苹果服务',
 				'RULE-SET,apple_cn_non_ip,苹果服务',
 				'RULE-SET,apple_services,苹果服务',
@@ -1402,10 +1409,11 @@ async function generateSubMergeConfig(env) {
 					'🇦🇺 澳洲节点',
 					'🇩🇪 德国节点',
 					'DIRECT'
-				]
+				],
+				icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Proxy.png'
 			},
 			{
-				name: '🤖AI',
+				name: 'AI服务',
 				type: 'select',
 				proxies: [
 					'🚀 默认代理',
@@ -1439,18 +1447,29 @@ async function generateSubMergeConfig(env) {
 					'🇩🇪 德国节点',
 					'🌐 全部节点',
 					'DIRECT'
-				]
+				],
+				icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ChatGPT.png'
 			},
-
+			{
+				name: 'Linux DO',
+				type: 'select',
+				proxies: [
+					'🚀 默认代理',
+					'DIRECT'
+				],
+				icon: 'https://edit-upload-pic.cdn.bcebos.com/26173e4a31c69a7c7bf843eeec70e1e0.jpeg?authorization=bce-auth-v1%2FALTAKh1mxHnNIyeO93hiasKJqq%2F2025-08-15T08%3A35%3A39Z%2F3600%2Fhost%2Fd6bff9c1010358e2a7ffd2915d3d7da2bf43bd76a9252e591ff085847855daf4'
+			},
 			{
 				name: '微软服务',
 				type: 'select',
-				proxies: ['🤖AI', 'DIRECT']
+				proxies: ['AI服务', 'DIRECT'],
+				icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Microsoft.png'
 			},
 			{
 				name: '苹果服务',
 				type: 'select',
-				proxies: ['DIRECT', '🚀 默认代理']
+				proxies: ['DIRECT', '🚀 默认代理'],
+				icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Apple.png'
 			},
 			{
 				name: '♻️ 台湾自动 🇨🇳',
@@ -1933,14 +1952,15 @@ async function generateSubMergeConfig(env) {
 			'RULE-SET,Fakeip_Filter,DIRECT',
 			'DOMAIN-SUFFIX,adobe.io,REJECT',
 			'DOMAIN-SUFFIX,adobestats.io,REJECT',
-			//'DOMAIN-SUFFIX,linux.do,DIRECT',
+			'DOMAIN-SUFFIX,linux.do,Linux DO',
 			'DOMAIN-SUFFIX,bilibili.com,DIRECT',
-			'DOMAIN-SUFFIX,codebuddy.ai,🤖AI',
+			'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
+			'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
 			// 特定服务规则
-			'RULE-SET,ai,🤖AI',
+			'RULE-SET,ai,AI服务',
 			'RULE-SET,github_domain,🚀 默认代理',
 			'RULE-SET,youtube_domain,🚀 默认代理',
-			'RULE-SET,google_domain,🤖AI',
+			'RULE-SET,google_domain,AI服务',
 			'RULE-SET,onedrive_domain,🚀 默认代理',
 			'RULE-SET,microsoft_domain,微软服务',
 			'RULE-SET,tiktok_domain,🚀 默认代理',
