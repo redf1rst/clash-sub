@@ -897,7 +897,7 @@ async function generateProxiesConfig(env) {
 				'DOMAIN-SUFFIX,linux.do,Linux DO',
 				'DOMAIN-SUFFIX,bilibili.com,DIRECT',
 				'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
-				'DOMAIN-SUFFIX,github.com,🚀 默认代理',
+				'DOMAIN-SUFFIX,github.com,节点选择',
 				'RULE-SET,apple_cdn,苹果服务',
 				'RULE-SET,apple_cn_non_ip,苹果服务',
 				'RULE-SET,apple_services,苹果服务',
@@ -1706,6 +1706,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/private.mrs',
 				path: './ruleset/private_domain.mrs'
 			},
@@ -1714,6 +1715,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-!cn.mrs',
 				path: './ruleset/ai.mrs'
 			},
@@ -1722,6 +1724,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/youtube.mrs',
 				path: './ruleset/youtube_domain.mrs'
 			},
@@ -1730,6 +1733,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/google.mrs',
 				path: './ruleset/google_domain.mrs'
 			},
@@ -1738,6 +1742,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/github.mrs',
 				path: './ruleset/github_domain.mrs'
 			},
@@ -1746,6 +1751,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/telegram.mrs',
 				path: './ruleset/telegram_domain.mrs'
 			},
@@ -1754,6 +1760,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/netflix.mrs',
 				path: './ruleset/netflix_domain.mrs'
 			},
@@ -1762,6 +1769,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/paypal.mrs',
 				path: './ruleset/paypal_domain.mrs'
 			},
@@ -1770,6 +1778,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/onedrive.mrs',
 				path: './ruleset/onedrive_domain.mrs'
 			},
@@ -1778,6 +1787,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft.mrs',
 				path: './ruleset/microsoft_domain.mrs'
 			},
@@ -1786,6 +1796,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple-cn.mrs',
 				path: './ruleset/apple_domain.mrs'
 			},
@@ -1794,6 +1805,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/ookla-speedtest.mrs',
 				path: './ruleset/speedtest_domain.mrs'
 			},
@@ -1802,6 +1814,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/tiktok.mrs',
 				path: './ruleset/tiktok_domain.mrs'
 			},
@@ -1810,6 +1823,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/spotify.mrs',
 				path: './ruleset/spotify_domain.mrs'
 			},
@@ -1818,6 +1832,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/gfw.mrs',
 				path: './ruleset/gfw_domain.mrs'
 			},
@@ -1826,6 +1841,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/geolocation-!cn.mrs',
 				path: './ruleset/geolocation-!cn.mrs'
 			},
@@ -1834,6 +1850,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'domain',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/cn.mrs',
 				path: './ruleset/cn_domain.mrs'
 			},
@@ -1843,6 +1860,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'ipcidr',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/cn.mrs',
 				path: './ruleset/cn_ip.mrs'
 			},
@@ -1851,6 +1869,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'ipcidr',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/google.mrs',
 				path: './ruleset/google_ip.mrs'
 			},
@@ -1859,6 +1878,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'ipcidr',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/telegram.mrs',
 				path: './ruleset/telegram_ip.mrs'
 			},
@@ -1867,6 +1887,7 @@ async function generateSubMergeConfig(env) {
 				interval: 3600,
 				behavior: 'ipcidr',
 				format: 'mrs',
+				proxy: '🚀 默认代理',
 				url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/netflix.mrs',
 				path: './ruleset/netflix_ip.mrs'
 			},
