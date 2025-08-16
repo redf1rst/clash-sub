@@ -689,6 +689,7 @@
                 <div class="action-bar">
                     <div class="action-buttons">
                         <button class="btn" onclick="addProxy()">添加节点</button>
+                        <button class="btn" onclick="sortProxies()" id="sortProxiesBtn">排序节点</button>
                         <button class="btn danger" onclick="clearProxies()">清空所有节点</button>
                     </div>
                     <div class="action-message">
@@ -793,8 +794,18 @@
             messageEl.className = 'message ' + type;
             messageEl.style.display = 'block';
 
-            // 根据消息类型设置不同的显示时间
-            const displayTime = type === 'error' ? 8000 : 3000; // 错误信息显示8秒，其他3秒
+            // 根据消息类型和内容设置不同的显示时间
+            let displayTime;
+            if (type === 'error') {
+                displayTime = 8000; // 错误信息显示8秒
+            } else if (message.includes('活跃检测完成') && message.includes('移除的订阅')) {
+                displayTime = 15000; // 活跃检测结果包含移除信息时显示15秒
+            } else if (message.includes('活跃检测完成')) {
+                displayTime = 8000; // 活跃检测结果显示8秒
+            } else {
+                displayTime = 3000; // 其他信息显示3秒
+            }
+
             setTimeout(() => {
                 messageEl.style.display = 'none';
             }, displayTime);
@@ -936,6 +947,33 @@
                 }
             } catch (error) {
                 showMessage('proxyMessage', '清空节点失败', 'error');
+            }
+        }
+
+        // 排序节点
+        async function sortProxies() {
+            const btn = document.getElementById('sortProxiesBtn');
+
+            try {
+                // 禁用按钮
+                btn.disabled = true;
+                btn.textContent = '排序中...';
+
+                const response = await fetch('/api/proxies?sort=true');
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage('proxyMessage', `${result.message}，共排序 ${result.sorted} 个节点`, 'success');
+                    loadProxies(); // 重新加载节点列表
+                } else {
+                    showMessage('proxyMessage', result.message || '排序失败', 'error');
+                }
+            } catch (error) {
+                showMessage('proxyMessage', '排序节点失败', 'error');
+            } finally {
+                // 恢复按钮
+                btn.disabled = false;
+                btn.textContent = '排序节点';
             }
         }
 
@@ -1244,11 +1282,20 @@
             const progressPercent = document.getElementById('progressPercent');
             const progressFill = document.getElementById('progressFill');
 
+            // 确保所有元素都存在
+            if (!progressContainer || !progressText || !progressPercent || !progressFill) {
+                console.error('进度条元素未找到');
+                return;
+            }
+
             progressContainer.style.display = 'block';
             const percentage = Math.round((current / total) * 100);
-            progressText.textContent = text;
+            progressText.textContent = text || '正在处理...';
             progressPercent.textContent = `${percentage}%`;
             progressFill.style.width = `${percentage}%`;
+
+            // 添加调试日志
+            console.log(`进度更新: ${current}/${total} (${percentage}%) - ${text}`);
         }
 
         // 隐藏进度条
@@ -1299,14 +1346,20 @@
                             url: subUrl,
                             valid: checkResult.valid,
                             name: checkResult.name,
-                            reason: checkResult.reason
+                            reason: checkResult.reason,
+                            download: checkResult.download,
+                            total: checkResult.total,
+                            expire: checkResult.expire
                         });
                     } catch (error) {
                         results.push({
                             url: subUrl,
                             valid: false,
                             name: '',
-                            reason: '检测失败: ' + error.message
+                            reason: '检测失败: ' + error.message,
+                            download: 0,
+                            total: 0,
+                            expire: null
                         });
                     }
                 }
@@ -1315,11 +1368,14 @@
                 showProgress(currentSubscriptions.length, currentSubscriptions.length, '检测完成，正在处理结果...');
 
                 // 发送批量处理请求
+                console.log('发送批量处理请求，结果数量:', results.length);
+                console.log('发送的数据结构:', JSON.stringify(results, null, 2));
                 const batchResponse = await fetch('/api/submerge?active_detection_batch=true', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ results: results })
                 });
+                console.log('批量处理响应状态:', batchResponse.status);
 
                 if (batchResponse.ok) {
                     const result = await batchResponse.json();
@@ -1343,10 +1399,20 @@
                         showMessage('subMessage', message, messageType);
                         loadSubscriptions();
                     } else {
-                        showMessage('subMessage', result.message, 'error');
+                        showMessage('subMessage', result.message || '活跃检测处理失败', 'error');
                     }
                 } else {
-                    showMessage('subMessage', '活跃检测处理失败', 'error');
+                    // 获取详细的错误信息
+                    let errorMessage = '活跃检测处理失败';
+                    try {
+                        const errorResult = await batchResponse.json();
+                        if (errorResult.message) {
+                            errorMessage += ': ' + errorResult.message;
+                        }
+                    } catch (e) {
+                        errorMessage += ` (HTTP ${batchResponse.status})`;
+                    }
+                    showMessage('subMessage', errorMessage, 'error');
                 }
 
             } catch (error) {

@@ -36,6 +36,13 @@ async function handleProxiesAPI(request, env) {
 	const method = request.method;
 
 	if (method === 'GET') {
+		const url = new URL(request.url);
+
+		// 检查是否需要排序现有节点
+		if (url.searchParams.get('sort') === 'true') {
+			return await sortExistingProxies(env);
+		}
+
 		const proxies = await env.CLASH_KV?.get('proxies') || '[]';
 		return new Response(proxies, {
 			headers: { 'Content-Type': 'application/json' }
@@ -60,6 +67,91 @@ async function handleProxiesAPI(request, env) {
 	return new Response('Method not allowed', { status: 405 });
 }
 
+// 排序现有节点
+async function sortExistingProxies(env) {
+	try {
+		const proxies = JSON.parse(await env.CLASH_KV?.get('proxies') || '[]');
+
+		if (proxies.length === 0) {
+			return new Response(JSON.stringify({
+				success: true,
+				message: '没有节点需要排序',
+				sorted: 0
+			}), {
+				headers: { 'Content-Type': 'application/json' }
+			});
+		}
+
+		// 使用与添加节点时相同的排序逻辑，但采用优先级排序
+		proxies.sort((a, b) => {
+			// 提取地区缩写和序号 - 修正正则表达式以匹配实际的节点命名格式
+			// 实际格式: US美国01-IPv4, JP日本02-IPv6 等
+			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{2})-(IPv4|IPv6)$/;
+			const matchA = a.name.match(regionPatternForSort);
+			const matchB = b.name.match(regionPatternForSort);
+
+			if (matchA && matchB) {
+				const regionA = matchA[1]; // 提取地区缩写，如 US, JP
+				const regionB = matchB[1];
+				const numberA = parseInt(matchA[2]); // 提取序号
+				const numberB = parseInt(matchB[2]);
+
+				// 定义优先级地区顺序
+				const priorityRegions = ['US', 'JP', 'TW', 'SG', 'KR', 'HK', 'CA', 'AU', 'FR', 'GB', 'DE'];
+				const priorityA = priorityRegions.indexOf(regionA);
+				const priorityB = priorityRegions.indexOf(regionB);
+
+				// 如果两个都是优先级地区
+				if (priorityA !== -1 && priorityB !== -1) {
+					if (priorityA !== priorityB) {
+						return priorityA - priorityB; // 按优先级顺序排序
+					}
+					return numberA - numberB; // 优先级相同时按序号排序
+				}
+
+				// 如果只有一个是优先级地区
+				if (priorityA !== -1 && priorityB === -1) {
+					return -1; // A 是优先级地区，排在前面
+				}
+				if (priorityA === -1 && priorityB !== -1) {
+					return 1; // B 是优先级地区，排在前面
+				}
+
+				// 如果都不是优先级地区，按地区缩写字母顺序排序
+				if (regionA !== regionB) {
+					return regionA.localeCompare(regionB);
+				}
+				// 地区相同时按序号排序
+				return numberA - numberB;
+			}
+
+			// 如果匹配失败，按名称排序
+			return a.name.localeCompare(b.name);
+		});
+
+		// 保存排序后的节点
+		await env.CLASH_KV?.put('proxies', JSON.stringify(proxies));
+
+		return new Response(JSON.stringify({
+			success: true,
+			message: '节点排序完成',
+			sorted: proxies.length,
+			proxies: proxies.map(p => p.name) // 返回排序后的节点名称列表
+		}), {
+			headers: { 'Content-Type': 'application/json' }
+		});
+
+	} catch (error) {
+		return new Response(JSON.stringify({
+			success: false,
+			message: '节点排序失败: ' + error.message
+		}), {
+			status: 500,
+			headers: { 'Content-Type': 'application/json' }
+		});
+	}
+}
+
 // 处理订阅整合API
 async function handleSubMergeAPI(request, env) {
 	const method = request.method;
@@ -81,11 +173,6 @@ async function handleSubMergeAPI(request, env) {
 			return await activeDetection(env);
 		}
 
-		if (url.searchParams.get('active_detection_batch') === 'true') {
-			const { results } = await request.json();
-			return await activeDetectionBatch(results, env);
-		}
-
 		const subscriptions = await env.CLASH_KV?.get('subscriptions') || '[]';
 		return new Response(subscriptions, {
 			headers: { 'Content-Type': 'application/json' }
@@ -93,6 +180,38 @@ async function handleSubMergeAPI(request, env) {
 	}
 
 	if (method === 'POST') {
+		const url = new URL(request.url);
+
+		// 处理批量活跃检测
+		if (url.searchParams.get('active_detection_batch') === 'true') {
+			try {
+				const requestBody = await request.json();
+				console.log('收到的请求体 results 数量:', requestBody.results?.length);
+				const { results } = requestBody;
+
+				if (!results) {
+					console.error('缺少 results 字段');
+					return new Response(JSON.stringify({
+						success: false,
+						message: '缺少 results 字段'
+					}), {
+						status: 400,
+						headers: { 'Content-Type': 'application/json' }
+					});
+				}
+
+				return await activeDetectionBatch(results, env);
+			} catch (error) {
+				console.error('处理活跃检测批量请求失败:', error);
+				return new Response(JSON.stringify({
+					success: false,
+					message: '处理失败: ' + error.message
+				}), {
+					status: 500,
+					headers: { 'Content-Type': 'application/json' }
+				});
+			}
+		}
 		const { action, data } = await request.json();
 
 		switch (action) {
@@ -343,8 +462,8 @@ async function addProxy(data, env) {
 
 		// 对节点进行排序：先按地区缩写(A-Z)，再按序号排序
 		proxies.sort((a, b) => {
-			// 提取地区缩写和序号
-			const regionPatternForSort = /^([A-Z]{2}[^0-9]*?)(\d{2})-(IPv4|IPv6)$/;
+			// 提取地区缩写和序号 - 修正正则表达式以匹配实际的节点命名格式
+			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{2})-(IPv4|IPv6)$/;
 			const matchA = a.name.match(regionPatternForSort);
 			const matchB = b.name.match(regionPatternForSort);
 
@@ -392,8 +511,8 @@ async function deleteProxy(index, env) {
 
 		// 删除后也进行排序，保持一致性
 		proxies.sort((a, b) => {
-			// 提取地区缩写和序号
-			const regionPatternForSort = /^([A-Z]{2}[^0-9]*?)(\d{2})-(IPv4|IPv6)$/;
+			// 提取地区缩写和序号 - 修正正则表达式以匹配实际的节点命名格式
+			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{2})-(IPv4|IPv6)$/;
 			const matchA = a.name.match(regionPatternForSort);
 			const matchB = b.name.match(regionPatternForSort);
 
@@ -622,10 +741,10 @@ async function shouldRejectSubscription(subUrl, subInfo) {
 	}
 
 	// 1. 网络连接失败，直接拒绝
-	if (!subInfo.success && subInfo.statusCode === 0) {
+	if (!subInfo.success && (subInfo.statusCode === 0 || subInfo.statusCode === 408)) {
 		return {
 			reject: true,
-			reason: '网络连接失败或超时'
+			reason: subInfo.statusCode === 408 ? '请求超时' : '网络连接失败'
 		};
 	}
 
@@ -654,7 +773,7 @@ async function shouldRejectSubscription(subUrl, subInfo) {
 					content.includes('<!DOCTYPE') || content.includes('<!doctype'))) {
 				return {
 					reject: true,
-					reason: getErrorMessage(response.status, true)
+					reason: getErrorMessage(result.response.status, true)
 				};
 			}
 
@@ -664,10 +783,10 @@ async function shouldRejectSubscription(subUrl, subInfo) {
 			}
 
 			// 其他情况，根据状态码决定
-			if ([403, 404, 502, 503].includes(response.status)) {
+			if ([403, 404, 502, 503].includes(result.response.status)) {
 				return {
 					reject: true,
-					reason: getErrorMessage(response.status, true)
+					reason: getErrorMessage(result.response.status, true)
 				};
 			}
 
@@ -819,8 +938,8 @@ async function generateProxiesConfig(env) {
 
 		// 对节点进行排序：优先级地区 + 其他地区按字母顺序
 		proxies.sort((a, b) => {
-			// 提取地区缩写和序号
-			const regionPatternForSort = /^([A-Z]{2}[^0-9]*?)(\d{2})-(IPv4|IPv6)$/;
+			// 提取地区缩写和序号 - 修正正则表达式以匹配实际的节点命名格式
+			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{2})-(IPv4|IPv6)$/;
 			const matchA = a.name.match(regionPatternForSort);
 			const matchB = b.name.match(regionPatternForSort);
 
@@ -831,7 +950,7 @@ async function generateProxiesConfig(env) {
 				const numberB = parseInt(matchB[2]);
 
 				// 定义优先级地区顺序
-				const priorityRegions = ['US', 'JP', 'TW', 'SG', 'KR', 'HK', 'AU', 'FR', 'GB', 'DE'];
+				const priorityRegions = ['US', 'JP', 'TW', 'SG', 'KR', 'HK', 'CA', 'AU', 'FR', 'GB', 'DE'];
 				const priorityA = priorityRegions.indexOf(regionA);
 				const priorityB = priorityRegions.indexOf(regionB);
 
@@ -2105,13 +2224,17 @@ async function generateSubMergeConfig(env) {
 // 解析代理URL
 function parseProxyUrl(url) {
 	try {
-		// 支持vmess, vless, ss, hysteria2, trojan, tuic等协议
+		// 支持vmess, vless, ss, ssr, hysteria, hysteria2, trojan, tuic等协议
 		if (url.startsWith('vmess://')) {
 			return parseVmess(url);
 		} else if (url.startsWith('vless://')) {
 			return parseVless(url);
 		} else if (url.startsWith('ss://')) {
 			return parseShadowsocks(url);
+		} else if (url.startsWith('ssr://')) {
+			return parseShadowsocksR(url);
+		} else if (url.startsWith('hysteria://')) {
+			return parseHysteria(url);
 		} else if (url.startsWith('hysteria2://') || url.startsWith('hy2://')) {
 			return parseHysteria2(url);
 		} else if (url.startsWith('trojan://')) {
@@ -2140,9 +2263,39 @@ function parseVmess(url) {
 		tls: data.tls === 'tls'
 	};
 
+	// 添加 UDP 支持
+	if (data.udp !== undefined) {
+		config.udp = data.udp === true || data.udp === 'true';
+	}
+
+	// 添加 IP 版本偏好
+	if (data['ip-version']) {
+		config['ip-version'] = data['ip-version'];
+	}
+
+	// 添加指纹配置
+	if (data.fingerprint) {
+		config.fingerprint = data.fingerprint;
+	}
+
+	// 添加客户端指纹
+	if (data['client-fingerprint']) {
+		config['client-fingerprint'] = data['client-fingerprint'];
+	}
+
+	// 添加跳过证书验证
+	if (data['skip-cert-verify'] !== undefined) {
+		config['skip-cert-verify'] = data['skip-cert-verify'] === true || data['skip-cert-verify'] === 'true';
+	}
+
 	// 添加 servername (SNI)
 	if (data.tls === 'tls' && data.host) {
 		config.servername = data.host;
+	}
+
+	// 添加 ECH 配置
+	if (data['ech-opts']) {
+		config['ech-opts'] = data['ech-opts'];
 	}
 
 	// 添加 WebSocket 配置
@@ -2155,6 +2308,46 @@ function parseVmess(url) {
 			config['ws-opts'].headers = {
 				Host: data.host
 			};
+		}
+		// 添加 WebSocket 扩展配置
+		if (data['max-early-data']) {
+			config['ws-opts']['max-early-data'] = parseInt(data['max-early-data']);
+		}
+		if (data['early-data-header-name']) {
+			config['ws-opts']['early-data-header-name'] = data['early-data-header-name'];
+		}
+		if (data['v2ray-http-upgrade'] !== undefined) {
+			config['ws-opts']['v2ray-http-upgrade'] = data['v2ray-http-upgrade'] === true || data['v2ray-http-upgrade'] === 'true';
+		}
+		if (data['v2ray-http-upgrade-fast-open'] !== undefined) {
+			config['ws-opts']['v2ray-http-upgrade-fast-open'] = data['v2ray-http-upgrade-fast-open'] === true || data['v2ray-http-upgrade-fast-open'] === 'true';
+		}
+	}
+
+	// 添加 HTTP/2 配置
+	if (data.net === 'h2') {
+		config.network = 'h2';
+		config['h2-opts'] = {};
+		if (data.host) {
+			// 支持多个主机
+			config['h2-opts'].host = Array.isArray(data.host) ? data.host : [data.host];
+		}
+		if (data.path) {
+			config['h2-opts'].path = data.path;
+		}
+	}
+
+	// 添加 HTTP 配置
+	if (data.net === 'http') {
+		config['http-opts'] = {};
+		if (data.method) {
+			config['http-opts'].method = data.method;
+		}
+		if (data.path) {
+			config['http-opts'].path = Array.isArray(data.path) ? data.path : [data.path];
+		}
+		if (data.headers) {
+			config['http-opts'].headers = data.headers;
 		}
 	}
 
@@ -2192,12 +2385,37 @@ function parseVless(url) {
 		port: parseInt(parsed.port),
 		uuid: parsed.username,
 		network: params.get('type') || 'tcp',
-		tls: params.get('security') === 'tls'
+		tls: params.get('security') === 'tls' || params.get('security') === 'reality'
 	};
+
+	// 添加 UDP 支持
+	if (params.get('udp')) {
+		config.udp = params.get('udp') === 'true' || params.get('udp') === '1';
+	}
+
+	// 添加 IP 版本偏好
+	if (params.get('ip-version')) {
+		config['ip-version'] = params.get('ip-version');
+	}
 
 	// 添加 flow 字段（用于 XTLS）
 	if (params.get('flow')) {
 		config.flow = params.get('flow');
+	}
+
+	// 添加指纹配置
+	if (params.get('fingerprint')) {
+		config.fingerprint = params.get('fingerprint');
+	}
+
+	// 添加客户端指纹
+	if (params.get('client-fingerprint')) {
+		config['client-fingerprint'] = params.get('client-fingerprint');
+	}
+
+	// 添加跳过证书验证
+	if (params.get('skip-cert-verify')) {
+		config['skip-cert-verify'] = params.get('skip-cert-verify') === 'true' || params.get('skip-cert-verify') === '1';
 	}
 
 	// 添加 servername (SNI)
@@ -2205,6 +2423,30 @@ function parseVless(url) {
 		config.servername = params.get('sni');
 	} else if (params.get('security') === 'tls' && params.get('host')) {
 		config.servername = params.get('host');
+	}
+
+	// 添加 ECH 配置
+	if (params.get('ech-enable') === 'true') {
+		config['ech-opts'] = {
+			enable: true
+		};
+		if (params.get('ech-config')) {
+			config['ech-opts'].config = params.get('ech-config');
+		}
+	}
+
+	// 添加 Reality 配置
+	if (params.get('security') === 'reality') {
+		config['reality-opts'] = {};
+		if (params.get('pbk')) {
+			config['reality-opts']['public-key'] = params.get('pbk');
+		}
+		if (params.get('sid')) {
+			config['reality-opts']['short-id'] = params.get('sid');
+		}
+		if (params.get('support-x25519mlkem768')) {
+			config['reality-opts']['support-x25519mlkem768'] = params.get('support-x25519mlkem768') === 'true';
+		}
 	}
 
 	// 添加 client-fingerprint
@@ -2330,7 +2572,7 @@ function parseShadowsocks(url) {
 		server = server.slice(1, -1);
 	}
 
-	return {
+	const config = {
 		name: name,
 		type: 'ss',
 		server: server,
@@ -2338,6 +2580,313 @@ function parseShadowsocks(url) {
 		cipher: method,
 		password: password
 	};
+
+	// 从 URL 参数中解析额外配置
+	const urlObj = new URL(url.replace('ss://', 'http://'));
+	const params = urlObj.searchParams;
+
+	// 添加 UDP 支持
+	if (params.get('udp')) {
+		config.udp = params.get('udp') === 'true' || params.get('udp') === '1';
+	}
+
+	// 添加 UDP over TCP
+	if (params.get('udp-over-tcp')) {
+		config['udp-over-tcp'] = params.get('udp-over-tcp') === 'true' || params.get('udp-over-tcp') === '1';
+	}
+
+	// 添加 IP 版本偏好
+	if (params.get('ip-version')) {
+		config['ip-version'] = params.get('ip-version');
+	}
+
+	// 添加客户端指纹
+	if (params.get('client-fingerprint')) {
+		config['client-fingerprint'] = params.get('client-fingerprint');
+	}
+
+	// 添加 SMUX 配置
+	if (params.get('smux-enabled') === 'true') {
+		config.smux = {
+			enabled: true,
+			protocol: params.get('smux-protocol') || 'smux'
+		};
+		if (params.get('smux-max-connections')) {
+			config.smux['max-connections'] = parseInt(params.get('smux-max-connections'));
+		}
+		if (params.get('smux-min-streams')) {
+			config.smux['min-streams'] = parseInt(params.get('smux-min-streams'));
+		}
+		if (params.get('smux-max-streams')) {
+			config.smux['max-streams'] = parseInt(params.get('smux-max-streams'));
+		}
+		if (params.get('smux-padding')) {
+			config.smux.padding = params.get('smux-padding') === 'true';
+		}
+		if (params.get('smux-statistic')) {
+			config.smux.statistic = params.get('smux-statistic') === 'true';
+		}
+		if (params.get('smux-only-tcp')) {
+			config.smux['only-tcp'] = params.get('smux-only-tcp') === 'true';
+		}
+	}
+
+	// 添加插件配置
+	if (params.get('plugin')) {
+		config.plugin = params.get('plugin');
+		config['plugin-opts'] = {};
+
+		// obfs 插件配置
+		if (params.get('plugin') === 'obfs') {
+			if (params.get('obfs-mode')) {
+				config['plugin-opts'].mode = params.get('obfs-mode');
+			}
+			if (params.get('obfs-host')) {
+				config['plugin-opts'].host = params.get('obfs-host');
+			}
+		}
+
+		// v2ray-plugin 配置
+		if (params.get('plugin') === 'v2ray-plugin') {
+			if (params.get('v2ray-mode')) {
+				config['plugin-opts'].mode = params.get('v2ray-mode');
+			}
+			if (params.get('v2ray-tls')) {
+				config['plugin-opts'].tls = params.get('v2ray-tls') === 'true';
+			}
+			if (params.get('v2ray-host')) {
+				config['plugin-opts'].host = params.get('v2ray-host');
+			}
+			if (params.get('v2ray-path')) {
+				config['plugin-opts'].path = params.get('v2ray-path');
+			}
+			if (params.get('v2ray-mux')) {
+				config['plugin-opts'].mux = params.get('v2ray-mux') === 'true';
+			}
+			if (params.get('v2ray-fingerprint')) {
+				config['plugin-opts'].fingerprint = params.get('v2ray-fingerprint');
+			}
+			if (params.get('v2ray-skip-cert-verify')) {
+				config['plugin-opts']['skip-cert-verify'] = params.get('v2ray-skip-cert-verify') === 'true';
+			}
+		}
+
+		// shadow-tls 插件配置
+		if (params.get('plugin') === 'shadow-tls') {
+			if (params.get('shadow-tls-host')) {
+				config['plugin-opts'].host = params.get('shadow-tls-host');
+			}
+			if (params.get('shadow-tls-password')) {
+				config['plugin-opts'].password = params.get('shadow-tls-password');
+			}
+			if (params.get('shadow-tls-version')) {
+				config['plugin-opts'].version = parseInt(params.get('shadow-tls-version'));
+			}
+			if (params.get('shadow-tls-alpn')) {
+				config['plugin-opts'].alpn = params.get('shadow-tls-alpn').split(',');
+			}
+		}
+
+		// restls 插件配置
+		if (params.get('plugin') === 'restls') {
+			if (params.get('restls-host')) {
+				config['plugin-opts'].host = params.get('restls-host');
+			}
+			if (params.get('restls-password')) {
+				config['plugin-opts'].password = params.get('restls-password');
+			}
+			if (params.get('restls-version-hint')) {
+				config['plugin-opts']['version-hint'] = params.get('restls-version-hint');
+			}
+			if (params.get('restls-script')) {
+				config['plugin-opts']['restls-script'] = params.get('restls-script');
+			}
+		}
+	}
+
+	return config;
+}
+
+// 解析ShadowsocksR
+function parseShadowsocksR(url) {
+	// SSR URL 格式: ssr://base64(server:port:protocol:method:obfs:password_base64/?params)
+	const base64Part = url.substring(6); // 移除 ssr://
+	const decoded = atob(base64Part);
+
+	// 分割主要部分和参数部分
+	const questionIndex = decoded.indexOf('/?');
+	const mainPart = questionIndex !== -1 ? decoded.substring(0, questionIndex) : decoded;
+	const paramsPart = questionIndex !== -1 ? decoded.substring(questionIndex + 2) : '';
+
+	// 解析主要部分: server:port:protocol:method:obfs:password_base64
+	const parts = mainPart.split(':');
+	if (parts.length < 6) {
+		return null;
+	}
+
+	const server = parts[0];
+	const port = parseInt(parts[1]);
+	const protocol = parts[2];
+	const method = parts[3];
+	const obfs = parts[4];
+	const passwordBase64 = parts[5];
+
+	// 解码密码
+	let password;
+	try {
+		password = atob(passwordBase64);
+	} catch (e) {
+		password = passwordBase64; // 如果解码失败，直接使用原始值
+	}
+
+	const config = {
+		name: 'ShadowsocksR',
+		type: 'ssr',
+		server: server,
+		port: port,
+		cipher: method,
+		password: password,
+		protocol: protocol,
+		obfs: obfs
+	};
+
+	// 解析参数
+	if (paramsPart) {
+		const params = new URLSearchParams(paramsPart);
+
+		// 解析混淆参数
+		if (params.get('obfsparam')) {
+			try {
+				config['obfs-param'] = atob(params.get('obfsparam'));
+			} catch (e) {
+				config['obfs-param'] = params.get('obfsparam');
+			}
+		}
+
+		// 解析协议参数
+		if (params.get('protoparam')) {
+			try {
+				config['protocol-param'] = atob(params.get('protoparam'));
+			} catch (e) {
+				config['protocol-param'] = params.get('protoparam');
+			}
+		}
+
+		// 解析备注
+		if (params.get('remarks')) {
+			try {
+				config.name = atob(params.get('remarks'));
+			} catch (e) {
+				config.name = params.get('remarks');
+			}
+		}
+
+		// 添加 UDP 支持
+		if (params.get('udp')) {
+			config.udp = params.get('udp') === 'true' || params.get('udp') === '1';
+		}
+	}
+
+	return config;
+}
+
+// 解析Hysteria (v1)
+function parseHysteria(url) {
+	const parsed = new URL(url);
+	const params = parsed.searchParams;
+
+	const config = {
+		name: decodeURIComponent(parsed.hash.substring(1)) || 'Hysteria',
+		type: 'hysteria',
+		server: parsed.hostname,
+		port: parseInt(parsed.port)
+	};
+
+	// 添加认证字符串
+	if (parsed.username) {
+		config['auth-str'] = parsed.username;
+	}
+
+	// 添加端口范围
+	if (params.get('ports')) {
+		config.ports = params.get('ports');
+	}
+
+	// 添加混淆
+	if (params.get('obfs')) {
+		config.obfs = params.get('obfs');
+	}
+
+	// 添加 ALPN
+	if (params.get('alpn')) {
+		config.alpn = params.get('alpn').split(',');
+	}
+
+	// 添加协议
+	if (params.get('protocol')) {
+		config.protocol = params.get('protocol');
+	}
+
+	// 添加上传下载速度
+	if (params.get('up')) {
+		config.up = params.get('up');
+	}
+	if (params.get('down')) {
+		config.down = params.get('down');
+	}
+
+	// 添加 SNI
+	if (params.get('sni')) {
+		config.sni = params.get('sni');
+	}
+
+	// 添加 ECH 配置
+	if (params.get('ech-enable') === 'true') {
+		config['ech-opts'] = {
+			enable: true
+		};
+		if (params.get('ech-config')) {
+			config['ech-opts'].config = params.get('ech-config');
+		}
+	}
+
+	// 添加跳过证书验证
+	if (params.get('skip-cert-verify')) {
+		config['skip-cert-verify'] = params.get('skip-cert-verify') === 'true';
+	}
+
+	// 添加接收窗口配置
+	if (params.get('recv-window-conn')) {
+		config['recv-window-conn'] = parseInt(params.get('recv-window-conn'));
+	}
+	if (params.get('recv-window')) {
+		config['recv-window'] = parseInt(params.get('recv-window'));
+	}
+
+	// 添加 CA 配置
+	if (params.get('ca')) {
+		config.ca = params.get('ca');
+	}
+	if (params.get('ca-str')) {
+		config['ca-str'] = params.get('ca-str');
+	}
+
+	// 添加禁用 MTU 发现
+	if (params.get('disable-mtu-discovery')) {
+		config['disable-mtu-discovery'] = params.get('disable-mtu-discovery') === 'true';
+	}
+
+	// 添加指纹
+	if (params.get('fingerprint')) {
+		config.fingerprint = params.get('fingerprint');
+	}
+
+	// 添加快速打开
+	if (params.get('fast-open')) {
+		config['fast-open'] = params.get('fast-open') === 'true';
+	}
+
+	return config;
 }
 
 // 解析Hysteria2
@@ -2353,19 +2902,50 @@ function parseHysteria2(url) {
 		password: parsed.username
 	};
 
+	// 添加端口范围支持
+	if (params.get('ports')) {
+		config.ports = params.get('ports');
+	}
+
+	// 添加跳跃间隔
+	if (params.get('hop-interval')) {
+		config['hop-interval'] = parseInt(params.get('hop-interval'));
+	}
+
+	// 添加上传下载速度
+	if (params.get('up')) {
+		config.up = params.get('up');
+	}
+	if (params.get('down')) {
+		config.down = params.get('down');
+	}
+
 	// 添加 SNI
 	if (params.get('sni')) {
 		config.sni = params.get('sni');
 	}
 
 	// 添加 skip-cert-verify
-	if (params.get('insecure') === '1') {
+	if (params.get('insecure') === '1' || params.get('skip-cert-verify') === 'true') {
 		config['skip-cert-verify'] = true;
+	}
+
+	// 添加指纹
+	if (params.get('fingerprint')) {
+		config.fingerprint = params.get('fingerprint');
 	}
 
 	// 添加 ALPN
 	if (params.get('alpn')) {
 		config.alpn = decodeURIComponent(params.get('alpn')).split(',');
+	}
+
+	// 添加 CA 配置
+	if (params.get('ca')) {
+		config.ca = params.get('ca');
+	}
+	if (params.get('ca-str')) {
+		config['ca-str'] = params.get('ca-str');
 	}
 
 	// 添加混淆
@@ -2374,6 +2954,30 @@ function parseHysteria2(url) {
 		if (params.get('obfs-password')) {
 			config['obfs-password'] = params.get('obfs-password');
 		}
+	}
+
+	// 添加 ECH 配置
+	if (params.get('ech-enable') === 'true') {
+		config['ech-opts'] = {
+			enable: true
+		};
+		if (params.get('ech-config')) {
+			config['ech-opts'].config = params.get('ech-config');
+		}
+	}
+
+	// 添加 QUIC 特殊配置
+	if (params.get('initial-stream-receive-window')) {
+		config['initial-stream-receive-window'] = parseInt(params.get('initial-stream-receive-window'));
+	}
+	if (params.get('max-stream-receive-window')) {
+		config['max-stream-receive-window'] = parseInt(params.get('max-stream-receive-window'));
+	}
+	if (params.get('initial-connection-receive-window')) {
+		config['initial-connection-receive-window'] = parseInt(params.get('initial-connection-receive-window'));
+	}
+	if (params.get('max-connection-receive-window')) {
+		config['max-connection-receive-window'] = parseInt(params.get('max-connection-receive-window'));
 	}
 
 	// 添加端口跳跃
@@ -2397,6 +3001,16 @@ function parseTrojan(url) {
 		password: parsed.username,
 		udp: true  // Trojan通常默认开启UDP
 	};
+
+	// 添加客户端指纹
+	if (params.get('client-fingerprint')) {
+		config['client-fingerprint'] = params.get('client-fingerprint');
+	}
+
+	// 添加指纹
+	if (params.get('fingerprint')) {
+		config.fingerprint = params.get('fingerprint');
+	}
 
 	// 添加 SNI (支持 sni 和 peer 两种参数名)
 	if (params.get('sni')) {
@@ -2423,6 +3037,34 @@ function parseTrojan(url) {
 	// 添加 flow (用于流控模式，如 xtls-rprx-vision)
 	if (params.get('flow')) {
 		config.flow = params.get('flow');
+	}
+
+	// 添加 flow-show
+	if (params.get('flow-show')) {
+		config['flow-show'] = params.get('flow-show') === 'true';
+	}
+
+	// 添加 ECH 配置
+	if (params.get('ech-enable') === 'true') {
+		config['ech-opts'] = {
+			enable: true
+		};
+		if (params.get('ech-config')) {
+			config['ech-opts'].config = params.get('ech-config');
+		}
+	}
+
+	// 添加 Shadowsocks 配置
+	if (params.get('ss-enabled') === 'true') {
+		config['ss-opts'] = {
+			enabled: true
+		};
+		if (params.get('ss-method')) {
+			config['ss-opts'].method = params.get('ss-method');
+		}
+		if (params.get('ss-password')) {
+			config['ss-opts'].password = params.get('ss-password');
+		}
 	}
 
 	// 添加 network (传输协议)
@@ -2467,7 +3109,7 @@ function parseTuic(url) {
 
 	// 解析用户名部分 (UUID:密码)
 	const userInfo = decodeURIComponent(parsed.username);
-	let uuid, password;
+	let uuid, password, token;
 
 	if (userInfo.includes(':')) {
 		const colonIndex = userInfo.indexOf(':');
@@ -2479,18 +3121,112 @@ function parseTuic(url) {
 		password = params.get('password') || '';
 	}
 
+	// 检查是否是 TUIC v4 (使用 token)
+	if (params.get('token')) {
+		token = params.get('token');
+	}
+
 	const config = {
 		name: decodeURIComponent(parsed.hash.substring(1)) || 'TUIC',
 		type: 'tuic',
 		server: parsed.hostname,
-		port: parseInt(parsed.port),
-		uuid: uuid,
-		password: password
+		port: parseInt(parsed.port)
 	};
+
+	// TUIC v4 使用 token，v5 使用 uuid + password
+	if (token) {
+		config.token = token;
+	} else {
+		config.uuid = uuid;
+		config.password = password;
+	}
+
+	// 添加 IP 覆盖
+	if (params.get('ip')) {
+		config.ip = params.get('ip');
+	}
+
+	// 添加心跳间隔
+	if (params.get('heartbeat-interval')) {
+		config['heartbeat-interval'] = parseInt(params.get('heartbeat-interval'));
+	}
+
+	// 添加 ALPN
+	if (params.get('alpn')) {
+		config.alpn = params.get('alpn').split(',');
+	}
+
+	// 添加禁用 SNI
+	if (params.get('disable-sni')) {
+		config['disable-sni'] = params.get('disable-sni') === 'true';
+	}
+
+	// 添加减少 RTT
+	if (params.get('reduce-rtt')) {
+		config['reduce-rtt'] = params.get('reduce-rtt') === 'true';
+	}
+
+	// 添加请求超时
+	if (params.get('request-timeout')) {
+		config['request-timeout'] = parseInt(params.get('request-timeout'));
+	}
+
+	// 添加 UDP 中继模式
+	if (params.get('udp-relay-mode')) {
+		config['udp-relay-mode'] = params.get('udp-relay-mode');
+	}
+
+	// 添加拥塞控制算法
+	if (params.get('congestion-controller')) {
+		config['congestion-controller'] = params.get('congestion-controller');
+	}
+
+	// 添加拥塞窗口
+	if (params.get('cwnd')) {
+		config.cwnd = parseInt(params.get('cwnd'));
+	}
+
+	// 添加最大 UDP 中继包大小
+	if (params.get('max-udp-relay-packet-size')) {
+		config['max-udp-relay-packet-size'] = parseInt(params.get('max-udp-relay-packet-size'));
+	}
+
+	// 添加快速打开
+	if (params.get('fast-open')) {
+		config['fast-open'] = params.get('fast-open') === 'true';
+	}
+
+	// 添加跳过证书验证
+	if (params.get('skip-cert-verify')) {
+		config['skip-cert-verify'] = params.get('skip-cert-verify') === 'true';
+	}
+
+	// 添加最大打开流数
+	if (params.get('max-open-streams')) {
+		config['max-open-streams'] = parseInt(params.get('max-open-streams'));
+	}
 
 	// 添加 SNI
 	if (params.get('sni')) {
 		config.sni = params.get('sni');
+	}
+
+	// 添加 ECH 配置
+	if (params.get('ech-enable') === 'true') {
+		config['ech-opts'] = {
+			enable: true
+		};
+		if (params.get('ech-config')) {
+			config['ech-opts'].config = params.get('ech-config');
+		}
+	}
+
+	// 添加 UDP over Stream (私有扩展)
+	if (params.get('udp-over-stream')) {
+		config['udp-over-stream'] = params.get('udp-over-stream') === 'true';
+	}
+	if (params.get('udp-over-stream-version')) {
+		config['udp-over-stream-version'] = parseInt(params.get('udp-over-stream-version'));
 	}
 
 	// 添加拥塞控制算法
@@ -2754,8 +3490,8 @@ async function getSubscriptionInfo(subUrl) {
 	}
 
 	try {
-		// 使用轮询方式尝试不同的 User-Agent
-		const result = await fetchWithUserAgentRotation(subUrl, 10000);
+		// 使用轮询方式尝试不同的 User-Agent，设置较短的超时时间用于活跃检测
+		const result = await fetchWithUserAgentRotation(subUrl, 8000);
 		const response = result.response;
 
 		subInfo.statusCode = response.status;
@@ -2793,10 +3529,15 @@ async function getSubscriptionInfo(subUrl) {
 
 	} catch (error) {
 		// 网络错误、超时等情况
+		console.log(`订阅 ${subUrl} 请求失败:`, error.message);
 		subInfo.success = false;
 		// 如果是超时错误，设置特殊状态码
-		if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+		if (error.name === 'TimeoutError' || error.name === 'AbortError' || error.message.includes('timeout')) {
 			subInfo.statusCode = 408; // Request Timeout
+		} else if (error.message.includes('fetch failed') || error.message.includes('network')) {
+			subInfo.statusCode = 0; // Network error
+		} else {
+			subInfo.statusCode = 0; // 其他网络错误
 		}
 	}
 
@@ -3156,9 +3897,11 @@ async function handleSubscriptionCheck(request, env) {
 
 		// 获取订阅信息
 		const subInfo = await getSubscriptionInfo(url);
+		console.log(`订阅检测 ${url}: success=${subInfo.success}, statusCode=${subInfo.statusCode}`);
 
 		// 进行连通性检测
 		const shouldReject = await shouldRejectSubscription(url, subInfo);
+		console.log(`连通性判断 ${url}: reject=${shouldReject.reject}, reason=${shouldReject.reason}`);
 
 		return new Response(JSON.stringify({
 			valid: !shouldReject.reject,
@@ -3186,6 +3929,17 @@ async function handleSubscriptionCheck(request, env) {
 // 批量处理活跃检测结果
 async function activeDetectionBatch(results, env) {
 	try {
+		// 验证输入参数
+		if (!results || !Array.isArray(results)) {
+			return new Response(JSON.stringify({
+				success: false,
+				message: '无效的检测结果数据'
+			}), {
+				status: 400,
+				headers: { 'Content-Type': 'application/json' }
+			});
+		}
+
 		const validSubscriptions = [];
 		const validNames = [];
 		const removedSubscriptions = [];
