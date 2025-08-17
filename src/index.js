@@ -1149,7 +1149,7 @@ async function addProxyToCollection(collectionId, proxyUrls, region, env) {
 			};
 
 			const regionName = regionNames[detectedRegion] || `${detectedRegion}未知`;
-			const isIPv6 = proxyConfig.server.includes(':');
+			const isIPv6 = isIPv6Address(proxyConfig.server);
 			const suffix = isIPv6 ? '-IPv6' : '-IPv4';
 
 			// 计算序号 - 找到该地区可用的最小序号，填补空缺
@@ -1724,7 +1724,7 @@ async function addJSONProxiesToCollection(collectionId, proxiesToAdd, env) {
 			};
 
 			const regionName = regionNames[detectedRegion] || `${detectedRegion}未知`;
-			const isIPv6 = proxyData.server.includes(':');
+			const isIPv6 = isIPv6Address(proxyData.server.trim());
 			const suffix = isIPv6 ? '-IPv6' : '-IPv4';
 
 			// 计算序号 - 找到该地区可用的最小序号，填补空缺
@@ -2041,7 +2041,7 @@ async function addProxy(data, env) {
 			};
 
 			const regionName = regionNames[detectedRegion] || `${detectedRegion}未知`;
-			const isIPv6 = proxyConfig.server.includes(':');
+			const isIPv6 = isIPv6Address(proxyConfig.server);
 			const suffix = isIPv6 ? '-IPv6' : '-IPv4';
 
 			// 计算序号 - 找到该地区可用的最小序号，填补空缺
@@ -4490,6 +4490,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 			'RULE-SET,advertising-ads,REJECT',
 			'DOMAIN-SUFFIX,adobe.io,REJECT',
 			'DOMAIN-SUFFIX,adobestats.io,REJECT',
+			'DOMAIN-SUFFIX,linux.do,Linux DO',
 			'RULE-SET,apple_cdn,苹果服务',
 			'RULE-SET,apple_cn_non_ip,苹果服务',
 			'RULE-SET,apple_services,苹果服务',
@@ -4518,7 +4519,6 @@ async function generateSubCollectionConfig(collectionId, env) {
 			'DOMAIN-SUFFIX,gstatic.com,🚀 默认代理',
 			'DOMAIN-SUFFIX,cursor.sh,🚀 默认代理',
 			'DOMAIN-SUFFIX,cursorapi.com,🚀 默认代理',
-			'DOMAIN-SUFFIX,linux.do,Linux DO',
 			'GEOSITE,CN,DIRECT',
 			'GEOIP,LAN,DIRECT',
 			'GEOIP,CN,DIRECT',
@@ -6890,8 +6890,11 @@ function generateSubscriptionName(subInfo, existingNames) {
 // 检测地区
 async function detectRegion(serverAddress) {
 	try {
+		// 清理地址：移除IPv6地址可能的方括号
+		const cleanAddress = serverAddress.replace(/^\[|\]$/g, '');
+
 		// 调用IP-API获取地理位置信息
-		const apiUrl = `http://ip-api.com/json/${encodeURIComponent(serverAddress)}?fields=status,country,countryCode`;
+		const apiUrl = `http://ip-api.com/json/${encodeURIComponent(cleanAddress)}?fields=status,country,countryCode`;
 		const response = await fetch(apiUrl);
 
 		if (!response.ok) {
@@ -7190,4 +7193,22 @@ async function activeDetectionBatch(results, env) {
 			headers: { 'Content-Type': 'application/json' }
 		});
 	}
+}
+
+// 检测是否为IPv6地址
+function isIPv6Address(address) {
+	// 移除可能的方括号（如 [2001:db8::1]）
+	const cleanAddress = address.replace(/^\[|\]$/g, '');
+
+	// IPv6地址的基本特征：包含冒号且符合IPv6格式
+	if (!cleanAddress.includes(':')) {
+		return false;
+	}
+
+	// 简单的IPv6格式验证
+	// IPv6地址由8组4位十六进制数字组成，用冒号分隔
+	// 支持压缩格式（::）和混合格式
+	const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^([0-9a-fA-F]{1,4}:)*::([0-9a-fA-F]{1,4}:)*[0-9a-fA-F]{1,4}$|^::([0-9a-fA-F]{1,4}:)*[0-9a-fA-F]{1,4}$|^([0-9a-fA-F]{1,4}:)+::$|^::$/;
+
+	return ipv6Regex.test(cleanAddress);
 }

@@ -972,15 +972,15 @@
 		</div>
 
 		<div class="tabs">
-			<button class="tab active" onclick="switchTab('proxies')">节点整合</button>
-			<button class="tab" onclick="switchTab('proxy-collections')">节点集合</button>
-			<button class="tab" onclick="switchTab('submerge')">订阅整合</button>
+			<button class="tab active" onclick="switchTab('proxies')" style="display: none;">节点整合</button>
+			<button class="tab active" onclick="switchTab('proxy-collections')">节点集合</button>
+			<button class="tab" onclick="switchTab('submerge')" style="display: none;">订阅整合</button>
 			<button class="tab" onclick="switchTab('sub-collections')">订阅集合</button>
 		</div>
 
 		<div class="content">
 			<!-- 节点整合部分 -->
-			<div id="proxies" class="section active">
+			<div id="proxies" class="section" style="display: none;">
 				<!-- 节点整合复制链接 -->
 				<div class="copy-link-single">
 					<div class="link-item">
@@ -1077,7 +1077,7 @@
 			</div>
 
 			<!-- 节点集合管理部分 -->
-			<div id="proxy-collections" class="section">
+			<div id="proxy-collections" class="section active">
 				<h2>节点集合管理</h2>
 				<p>创建和管理多个独立的节点整合订阅链接</p>
 
@@ -1099,7 +1099,7 @@
 			</div>
 
 			<!-- 订阅整合部分 -->
-			<div id="submerge" class="section">
+			<div id="submerge" class="section" style="display: none;">
 				<!-- 订阅整合复制链接 -->
 				<div class="copy-link-single">
 					<div class="link-item">
@@ -1379,6 +1379,7 @@
 		let subCollections = []; // 订阅集合
 		let newlyAddedProxies = new Set(); // 跟踪新添加的节点
 		let newlyAddedSubscriptions = new Set(); // 跟踪新添加的订阅
+		let newlyAddedCollectionSubscriptions = new Set(); // 跟踪订阅集合中新添加的订阅
 
 		// 当前管理的集合
 		let currentManagingCollection = null;
@@ -1896,12 +1897,12 @@
 					}
 				}
 
-				// 8秒后移除高亮
+				// 15秒后移除高亮
 				setTimeout(() => {
 					document.querySelectorAll('#collectionProxyList .newly-added').forEach(item => {
 						item.classList.remove('newly-added');
 					});
-				}, 8000);
+				}, 15000);
 			}, 100);
 		}
 
@@ -2419,11 +2420,20 @@
 			}
 
 			let html = '';
+			let firstNewlyAddedIndex = -1;
+
 			for (let i = 0; i < subscriptions.length; i++) {
 				const sub = subscriptions[i];
 				const name = subscriptionNames[i] || ('订阅' + (i + 1));
+				const isNewlyAdded = newlyAddedCollectionSubscriptions.has(name);
+				const highlightClass = isNewlyAdded ? ' newly-added' : '';
 
-				html += '<div class="list-item" data-index="' + i + '">';
+				// 记录第一个新添加订阅的位置
+				if (isNewlyAdded && firstNewlyAddedIndex === -1) {
+					firstNewlyAddedIndex = i;
+				}
+
+				html += '<div class="list-item' + highlightClass + '" data-index="' + i + '">';
 				html += '<input type="checkbox" class="collection-subscription-checkbox" data-index="' + i + '" onchange="updateCollectionSubscriptionSelectionUI()">';
 				html += '<div class="item-info">';
 				html += '<div class="item-name" id="collectionSubName-' + i + '">' + name + '</div>';
@@ -2436,6 +2446,24 @@
 			}
 			listEl.innerHTML = html;
 			updateCollectionSubscriptionSelectionUI();
+
+			// 自动滚动到第一个新添加的订阅
+			if (firstNewlyAddedIndex !== -1) {
+				setTimeout(() => {
+					const listItems = listEl.querySelectorAll('.list-item');
+					if (listItems[firstNewlyAddedIndex]) {
+						listItems[firstNewlyAddedIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+					}
+				}, 100);
+			}
+
+			// 15秒后移除高亮效果
+			setTimeout(() => {
+				newlyAddedCollectionSubscriptions.clear();
+				document.querySelectorAll('#collectionSubList .list-item.newly-added').forEach(item => {
+					item.classList.remove('newly-added');
+				});
+			}, 15000);
 		}
 
 		// ========== 集合订阅选择功能 ==========
@@ -2633,6 +2661,13 @@
 
 					// 清空输入框
 					document.getElementById('collectionSubUrl').value = '';
+
+					// 标记新添加的订阅用于高亮显示
+					if (result.addedSubscriptions && result.addedSubscriptions.length > 0) {
+						result.addedSubscriptions.forEach(sub => {
+							newlyAddedCollectionSubscriptions.add(sub.name);
+						});
+					}
 
 					// 重新加载集合数据并渲染
 					await loadSubCollections();
@@ -2873,13 +2908,13 @@
 				}, 100);
 			}
 
-			// 8秒后移除高亮效果
+			// 15秒后移除高亮效果
 			setTimeout(() => {
 				newlyAddedProxies.clear();
 				document.querySelectorAll('.list-item.newly-added').forEach(item => {
 					item.classList.remove('newly-added');
 				});
-			}, 8000);
+			}, 15000);
 		}
 
 		// 添加订阅
@@ -3090,13 +3125,13 @@
 				}, 100);
 			}
 
-			// 8秒后移除高亮效果
+			// 15秒后移除高亮效果
 			setTimeout(() => {
 				newlyAddedSubscriptions.clear();
 				document.querySelectorAll('.list-item.newly-added').forEach(item => {
 					item.classList.remove('newly-added');
 				});
-			}, 8000);
+			}, 15000);
 		}
 
 		// ========== 节点选择功能 ==========
