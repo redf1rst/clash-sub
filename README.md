@@ -69,7 +69,7 @@ cd clash-sub
 npm install -g wrangler
 
 # 登录 wrangler
-npx wrangler login
+wrangler login
 ```
 
 ### 3. 创建KV命名空间
