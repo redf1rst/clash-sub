@@ -1,1429 +1,3607 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clash订阅生成器</title>
-    <link rel="icon" type="image/png" href="https://github.com/redf1rst/clash-sub/blob/main/img/clash-sub.png?raw=true">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css" />
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', 'Apple Color Emoji', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-
-        .header {
-            background: #2c3e50;
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            opacity: 0.8;
-            font-size: 1.1em;
-        }
-
-        .tabs {
-            display: flex;
-            background: #34495e;
-        }
-
-        .tab {
-            flex: 1;
-            padding: 20px;
-            text-align: center;
-            color: #000;
-            cursor: pointer;
-            transition: background 0.3s;
-            border: none;
-            font-size: 1.1em;
-            background: #ecf0f1;
-        }
-
-        .tab.active {
-            background: #3498db;
-            color: white;
-        }
-
-        .tab:hover {
-            background: #2980b9;
-            color: white;
-        }
-
-        .content {
-            padding: 30px;
-        }
-
-        .section {
-            display: none;
-        }
-
-        .section.active {
-            display: block;
-        }
-
-        .input-group {
-            margin-bottom: 25px;
-        }
-
-        .input-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-        .input-group input, .input-group textarea, .input-group select {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1em;
-            transition: border-color 0.3s;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', 'Apple Color Emoji', Arial, sans-serif;
-            background: white;
-        }
-
-        .input-group textarea {
-            min-height: 120px;
-            resize: vertical;
-        }
-
-        .input-group input:focus, .input-group textarea:focus, .input-group select:focus {
-            outline: none;
-            border-color: #3498db;
-        }
-
-        .input-group select {
-            cursor: pointer;
-        }
-
-        /* 自定义下拉菜单样式 */
-        .custom-select {
-            position: relative;
-            width: 100%;
-        }
-
-        .select-display {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1em;
-            background: white;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: border-color 0.3s;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', 'Apple Color Emoji', Arial, sans-serif;
-        }
-
-        .select-display:hover {
-            border-color: #3498db;
-        }
-
-        .select-display.active {
-            border-color: #3498db;
-            border-bottom-left-radius: 0;
-            border-bottom-right-radius: 0;
-        }
-
-        .select-arrow {
-            transition: transform 0.3s;
-            color: #666;
-        }
-
-        .select-display.active .select-arrow {
-            transform: rotate(180deg);
-        }
-
-        .select-options {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 2px solid #3498db;
-            border-top: none;
-            border-radius: 0 0 8px 8px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .select-options.show {
-            display: block;
-        }
-
-        .select-option {
-            padding: 12px 15px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', 'Apple Color Emoji', Arial, sans-serif;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .select-option .fi {
-            width: 20px;
-            height: 15px;
-            border-radius: 2px;
-        }
-
-        .select-option:hover {
-            background-color: #f8f9fa;
-        }
-
-        .select-option.selected {
-            background-color: #3498db;
-            color: white;
-        }
-
-        .btn {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1em;
-            transition: background 0.3s;
-            margin-right: 10px;
-            margin-bottom: 10px;
-        }
-
-        .btn:hover {
-            background: #2980b9;
-        }
-
-        .btn.danger {
-            background: #e74c3c;
-        }
-
-        .btn.danger:hover {
-            background: #c0392b;
-        }
-
-        .btn.success {
-            background: #27ae60;
-        }
-
-        .btn.success:hover {
-            background: #229954;
-        }
-
-        .list {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 20px;
-        }
-
-        .list-item {
-            background: white;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 6px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-        }
-
-        .list-item:last-child {
-            margin-bottom: 0;
-        }
-
-        /* 新添加项目的高亮样式 */
-        .list-item.newly-added {
-            background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
-            border: 2px solid #27ae60;
-            box-shadow: 0 4px 8px rgba(39, 174, 96, 0.2);
-            animation: highlightPulse 3s ease-in-out;
-            scroll-margin-top: 20px; /* 滚动时的顶部边距 */
-        }
-
-        @keyframes highlightPulse {
-            0% {
-                transform: scale(1);
-                box-shadow: 0 4px 8px rgba(39, 174, 96, 0.2);
-            }
-            25% {
-                transform: scale(1.02);
-                box-shadow: 0 6px 12px rgba(39, 174, 96, 0.3);
-            }
-            50% {
-                transform: scale(1);
-                box-shadow: 0 4px 8px rgba(39, 174, 96, 0.2);
-            }
-            75% {
-                transform: scale(1.01);
-                box-shadow: 0 5px 10px rgba(39, 174, 96, 0.25);
-            }
-            100% {
-                transform: scale(1);
-                box-shadow: 0 4px 8px rgba(39, 174, 96, 0.2);
-            }
-        }
-
-        .item-info {
-            flex: 1;
-        }
-
-        .item-name {
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 5px;
-        }
-
-        .item-details {
-            color: #7f8c8d;
-            font-size: 0.9em;
-        }
-
-        .subscription-links {
-            background: #e8f5e8;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
-
-        .subscription-links h3 {
-            color: #27ae60;
-            margin-bottom: 15px;
-        }
-
-        .link-item {
-            background: white;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 10px;
-            border-left: 4px solid #27ae60;
-        }
-
-        .link-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .link-url {
-            font-family: monospace;
-            background: #f1f2f6;
-            padding: 8px 12px;
-            border-radius: 4px;
-            word-break: break-all;
-            margin-top: 8px;
-        }
-
-        .message {
-            padding: 12px 15px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            display: none;
-            white-space: pre-line; /* 支持换行显示 */
-            font-weight: 500;
-        }
-
-        .message.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .message.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .message.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-
-        /* 按钮和消息的横向布局 */
-        .action-bar {
-            display: flex;
-            align-items: flex-start;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .action-message {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .action-message .message {
-            margin: 0;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .empty-state {
-            text-align: center;
-            color: #7f8c8d;
-            padding: 40px;
-        }
-
-        .empty-state i {
-            font-size: 3em;
-            margin-bottom: 15px;
-            opacity: 0.5;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                margin: 10px;
-                border-radius: 8px;
-            }
-
-            .header {
-                padding: 20px;
-            }
-
-            .header h1 {
-                font-size: 2em;
-            }
-
-            .content {
-                padding: 20px;
-            }
-
-            .tabs {
-                flex-direction: column;
-            }
-
-            .list-item {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .list-item .btn {
-                margin-top: 10px;
-            }
-        }
-
-        /* 进度条样式 */
-        .progress-container {
-            margin-top: 15px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
-        }
-
-        .progress-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            font-size: 14px;
-            color: #495057;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 20px;
-            background-color: #e9ecef;
-            border-radius: 10px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #3498db, #2980b9);
-            border-radius: 10px;
-            width: 0%;
-            transition: width 0.3s ease;
-            position: relative;
-        }
-
-        .progress-fill::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-            background: linear-gradient(
-                90deg,
-                transparent,
-                rgba(255, 255, 255, 0.2),
-                transparent
-            );
-            animation: shimmer 2s infinite;
-        }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-
-        .btn:disabled {
-            background: #6c757d;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        .btn:disabled:hover {
-            background: #6c757d;
-        }
-
-        /* 复制链接区域样式 */
-        .copy-links-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .copy-link-single {
-            display: flex;
-            justify-content: center;
-            margin: 0 0 20px 0;
-        }
-
-        .copy-links-container .link-item,
-        .copy-link-single .link-item {
-            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
-            border: 1px solid #bbdefb;
-            border-radius: 8px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            transition: all 0.2s ease;
-        }
-
-        .copy-link-single .link-item {
-            width: 100%;
-            max-width: 750px;
-        }
-
-        .copy-links-container .link-item:hover,
-        .copy-link-single .link-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .copy-links-container .link-item strong,
-        .copy-link-single .link-item strong {
-            font-size: 15px;
-            color: #1976d2;
-            margin-bottom: 6px;
-            font-weight: 600;
-            text-align: center;
-        }
-
-        .copy-links-container .link-url,
-        .copy-link-single .link-url {
-            background: rgba(255, 255, 255, 0.8);
-            border: 1px solid #90caf9;
-            border-radius: 6px;
-            padding: 6px 10px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            word-break: break-all;
-            color: #424242;
-            flex: 1;
-            margin-bottom: 8px;
-            min-height: 28px;
-            display: flex;
-            align-items: center;
-            line-height: 1.3;
-        }
-
-        .copy-links-container .btn,
-        .copy-link-single .btn {
-            background: #1976d2;
-            color: white;
-            border: none;
-            font-size: 13px;
-            font-weight: 500;
-            padding: 6px 16px;
-            height: 30px;
-            border-radius: 6px;
-            transition: all 0.2s ease;
-        }
-
-        .copy-links-container .btn:hover,
-        .copy-link-single .btn:hover {
-            background: #1565c0;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 6px rgba(25, 118, 210, 0.3);
-        }
-
-        @media (max-width: 768px) {
-            .copy-links-container {
-                grid-template-columns: 1fr;
-                gap: 12px;
-                margin: 15px 0;
-            }
-
-            .copy-link-single .link-item {
-                max-width: none;
-            }
-        }
-    </style>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Clash订阅生成器</title>
+	<link rel="icon" type="image/png" href="https://github.com/redf1rst/clash-sub/blob/main/img/clash-sub.png?raw=true">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css" />
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', 'Apple Color Emoji', Roboto, sans-serif;
+			background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 25%, #45b7d1 50%, #96ceb4 75%, #feca57 100%);
+			background-size: 400% 400%;
+			animation: gradientShift 15s ease infinite;
+			min-height: 100vh;
+			padding: 20px;
+		}
+
+		@keyframes gradientShift {
+			0% {
+				background-position: 0% 50%;
+			}
+
+			50% {
+				background-position: 100% 50%;
+			}
+
+			100% {
+				background-position: 0% 50%;
+			}
+		}
+
+		.container {
+			max-width: 1200px;
+			margin: 0 auto;
+			background: white;
+			border-radius: 12px;
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+			overflow: hidden;
+		}
+
+		.header {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			padding: 30px;
+			text-align: center;
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+		}
+
+		.header h1 {
+			font-size: 2.5em;
+			margin-bottom: 10px;
+		}
+
+		.header p {
+			opacity: 0.8;
+			font-size: 1.1em;
+		}
+
+		.tabs {
+			display: flex;
+			background: #34495e;
+		}
+
+		.tab {
+			flex: 1;
+			padding: 20px;
+			text-align: center;
+			color: #000;
+			cursor: pointer;
+			transition: background 0.3s;
+			border: none;
+			font-size: 1.1em;
+			background: #ecf0f1;
+		}
+
+		.tab.active {
+			background: #3498db;
+			color: white;
+		}
+
+		.tab:hover {
+			background: #2980b9;
+			color: white;
+		}
+
+		.content {
+			padding: 30px;
+		}
+
+		.section {
+			display: none;
+		}
+
+		.section.active {
+			display: block;
+		}
+
+		.input-group {
+			margin-bottom: 25px;
+		}
+
+		.input-group label {
+			display: block;
+			margin-bottom: 8px;
+			font-weight: 600;
+			color: #2c3e50;
+		}
+
+		.input-group input,
+		.input-group textarea,
+		.input-group select {
+			width: 100%;
+			padding: 12px 15px;
+			border: 2px solid #e0e0e0;
+			border-radius: 8px;
+			font-size: 1em;
+			transition: border-color 0.3s;
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', 'Apple Color Emoji', Arial, sans-serif;
+			background: white;
+		}
+
+		.input-group textarea {
+			min-height: 120px;
+			resize: vertical;
+		}
+
+		.input-group input:focus,
+		.input-group textarea:focus,
+		.input-group select:focus {
+			outline: none;
+			border-color: #3498db;
+		}
+
+		.input-group select {
+			cursor: pointer;
+		}
+
+		/* 自定义下拉菜单样式 */
+		.custom-select {
+			position: relative;
+			width: 100%;
+		}
+
+		.select-display {
+			width: 100%;
+			padding: 12px 15px;
+			border: 2px solid #e0e0e0;
+			border-radius: 8px;
+			font-size: 1em;
+			background: white;
+			cursor: pointer;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			transition: border-color 0.3s;
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', 'Apple Color Emoji', Arial, sans-serif;
+		}
+
+		.select-display:hover {
+			border-color: #3498db;
+		}
+
+		.select-display.active {
+			border-color: #3498db;
+			border-bottom-left-radius: 0;
+			border-bottom-right-radius: 0;
+		}
+
+		.select-arrow {
+			transition: transform 0.3s;
+			color: #666;
+		}
+
+		.select-display.active .select-arrow {
+			transform: rotate(180deg);
+		}
+
+		.select-options {
+			position: absolute;
+			top: 100%;
+			left: 0;
+			right: 0;
+			background: white;
+			border: 2px solid #3498db;
+			border-top: none;
+			border-radius: 0 0 8px 8px;
+			max-height: 200px;
+			overflow-y: auto;
+			z-index: 1000;
+			display: none;
+			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		}
+
+		.select-options.show {
+			display: block;
+		}
+
+		.select-option {
+			padding: 12px 15px;
+			cursor: pointer;
+			transition: background-color 0.2s;
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', 'Apple Color Emoji', Arial, sans-serif;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.select-option .fi {
+			width: 20px;
+			height: 15px;
+			border-radius: 2px;
+		}
+
+		.select-option:hover {
+			background-color: #f8f9fa;
+		}
+
+		.select-option.selected {
+			background-color: #3498db;
+			color: white;
+		}
+
+		.btn {
+			background: #3498db;
+			color: white;
+			border: none;
+			padding: 12px 25px;
+			border-radius: 8px;
+			cursor: pointer;
+			font-size: 1em;
+			transition: background 0.3s;
+			margin-right: 10px;
+			margin-bottom: 10px;
+		}
+
+		.btn:hover {
+			background: #2980b9;
+		}
+
+		.btn.danger {
+			background: #e74c3c;
+		}
+
+		.btn.danger:hover {
+			background: #c0392b;
+		}
+
+		.btn.success {
+			background: #27ae60;
+		}
+
+		.btn.success:hover {
+			background: #229954;
+		}
+
+		.list {
+			background: #f8f9fa;
+			border-radius: 8px;
+			padding: 20px;
+			margin-top: 20px;
+		}
+
+		.list-item {
+			background: white;
+			padding: 15px;
+			margin-bottom: 10px;
+			border-radius: 6px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+			transition: all 0.3s ease;
+		}
+
+		.list-item:last-child {
+			margin-bottom: 0;
+		}
+
+		.item-actions {
+			display: flex;
+			gap: 8px;
+			flex-shrink: 0;
+		}
+
+		/* 新添加项目的高亮样式 */
+		.list-item.newly-added {
+			background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
+			border: 2px solid #27ae60;
+			box-shadow: 0 4px 8px rgba(39, 174, 96, 0.2);
+			animation: highlightPulse 3s ease-in-out;
+			scroll-margin-top: 20px;
+			/* 滚动时的顶部边距 */
+		}
+
+		@keyframes highlightPulse {
+			0% {
+				transform: scale(1);
+				box-shadow: 0 4px 8px rgba(39, 174, 96, 0.2);
+			}
+
+			25% {
+				transform: scale(1.02);
+				box-shadow: 0 6px 12px rgba(39, 174, 96, 0.3);
+			}
+
+			50% {
+				transform: scale(1);
+				box-shadow: 0 4px 8px rgba(39, 174, 96, 0.2);
+			}
+
+			75% {
+				transform: scale(1.01);
+				box-shadow: 0 5px 10px rgba(39, 174, 96, 0.25);
+			}
+
+			100% {
+				transform: scale(1);
+				box-shadow: 0 4px 8px rgba(39, 174, 96, 0.2);
+			}
+		}
+
+		.item-info {
+			flex: 1;
+		}
+
+		.item-name {
+			font-weight: 600;
+			color: #2c3e50;
+			margin-bottom: 5px;
+		}
+
+		.item-details {
+			color: #7f8c8d;
+			font-size: 0.9em;
+		}
+
+		.subscription-links {
+			background: #e8f5e8;
+			padding: 20px;
+			border-radius: 8px;
+			margin-top: 20px;
+		}
+
+		.subscription-links h3 {
+			color: #27ae60;
+			margin-bottom: 15px;
+		}
+
+		.link-item {
+			background: white;
+			padding: 15px;
+			border-radius: 6px;
+			margin-bottom: 10px;
+			border-left: 4px solid #27ae60;
+		}
+
+		.link-item:last-child {
+			margin-bottom: 0;
+		}
+
+		.link-url {
+			font-family: monospace;
+			background: #f1f2f6;
+			padding: 8px 12px;
+			border-radius: 4px;
+			word-break: break-all;
+			margin-top: 8px;
+		}
+
+		.message {
+			padding: 12px 15px;
+			border-radius: 6px;
+			margin-bottom: 15px;
+			display: none;
+			white-space: pre-line;
+			/* 支持换行显示 */
+			font-weight: 500;
+		}
+
+		.message.success {
+			background: #d4edda;
+			color: #155724;
+			border: 1px solid #c3e6cb;
+		}
+
+		.message.error {
+			background: #f8d7da;
+			color: #721c24;
+			border: 1px solid #f5c6cb;
+		}
+
+		.message.info {
+			background: #d1ecf1;
+			color: #0c5460;
+			border: 1px solid #bee5eb;
+		}
+
+		/* 按钮和消息的横向布局 */
+		.action-bar {
+			display: flex;
+			align-items: flex-start;
+			gap: 15px;
+			margin-bottom: 20px;
+		}
+
+		.action-buttons {
+			display: flex;
+			gap: 10px;
+			flex-wrap: wrap;
+		}
+
+		.action-message {
+			flex: 1;
+			min-width: 0;
+		}
+
+		.action-message .message {
+			margin: 0;
+			max-height: 200px;
+			overflow-y: auto;
+		}
+
+		.empty-state {
+			text-align: center;
+			color: #7f8c8d;
+			padding: 40px;
+		}
+
+		.empty-state i {
+			font-size: 3em;
+			margin-bottom: 15px;
+			opacity: 0.5;
+		}
+
+		@media (max-width: 768px) {
+			.container {
+				margin: 10px;
+				border-radius: 8px;
+			}
+
+			.header {
+				padding: 20px;
+			}
+
+			.header h1 {
+				font-size: 2em;
+			}
+
+			.content {
+				padding: 20px;
+			}
+
+			.tabs {
+				flex-direction: column;
+			}
+
+			.list-item {
+				flex-direction: column;
+				align-items: flex-start;
+			}
+
+			.list-item .btn {
+				margin-top: 10px;
+			}
+		}
+
+		/* 进度条样式 */
+		.progress-container {
+			margin-top: 15px;
+			padding: 15px;
+			background: #f8f9fa;
+			border-radius: 8px;
+			border: 1px solid #e9ecef;
+		}
+
+		.progress-info {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 10px;
+			font-size: 14px;
+			color: #495057;
+		}
+
+		.progress-bar {
+			width: 100%;
+			height: 20px;
+			background-color: #e9ecef;
+			border-radius: 10px;
+			overflow: hidden;
+			position: relative;
+		}
+
+		.progress-fill {
+			height: 100%;
+			background: linear-gradient(90deg, #3498db, #2980b9);
+			border-radius: 10px;
+			width: 0%;
+			transition: width 0.3s ease;
+			position: relative;
+		}
+
+		.progress-fill::after {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: 0;
+			bottom: 0;
+			right: 0;
+			background: linear-gradient(90deg,
+					transparent,
+					rgba(255, 255, 255, 0.2),
+					transparent);
+			animation: shimmer 2s infinite;
+		}
+
+		@keyframes shimmer {
+			0% {
+				transform: translateX(-100%);
+			}
+
+			100% {
+				transform: translateX(100%);
+			}
+		}
+
+		.btn:disabled {
+			background: #6c757d;
+			cursor: not-allowed;
+			opacity: 0.6;
+		}
+
+		.btn:disabled:hover {
+			background: #6c757d;
+		}
+
+		/* 复制链接区域样式 */
+		.copy-links-container {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 15px;
+			margin: 20px 0;
+		}
+
+		.copy-link-single {
+			display: flex;
+			justify-content: center;
+			margin: 0 0 20px 0;
+		}
+
+		.copy-links-container .link-item,
+		.copy-link-single .link-item {
+			background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+			border: 1px solid #bbdefb;
+			border-radius: 8px;
+			padding: 10px;
+			display: flex;
+			flex-direction: column;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+			transition: all 0.2s ease;
+		}
+
+		.copy-link-single .link-item {
+			width: 100%;
+			max-width: 750px;
+		}
+
+		.copy-links-container .link-item:hover,
+		.copy-link-single .link-item:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		}
+
+		.copy-links-container .link-item strong,
+		.copy-link-single .link-item strong {
+			font-size: 15px;
+			color: #1976d2;
+			margin-bottom: 6px;
+			font-weight: 600;
+			text-align: center;
+		}
+
+		.copy-links-container .link-url,
+		.copy-link-single .link-url {
+			background: rgba(255, 255, 255, 0.8);
+			border: 1px solid #90caf9;
+			border-radius: 6px;
+			padding: 6px 10px;
+			font-family: 'Courier New', monospace;
+			font-size: 13px;
+			word-break: break-all;
+			color: #424242;
+			flex: 1;
+			margin-bottom: 8px;
+			min-height: 28px;
+			display: flex;
+			align-items: center;
+			line-height: 1.3;
+		}
+
+		.copy-links-container .btn,
+		.copy-link-single .btn {
+			background: #1976d2;
+			color: white;
+			border: none;
+			font-size: 13px;
+			font-weight: 500;
+			padding: 6px 16px;
+			height: 30px;
+			border-radius: 6px;
+			transition: all 0.2s ease;
+		}
+
+		.copy-links-container .btn:hover,
+		.copy-link-single .btn:hover {
+			background: #1565c0;
+			transform: translateY(-1px);
+			box-shadow: 0 2px 6px rgba(25, 118, 210, 0.3);
+		}
+
+		@media (max-width: 768px) {
+			.copy-links-container {
+				grid-template-columns: 1fr;
+				gap: 12px;
+				margin: 15px 0;
+			}
+
+			.copy-link-single .link-item {
+				max-width: none;
+			}
+		}
+
+		/* 选择功能样式 */
+		.proxy-checkbox,
+		.subscription-checkbox,
+		.collection-proxy-checkbox,
+		.collection-subscription-checkbox {
+			margin-right: 12px;
+			transform: scale(1.2);
+			cursor: pointer;
+			accent-color: #3498db;
+		}
+
+		.list-item {
+			display: flex;
+			align-items: center;
+			padding: 15px;
+			border: 1px solid #e0e0e0;
+			border-radius: 8px;
+			margin-bottom: 10px;
+			background: white;
+			transition: all 0.2s ease;
+		}
+
+		.list-item:hover {
+			border-color: #3498db;
+			box-shadow: 0 2px 8px rgba(52, 152, 219, 0.1);
+		}
+
+		.list-item.selected {
+			border-color: #3498db;
+			background: #f8f9fa;
+		}
+
+		.selection-info {
+			padding: 8px 16px;
+			background: #e3f2fd;
+			border-radius: 6px;
+			margin-bottom: 16px;
+			font-size: 14px;
+			color: #1976d2;
+			border-left: 4px solid #2196f3;
+		}
+
+		.btn:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+			background: #bdc3c7 !important;
+		}
+
+		.btn:disabled:hover {
+			transform: none !important;
+			box-shadow: none !important;
+		}
+
+		/* 新节点高亮样式 - 统一使用绿色 */
+		.list-item.newly-added {
+			background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
+			border: 2px solid #27ae60;
+			box-shadow: 0 4px 8px rgba(39, 174, 96, 0.2);
+			animation: highlightPulse 3s ease-in-out;
+			scroll-margin-top: 20px;
+		}
+
+		@keyframes highlightPulse {
+
+			0%,
+			100% {
+				transform: scale(1);
+			}
+
+			50% {
+				transform: scale(1.02);
+			}
+		}
+
+		/* 输出框样式 */
+		.output-section {
+			margin-top: 20px;
+			border: 1px solid #e0e0e0;
+			border-radius: 8px;
+			overflow: hidden;
+			background: #ffffff;
+		}
+
+		.output-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 12px 16px;
+			background: #f8f9fa;
+			border-bottom: 1px solid #e0e0e0;
+		}
+
+		.output-header label {
+			font-weight: 600;
+			color: #2c3e50;
+			margin: 0;
+			font-size: 14px;
+		}
+
+		.btn.small {
+			padding: 6px 12px;
+			font-size: 12px;
+			min-width: auto;
+		}
+
+		.output-box {
+			height: 80px;
+			overflow-y: auto;
+			padding: 12px;
+			background: #ffffff;
+			font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+			font-size: 13px;
+			line-height: 1.4;
+		}
+
+		.output-placeholder {
+			color: #6c757d;
+			font-style: italic;
+			text-align: center;
+			padding: 40px 0;
+		}
+
+		.output-entry {
+			margin-bottom: 8px;
+			padding: 6px 8px;
+			border-radius: 4px;
+			border-left: 3px solid #3498db;
+			word-wrap: break-word;
+		}
+
+		.output-entry.success {
+			background: #d4edda;
+			border-left-color: #28a745;
+			color: #155724;
+		}
+
+		.output-entry.error {
+			background: #f8d7da;
+			border-left-color: #dc3545;
+			color: #721c24;
+		}
+
+		.output-entry.warning {
+			background: #fff3cd;
+			border-left-color: #ffc107;
+			color: #856404;
+		}
+
+		.output-entry.info {
+			background: #d1ecf1;
+			border-left-color: #17a2b8;
+			color: #0c5460;
+		}
+
+		.output-timestamp {
+			font-size: 11px;
+			color: #6c757d;
+			margin-right: 8px;
+		}
+
+		/* 确认删除弹窗样式 */
+		.confirm-modal {
+			display: none;
+			position: fixed;
+			z-index: 2000;
+			left: 0;
+			top: 0;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0, 0, 0, 0.6);
+			backdrop-filter: blur(5px);
+		}
+
+		.confirm-modal-content {
+			background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+			margin: 15% auto;
+			padding: 0;
+			border-radius: 16px;
+			width: 90%;
+			max-width: 450px;
+			box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+			animation: confirmModalSlideIn 0.3s ease-out;
+			overflow: hidden;
+		}
+
+		@keyframes confirmModalSlideIn {
+			from {
+				opacity: 0;
+				transform: translateY(-50px) scale(0.9);
+			}
+
+			to {
+				opacity: 1;
+				transform: translateY(0) scale(1);
+			}
+		}
+
+		.confirm-modal-header {
+			background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+			color: white;
+			padding: 20px 25px;
+			text-align: center;
+		}
+
+		.confirm-modal-header h3 {
+			margin: 0;
+			font-size: 1.3em;
+			font-weight: 600;
+		}
+
+		.confirm-modal-body {
+			padding: 25px;
+			text-align: center;
+		}
+
+		.confirm-modal-body p {
+			margin: 0 0 20px 0;
+			font-size: 1.1em;
+			color: #2c3e50;
+			line-height: 1.5;
+		}
+
+		.confirm-modal-actions {
+			display: flex;
+			gap: 12px;
+			justify-content: center;
+		}
+
+		.confirm-btn {
+			padding: 12px 24px;
+			border: none;
+			border-radius: 8px;
+			font-size: 1em;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.2s ease;
+			min-width: 100px;
+		}
+
+		.confirm-btn.danger {
+			background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+			color: white;
+		}
+
+		.confirm-btn.danger:hover {
+			background: linear-gradient(135deg, #ff5252 0%, #e53935 100%);
+			transform: translateY(-2px);
+			box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+		}
+
+		.confirm-btn.secondary {
+			background: #f8f9fa;
+			color: #6c757d;
+			border: 2px solid #e9ecef;
+		}
+
+		.confirm-btn.secondary:hover {
+			background: #e9ecef;
+			color: #495057;
+			transform: translateY(-2px);
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+		}
+
+		/* 弹窗样式 */
+		.modal {
+			display: none;
+			position: fixed;
+			z-index: 1000;
+			left: 0;
+			top: 0;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0, 0, 0, 0.5);
+		}
+
+		.modal-content {
+			background-color: white;
+			margin: 5% auto;
+			padding: 0;
+			border-radius: 12px;
+			width: 90%;
+			max-width: 800px;
+			max-height: 80vh;
+			overflow: hidden;
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+		}
+
+		.modal-header {
+			background: #2c3e50;
+			color: white;
+			padding: 20px;
+			border-radius: 12px 12px 0 0;
+		}
+
+		.modal-header h3 {
+			margin: 0;
+			font-size: 1.5em;
+		}
+
+		.modal-body {
+			padding: 20px;
+			max-height: 60vh;
+			overflow-y: auto;
+		}
+
+		.modal-footer {
+			padding: 15px 20px;
+			border-top: 1px solid #ddd;
+			text-align: right;
+		}
+
+		.close {
+			color: white;
+			float: right;
+			font-size: 28px;
+			font-weight: bold;
+			cursor: pointer;
+			line-height: 1;
+		}
+
+		.close:hover {
+			opacity: 0.7;
+		}
+	</style>
 </head>
+
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🚀 Clash订阅生成器</h1>
-            <p>轻松管理你的代理节点和订阅链接</p>
-        </div>
-
-        <div class="tabs">
-            <button class="tab active" onclick="switchTab('proxies')">节点整合</button>
-            <button class="tab" onclick="switchTab('submerge')">订阅整合</button>
-        </div>
-
-        <div class="content">
-            <!-- 节点整合部分 -->
-            <div id="proxies" class="section active">
-                <!-- 节点整合复制链接 -->
-                <div class="copy-link-single">
-                    <div class="link-item">
-                        <strong>节点整合订阅</strong>
-                        <div class="link-url" id="proxiesLinkTop"></div>
-                        <button class="btn success" onclick="copyLink('proxiesLinkTop')">复制链接</button>
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label for="proxyUrl">添加节点链接（支持批量添加，每行一个链接）</label>
-                    <textarea id="proxyUrl" placeholder="支持 vmess://, vless://, ss://, hysteria2://, trojan:// 等协议，每行一个链接"></textarea>
-                </div>
-
-                <div class="input-group">
-                    <label for="regionSelect">地区选择</label>
-                    <div class="custom-select" id="regionSelect">
-                        <div class="select-display" onclick="toggleRegionDropdown()">
-                            <span id="selectedRegion">🌍 自动识别地区</span>
-                            <span class="select-arrow">▼</span>
-                        </div>
-                        <div class="select-options" id="regionOptions">
-                            <div class="select-option" data-value="auto">🌍 自动识别地区</div>
-                            <div class="select-option" data-value="US"><span class="fi fi-us"></span> 美国</div>
-                            <div class="select-option" data-value="HK"><span class="fi fi-hk"></span> 香港</div>
-                            <div class="select-option" data-value="JP"><span class="fi fi-jp"></span> 日本</div>
-                            <div class="select-option" data-value="KR"><span class="fi fi-kr"></span> 韩国</div>
-                            <div class="select-option" data-value="TW"><span class="fi fi-tw"></span> 台湾</div>
-                            <div class="select-option" data-value="SG"><span class="fi fi-sg"></span> 新加坡</div>
-                            <div class="select-option" data-value="UK"><span class="fi fi-gb"></span> 英国</div>
-                            <div class="select-option" data-value="FR"><span class="fi fi-fr"></span> 法国</div>
-                            <div class="select-option" data-value="DE"><span class="fi fi-de"></span> 德国</div>
-                            <div class="select-option" data-value="AU"><span class="fi fi-au"></span> 澳大利亚</div>
-                            <div class="select-option" data-value="MY"><span class="fi fi-my"></span> 马来西亚</div>
-                            <div class="select-option" data-value="IT"><span class="fi fi-it"></span> 意大利</div>
-                            <div class="select-option" data-value="ES"><span class="fi fi-es"></span> 西班牙</div>
-                            <div class="select-option" data-value="NL"><span class="fi fi-nl"></span> 荷兰</div>
-                            <div class="select-option" data-value="RU"><span class="fi fi-ru"></span> 俄罗斯</div>
-                            <div class="select-option" data-value="CH"><span class="fi fi-ch"></span> 瑞士</div>
-                            <div class="select-option" data-value="UA"><span class="fi fi-ua"></span> 乌克兰</div>
-                            <div class="select-option" data-value="CL"><span class="fi fi-cl"></span> 智利</div>
-                            <div class="select-option" data-value="BR"><span class="fi fi-br"></span> 巴西</div>
-                            <div class="select-option" data-value="MX"><span class="fi fi-mx"></span> 墨西哥</div>
-                            <div class="select-option" data-value="AR"><span class="fi fi-ar"></span> 阿根廷</div>
-                            <div class="select-option" data-value="TR"><span class="fi fi-tr"></span> 土耳其</div>
-                            <div class="select-option" data-value="AE"><span class="fi fi-ae"></span> 阿联酋</div>
-                            <div class="select-option" data-value="IN"><span class="fi fi-in"></span> 印度</div>
-                            <div class="select-option" data-value="VN"><span class="fi fi-vn"></span> 越南</div>
-                            <div class="select-option" data-value="TH"><span class="fi fi-th"></span> 泰国</div>
-                            <div class="select-option" data-value="ID"><span class="fi fi-id"></span> 印尼</div>
-                            <div class="select-option" data-value="CA"><span class="fi fi-ca"></span> 加拿大</div>
-                            <div class="select-option" data-value="PL"><span class="fi fi-pl"></span> 波兰</div>
-                            <div class="select-option" data-value="CZ"><span class="fi fi-cz"></span> 捷克</div>
-                            <div class="select-option" data-value="AT"><span class="fi fi-at"></span> 奥地利</div>
-                            <div class="select-option" data-value="BE"><span class="fi fi-be"></span> 比利时</div>
-                            <div class="select-option" data-value="SE"><span class="fi fi-se"></span> 瑞典</div>
-                            <div class="select-option" data-value="NO"><span class="fi fi-no"></span> 挪威</div>
-                            <div class="select-option" data-value="DK"><span class="fi fi-dk"></span> 丹麦</div>
-                            <div class="select-option" data-value="FI"><span class="fi fi-fi"></span> 芬兰</div>
-                            <div class="select-option" data-value="PH"><span class="fi fi-ph"></span> 菲律宾</div>
-                            <div class="select-option" data-value="IL"><span class="fi fi-il"></span> 以色列</div>
-                            <div class="select-option" data-value="ZA"><span class="fi fi-za"></span> 南非</div>
-                            <div class="select-option" data-value="EG"><span class="fi fi-eg"></span> 埃及</div>
-                            <div class="select-option" data-value="CO"><span class="fi fi-co"></span> 哥伦比亚</div>
-                            <div class="select-option" data-value="PE"><span class="fi fi-pe"></span> 秘鲁</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="action-bar">
-                    <div class="action-buttons">
-                        <button class="btn" onclick="addProxy()">添加节点</button>
-                        <button class="btn" onclick="sortProxies()" id="sortProxiesBtn">排序节点</button>
-                        <button class="btn danger" onclick="clearProxies()">清空所有节点</button>
-                    </div>
-                    <div class="action-message">
-                        <div id="proxyMessage" class="message"></div>
-                    </div>
-                </div>
-
-                <div class="list" id="proxyList">
-                    <div class="empty-state">
-                        <div>📡</div>
-                        <p>暂无节点，请添加节点链接</p>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- 订阅整合部分 -->
-            <div id="submerge" class="section">
-                <!-- 订阅整合复制链接 -->
-                <div class="copy-link-single">
-                    <div class="link-item">
-                        <strong>订阅整合链接</strong>
-                        <div class="link-url" id="submergeLinkTop"></div>
-                        <button class="btn success" onclick="copyLink('submergeLinkTop')">复制链接</button>
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label for="subUrl">添加订阅链接（支持批量添加，每行一个链接）</label>
-                    <textarea id="subUrl" placeholder="输入Clash订阅链接，支持批量添加，每行一个链接"></textarea>
-                </div>
-
-                <div class="action-bar">
-                    <div class="action-buttons">
-                        <button class="btn" onclick="addSubscription()">添加订阅</button>
-                        <button class="btn" onclick="activeDetection()" id="activeDetectionBtn">活跃检测</button>
-                        <button class="btn danger" onclick="clearSubscriptions()">清空所有订阅</button>
-                    </div>
-                    <div class="action-message">
-                        <div id="subMessage" class="message"></div>
-                        <!-- 进度条容器 -->
-                        <div id="progressContainer" class="progress-container" style="display: none;">
-                            <div class="progress-info">
-                                <span id="progressText">正在检测...</span>
-                                <span id="progressPercent">0%</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div id="progressFill" class="progress-fill"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="list" id="subList">
-                    <div class="empty-state">
-                        <div>🔗</div>
-                        <p>暂无订阅，请添加订阅链接</p>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let proxies = [];
-        let subscriptions = [];
-        let subscriptionNames = [];
-        let newlyAddedProxies = new Set(); // 跟踪新添加的节点
-        let newlyAddedSubscriptions = new Set(); // 跟踪新添加的订阅
-
-        // 页面加载时初始化
-        window.addEventListener('load', function() {
-            // 设置订阅链接
-            const origin = window.location.origin;
-            const proxiesUrl = origin + '/clash/proxies';
-            const submergeUrl = origin + '/clash/submerge';
-
-            // 设置顶部复制链接
-            document.getElementById('proxiesLinkTop').textContent = proxiesUrl;
-            document.getElementById('submergeLinkTop').textContent = submergeUrl;
-
-            loadProxies();
-            loadSubscriptions();
-            // 启动订阅名称定时更新（每小时）
-            startSubscriptionNameUpdater();
-        });
-
-        // 切换标签页
-        function switchTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-
-            event.target.classList.add('active');
-            document.getElementById(tab).classList.add('active');
-        }
-
-        // 显示消息
-        function showMessage(elementId, message, type = 'success') {
-            const messageEl = document.getElementById(elementId);
-            messageEl.textContent = message;
-            messageEl.className = 'message ' + type;
-            messageEl.style.display = 'block';
-
-            // 根据消息类型和内容设置不同的显示时间
-            let displayTime;
-            if (type === 'error') {
-                displayTime = 8000; // 错误信息显示8秒
-            } else if (message.includes('活跃检测完成') && message.includes('移除的订阅')) {
-                displayTime = 15000; // 活跃检测结果包含移除信息时显示15秒
-            } else if (message.includes('活跃检测完成')) {
-                displayTime = 8000; // 活跃检测结果显示8秒
-            } else {
-                displayTime = 3000; // 其他信息显示3秒
-            }
-
-            setTimeout(() => {
-                messageEl.style.display = 'none';
-            }, displayTime);
-        }
-
-        // 自定义下拉菜单相关变量
-        let selectedRegionValue = 'auto';
-
-        // 切换下拉菜单显示/隐藏
-        function toggleRegionDropdown() {
-            const display = document.querySelector('.select-display');
-            const options = document.getElementById('regionOptions');
-
-            display.classList.toggle('active');
-            options.classList.toggle('show');
-        }
-
-        // 选择地区选项
-        function selectRegionOption(value, text) {
-            selectedRegionValue = value;
-            document.getElementById('selectedRegion').innerHTML = text;
-
-            // 更新选中状态
-            document.querySelectorAll('.select-option').forEach(option => {
-                option.classList.remove('selected');
-            });
-            document.querySelector('[data-value="' + value + '"]').classList.add('selected');
-
-            // 关闭下拉菜单
-            document.querySelector('.select-display').classList.remove('active');
-            document.getElementById('regionOptions').classList.remove('show');
-        }
-
-        // 点击选项事件处理
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.select-option').forEach(option => {
-                option.addEventListener('click', function() {
-                    const value = this.getAttribute('data-value');
-                    const text = this.innerHTML;
-                    selectRegionOption(value, text);
-                });
-            });
-
-            // 点击外部关闭下拉菜单
-            document.addEventListener('click', function(event) {
-                const customSelect = document.querySelector('.custom-select');
-                if (!customSelect.contains(event.target)) {
-                    document.querySelector('.select-display').classList.remove('active');
-                    document.getElementById('regionOptions').classList.remove('show');
-                }
-            });
-
-            // 设置默认选中项
-            document.querySelector('[data-value="auto"]').classList.add('selected');
-        });
-
-        // 添加节点
-        async function addProxy() {
-            const proxyUrls = document.getElementById('proxyUrl').value.trim();
-            const region = selectedRegionValue;
-
-            if (!proxyUrls) {
-                showMessage('proxyMessage', '请输入节点链接', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/proxies', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'add', data: { proxyUrls, region } })
-                });
-
-                const result = await response.json();
-
-                if (result.error) {
-                    showMessage('proxyMessage', result.error, 'error');
-                } else {
-                    var message = "成功添加 " + result.successCount + " 个节点";
-                    if (result.duplicateCount > 0) {
-                        message += '，' + result.duplicateCount + ' 个重复节点已跳过';
-                    }
-                    showMessage('proxyMessage', message);
-                    document.getElementById('proxyUrl').value = '';
-
-                    // 标记新添加的节点用于高亮显示
-                    if (result.addedProxies && result.addedProxies.length > 0) {
-                        result.addedProxies.forEach(proxy => {
-                            newlyAddedProxies.add(proxy.name);
-                        });
-                    }
-
-                    loadProxies();
-                }
-            } catch (error) {
-                showMessage('proxyMessage', '添加节点失败', 'error');
-            }
-        }
-
-        // 删除节点
-        async function deleteProxy(index) {
-            try {
-                const response = await fetch('/api/proxies', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'delete', data: { index } })
-                });
-
-                const result = await response.json();
-
-                if (result.error) {
-                    showMessage('proxyMessage', result.error, 'error');
-                } else {
-                    showMessage('proxyMessage', '节点删除成功');
-                    loadProxies();
-                }
-            } catch (error) {
-                showMessage('proxyMessage', '删除节点失败', 'error');
-            }
-        }
-
-        // 清空所有节点
-        async function clearProxies() {
-            try {
-                const response = await fetch('/api/proxies', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'clear' })
-                });
-
-                const result = await response.json();
-
-                if (result.error) {
-                    showMessage('proxyMessage', result.error, 'error');
-                } else {
-                    showMessage('proxyMessage', '所有节点已清空');
-                    newlyAddedProxies.clear(); // 清空高亮标记
-                    loadProxies();
-                }
-            } catch (error) {
-                showMessage('proxyMessage', '清空节点失败', 'error');
-            }
-        }
-
-        // 排序节点
-        async function sortProxies() {
-            const btn = document.getElementById('sortProxiesBtn');
-
-            try {
-                // 禁用按钮
-                btn.disabled = true;
-                btn.textContent = '排序中...';
-
-                const response = await fetch('/api/proxies?sort=true');
-                const result = await response.json();
-
-                if (result.success) {
-                    showMessage('proxyMessage', `${result.message}，共排序 ${result.sorted} 个节点`, 'success');
-                    loadProxies(); // 重新加载节点列表
-                } else {
-                    showMessage('proxyMessage', result.message || '排序失败', 'error');
-                }
-            } catch (error) {
-                showMessage('proxyMessage', '排序节点失败', 'error');
-            } finally {
-                // 恢复按钮
-                btn.disabled = false;
-                btn.textContent = '排序节点';
-            }
-        }
-
-        // 加载节点列表
-        async function loadProxies() {
-            try {
-                const response = await fetch('/api/proxies');
-                proxies = await response.json();
-                renderProxies();
-            } catch (error) {
-                console.error('加载节点失败:', error);
-            }
-        }
-
-        // 渲染节点列表
-        function renderProxies() {
-            const listEl = document.getElementById('proxyList');
-
-            if (proxies.length === 0) {
-                listEl.innerHTML = '<div class="empty-state"><div>📡</div><p>暂无节点，请添加节点链接</p></div>';
-                return;
-            }
-
-            let html = '';
-            let firstNewlyAddedIndex = -1;
-
-            for (let i = 0; i < proxies.length; i++) {
-                const proxy = proxies[i];
-                const isNewlyAdded = newlyAddedProxies.has(proxy.name);
-                const highlightClass = isNewlyAdded ? ' newly-added' : '';
-
-                // 记录第一个新添加节点的位置
-                if (isNewlyAdded && firstNewlyAddedIndex === -1) {
-                    firstNewlyAddedIndex = i;
-                }
-
-                html += '<div class="list-item' + highlightClass + '" data-index="' + i + '">';
-                html += '<div class="item-info">';
-                html += '<div class="item-name">' + proxy.name + '</div>';
-                html += '<div class="item-details">' + proxy.server + ':' + proxy.port + ' (' + proxy.type.toUpperCase() + ')</div>';
-                html += '</div>';
-                html += '<button class="btn danger" onclick="deleteProxy(' + i + ')">删除</button>';
-                html += '</div>';
-            }
-            listEl.innerHTML = html;
-
-            // 滚动到第一个新添加的节点
-            if (firstNewlyAddedIndex !== -1) {
-                setTimeout(() => {
-                    const firstNewItem = listEl.querySelector('[data-index="' + firstNewlyAddedIndex + '"]');
-                    if (firstNewItem) {
-                        firstNewItem.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'center'
-                        });
-                    }
-                }, 100);
-            }
-
-            // 8秒后移除高亮效果
-            setTimeout(() => {
-                newlyAddedProxies.clear();
-                document.querySelectorAll('.list-item.newly-added').forEach(item => {
-                    item.classList.remove('newly-added');
-                });
-            }, 8000);
-        }
-
-        // 添加订阅
-        async function addSubscription() {
-            const subUrl = document.getElementById('subUrl').value.trim();
-            if (!subUrl) {
-                showMessage('subMessage', '请输入订阅链接', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/submerge', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'add', data: subUrl })
-                });
-
-                const result = await response.json();
-
-                if (result.error) {
-                    showMessage('subMessage', result.error, 'error');
-                } else {
-                    var message = '成功添加 ' + result.successCount + ' 个订阅';
-                    if (result.duplicateCount > 0) {
-                        message += '，' + result.duplicateCount + ' 个重复订阅已跳过';
-                    }
-                    if (result.failedCount > 0) {
-                        message += '，' + result.failedCount + ' 个订阅添加失败';
-
-                        // 显示失败订阅的详细信息
-                        if (result.failedSubscriptions && result.failedSubscriptions.length > 0) {
-                            let failedDetails = '\n\n失败的订阅链接：\n';
-                            result.failedSubscriptions.forEach((failed, index) => {
-                                failedDetails += `${index + 1}. ${failed.url}\n   错误：${failed.error}\n`;
-                            });
-                            message += failedDetails;
-                        }
-                    }
-
-                    const messageType = result.failedCount > 0 ? 'info' : 'success';
-                    showMessage('subMessage', message, messageType);
-                    document.getElementById('subUrl').value = '';
-
-                    // 标记新添加的订阅用于高亮显示
-                    if (result.addedSubscriptions && result.addedSubscriptions.length > 0) {
-                        result.addedSubscriptions.forEach(sub => {
-                            newlyAddedSubscriptions.add(sub.name);
-                        });
-                    }
-
-                    loadSubscriptions();
-                }
-            } catch (error) {
-                showMessage('subMessage', '添加订阅失败', 'error');
-            }
-        }
-
-        // 删除订阅
-        async function deleteSubscription(index) {
-            try {
-                const response = await fetch('/api/submerge', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'delete', data: { index } })
-                });
-
-                const result = await response.json();
-
-                if (result.error) {
-                    showMessage('subMessage', result.error, 'error');
-                } else {
-                    showMessage('subMessage', '订阅删除成功');
-                    loadSubscriptions();
-                }
-            } catch (error) {
-                showMessage('subMessage', '删除订阅失败', 'error');
-            }
-        }
-
-        // 清空所有订阅
-        async function clearSubscriptions() {
-            try {
-                const response = await fetch('/api/submerge', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'clear' })
-                });
-
-                const result = await response.json();
-
-                if (result.error) {
-                    showMessage('subMessage', result.error, 'error');
-                } else {
-                    showMessage('subMessage', '所有订阅已清空');
-                    newlyAddedSubscriptions.clear(); // 清空高亮标记
-                    loadSubscriptions();
-                }
-            } catch (error) {
-                showMessage('subMessage', '清空订阅失败', 'error');
-            }
-        }
-
-        // 加载订阅列表
-        async function loadSubscriptions() {
-            try {
-                const response = await fetch('/api/submerge');
-                const data = await response.json();
-                subscriptions = data;
-
-                // 获取订阅名称
-                const namesResponse = await fetch('/api/submerge?names=true');
-                if (namesResponse.ok) {
-                    subscriptionNames = await namesResponse.json();
-                } else {
-                    subscriptionNames = subscriptions.map((_, index) => '订阅' + (index + 1));
-                }
-
-                renderSubscriptions();
-            } catch (error) {
-                console.error('加载订阅失败:', error);
-            }
-        }
-
-        // 渲染订阅列表
-        function renderSubscriptions() {
-            const listEl = document.getElementById('subList');
-
-            if (subscriptions.length === 0) {
-                listEl.innerHTML = '<div class="empty-state"><div>🔗</div><p>暂无订阅，请添加订阅链接</p></div>';
-                return;
-            }
-
-            let html = '';
-            let firstNewlyAddedIndex = -1;
-
-            for (let i = 0; i < subscriptions.length; i++) {
-                const sub = subscriptions[i];
-                const name = subscriptionNames[i] || ('订阅' + (i + 1));
-                const isNewlyAdded = newlyAddedSubscriptions.has(name);
-                const highlightClass = isNewlyAdded ? ' newly-added' : '';
-
-                // 记录第一个新添加订阅的位置
-                if (isNewlyAdded && firstNewlyAddedIndex === -1) {
-                    firstNewlyAddedIndex = i;
-                }
-
-                html += '<div class="list-item' + highlightClass + '" data-index="' + i + '">';
-                html += '<div class="item-info">';
-                html += '<div class="item-name">' + name + '</div>';
-                html += '<div class="item-details">' + sub + '</div>';
-                html += '</div>';
-                html += '<button class="btn danger" onclick="deleteSubscription(' + i + ')">删除</button>';
-                html += '</div>';
-            }
-            listEl.innerHTML = html;
-
-            // 滚动到第一个新添加的订阅
-            if (firstNewlyAddedIndex !== -1) {
-                setTimeout(() => {
-                    const firstNewItem = listEl.querySelector('[data-index="' + firstNewlyAddedIndex + '"]');
-                    if (firstNewItem) {
-                        firstNewItem.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'center'
-                        });
-                    }
-                }, 100);
-            }
-
-            // 8秒后移除高亮效果
-            setTimeout(() => {
-                newlyAddedSubscriptions.clear();
-                document.querySelectorAll('.list-item.newly-added').forEach(item => {
-                    item.classList.remove('newly-added');
-                });
-            }, 8000);
-        }
-
-        // 复制链接
-        function copyLink(elementId) {
-            const linkElement = document.getElementById(elementId);
-            const text = linkElement.textContent;
-
-            navigator.clipboard.writeText(text).then(() => {
-                // 简单的视觉反馈
-                const originalText = linkElement.textContent;
-                linkElement.textContent = '已复制!';
-                linkElement.style.color = '#27ae60';
-
-                setTimeout(() => {
-                    linkElement.textContent = originalText;
-                    linkElement.style.color = '';
-                }, 1000);
-            }).catch(() => {
-                // 降级方案
-                const textArea = document.createElement('textarea');
-                textArea.value = text;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-
-                const originalText = linkElement.textContent;
-                linkElement.textContent = '已复制!';
-                linkElement.style.color = '#27ae60';
-
-                setTimeout(() => {
-                    linkElement.textContent = originalText;
-                    linkElement.style.color = '';
-                }, 1000);
-            });
-        }
-
-        // 启动订阅名称定时更新器
-        function startSubscriptionNameUpdater() {
-            // 每小时更新一次订阅名称 (3600000毫秒 = 1小时)
-            setInterval(async () => {
-                try {
-                    const response = await fetch('/api/submerge?update=true');
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (result.success) {
-                            console.log('订阅名称自动更新成功:', result.updated + ' 个订阅已更新');
-                            // 如果当前页面显示的是订阅整合，刷新列表
-                            if (document.getElementById('submerge').classList.contains('active')) {
-                                loadSubscriptions();
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.warn('订阅名称自动更新失败:', error.message);
-                }
-            }, 3600000); // 1小时 = 3600000毫秒
-        }
-
-        // 显示进度条
-        function showProgress(current, total, text) {
-            const progressContainer = document.getElementById('progressContainer');
-            const progressText = document.getElementById('progressText');
-            const progressPercent = document.getElementById('progressPercent');
-            const progressFill = document.getElementById('progressFill');
-
-            // 确保所有元素都存在
-            if (!progressContainer || !progressText || !progressPercent || !progressFill) {
-                console.error('进度条元素未找到');
-                return;
-            }
-
-            progressContainer.style.display = 'block';
-            const percentage = Math.round((current / total) * 100);
-            progressText.textContent = text || '正在处理...';
-            progressPercent.textContent = `${percentage}%`;
-            progressFill.style.width = `${percentage}%`;
-
-            // 添加调试日志
-            console.log(`进度更新: ${current}/${total} (${percentage}%) - ${text}`);
-        }
-
-        // 隐藏进度条
-        function hideProgress() {
-            const progressContainer = document.getElementById('progressContainer');
-            progressContainer.style.display = 'none';
-        }
-
-        // 活跃检测
-        async function activeDetection() {
-            const btn = document.getElementById('activeDetectionBtn');
-
-            try {
-                // 禁用按钮
-                btn.disabled = true;
-                btn.textContent = '检测中...';
-
-                // 隐藏之前的消息
-                document.getElementById('subMessage').style.display = 'none';
-
-                // 获取当前订阅列表
-                const response = await fetch('/api/submerge');
-                const currentSubscriptions = await response.json();
-
-                if (currentSubscriptions.length === 0) {
-                    showMessage('subMessage', '没有订阅需要检测', 'info');
-                    return;
-                }
-
-                // 显示进度条
-                showProgress(0, currentSubscriptions.length, '准备开始检测...');
-
-                // 逐个检测订阅
-                const results = [];
-                for (let i = 0; i < currentSubscriptions.length; i++) {
-                    const subUrl = currentSubscriptions[i];
-                    showProgress(i, currentSubscriptions.length, `正在检测订阅 ${i + 1}/${currentSubscriptions.length}...`);
-
-                    try {
-                        const checkResponse = await fetch('/api/submerge/check', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ url: subUrl })
-                        });
-
-                        const checkResult = await checkResponse.json();
-                        results.push({
-                            url: subUrl,
-                            valid: checkResult.valid,
-                            name: checkResult.name,
-                            reason: checkResult.reason,
-                            download: checkResult.download,
-                            total: checkResult.total,
-                            expire: checkResult.expire
-                        });
-                    } catch (error) {
-                        results.push({
-                            url: subUrl,
-                            valid: false,
-                            name: '',
-                            reason: '检测失败: ' + error.message,
-                            download: 0,
-                            total: 0,
-                            expire: null
-                        });
-                    }
-                }
-
-                // 完成检测
-                showProgress(currentSubscriptions.length, currentSubscriptions.length, '检测完成，正在处理结果...');
-
-                // 发送批量处理请求
-                console.log('发送批量处理请求，结果数量:', results.length);
-                console.log('发送的数据结构:', JSON.stringify(results, null, 2));
-                const batchResponse = await fetch('/api/submerge?active_detection_batch=true', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ results: results })
-                });
-                console.log('批量处理响应状态:', batchResponse.status);
-
-                if (batchResponse.ok) {
-                    const result = await batchResponse.json();
-                    if (result.success) {
-                        let message = '活跃检测完成';
-                        if (result.updated > 0) {
-                            message += `，更新了 ${result.updated} 个订阅名称`;
-                        }
-                        if (result.removed > 0) {
-                            message += `，移除了 ${result.removed} 个无效订阅`;
-                        }
-                        if (result.removedSubscriptions && result.removedSubscriptions.length > 0) {
-                            message += '\n\n移除的订阅：\n';
-                            result.removedSubscriptions.forEach((sub, index) => {
-                                message += `${index + 1}. 名称：${sub.name || '未知'}\n`;
-                                message += `   链接：${sub.url}\n`;
-                                message += `   原因：${sub.reason}\n\n`;
-                            });
-                        }
-                        const messageType = result.removed > 0 ? 'info' : 'success';
-                        showMessage('subMessage', message, messageType);
-                        loadSubscriptions();
-                    } else {
-                        showMessage('subMessage', result.message || '活跃检测处理失败', 'error');
-                    }
-                } else {
-                    // 获取详细的错误信息
-                    let errorMessage = '活跃检测处理失败';
-                    try {
-                        const errorResult = await batchResponse.json();
-                        if (errorResult.message) {
-                            errorMessage += ': ' + errorResult.message;
-                        }
-                    } catch (e) {
-                        errorMessage += ` (HTTP ${batchResponse.status})`;
-                    }
-                    showMessage('subMessage', errorMessage, 'error');
-                }
-
-            } catch (error) {
-                showMessage('subMessage', '活跃检测失败: ' + error.message, 'error');
-            } finally {
-                // 恢复按钮状态
-                btn.disabled = false;
-                btn.textContent = '活跃检测';
-                hideProgress();
-            }
-        }
-    </script>
+	<div class="container">
+		<div class="header">
+			<h1>🚀 Clash订阅生成器</h1>
+			<p>轻松管理你的代理节点和订阅链接</p>
+		</div>
+
+		<div class="tabs">
+			<button class="tab active" onclick="switchTab('proxies')">节点整合</button>
+			<button class="tab" onclick="switchTab('proxy-collections')">节点集合</button>
+			<button class="tab" onclick="switchTab('submerge')">订阅整合</button>
+			<button class="tab" onclick="switchTab('sub-collections')">订阅集合</button>
+		</div>
+
+		<div class="content">
+			<!-- 节点整合部分 -->
+			<div id="proxies" class="section active">
+				<!-- 节点整合复制链接 -->
+				<div class="copy-link-single">
+					<div class="link-item">
+						<strong>节点整合订阅</strong>
+						<div class="link-url" id="proxiesLinkTop"></div>
+						<button class="btn success" onclick="copyLink('proxiesLinkTop')">复制链接</button>
+					</div>
+				</div>
+
+				<div class="input-group">
+					<label for="proxyUrl">添加节点（支持链接和JSON格式，支持批量添加）</label>
+					<textarea id="proxyUrl"
+						placeholder="支持以下格式：&#10;1. 节点链接：vmess://, vless://, ss://, hysteria2://, hy2://, trojan:// 等，每行一个&#10;2. JSON格式：单行JSON对象，每行一个，无需外层[]&#10;3. 混合格式：链接和JSON可以混合输入，每行一个"></textarea>
+				</div>
+
+				<div class="input-group">
+					<label for="regionSelect">地区选择</label>
+					<div class="custom-select" id="regionSelect">
+						<div class="select-display" onclick="toggleRegionDropdown()">
+							<span id="selectedRegion">🌍 自动识别地区</span>
+							<span class="select-arrow">▼</span>
+						</div>
+						<div class="select-options" id="regionOptions">
+							<div class="select-option" data-value="auto">🌍 自动识别地区</div>
+							<div class="select-option" data-value="US"><span class="fi fi-us"></span> 美国</div>
+							<div class="select-option" data-value="HK"><span class="fi fi-hk"></span> 香港</div>
+							<div class="select-option" data-value="JP"><span class="fi fi-jp"></span> 日本</div>
+							<div class="select-option" data-value="KR"><span class="fi fi-kr"></span> 韩国</div>
+							<div class="select-option" data-value="TW"><span class="fi fi-tw"></span> 台湾</div>
+							<div class="select-option" data-value="SG"><span class="fi fi-sg"></span> 新加坡</div>
+							<div class="select-option" data-value="UK"><span class="fi fi-gb"></span> 英国</div>
+							<div class="select-option" data-value="FR"><span class="fi fi-fr"></span> 法国</div>
+							<div class="select-option" data-value="DE"><span class="fi fi-de"></span> 德国</div>
+							<div class="select-option" data-value="AU"><span class="fi fi-au"></span> 澳大利亚</div>
+							<div class="select-option" data-value="MY"><span class="fi fi-my"></span> 马来西亚</div>
+							<div class="select-option" data-value="IT"><span class="fi fi-it"></span> 意大利</div>
+							<div class="select-option" data-value="ES"><span class="fi fi-es"></span> 西班牙</div>
+							<div class="select-option" data-value="NL"><span class="fi fi-nl"></span> 荷兰</div>
+							<div class="select-option" data-value="RU"><span class="fi fi-ru"></span> 俄罗斯</div>
+							<div class="select-option" data-value="CH"><span class="fi fi-ch"></span> 瑞士</div>
+							<div class="select-option" data-value="UA"><span class="fi fi-ua"></span> 乌克兰</div>
+							<div class="select-option" data-value="CL"><span class="fi fi-cl"></span> 智利</div>
+							<div class="select-option" data-value="BR"><span class="fi fi-br"></span> 巴西</div>
+							<div class="select-option" data-value="MX"><span class="fi fi-mx"></span> 墨西哥</div>
+							<div class="select-option" data-value="AR"><span class="fi fi-ar"></span> 阿根廷</div>
+							<div class="select-option" data-value="TR"><span class="fi fi-tr"></span> 土耳其</div>
+							<div class="select-option" data-value="AE"><span class="fi fi-ae"></span> 阿联酋</div>
+							<div class="select-option" data-value="IN"><span class="fi fi-in"></span> 印度</div>
+							<div class="select-option" data-value="VN"><span class="fi fi-vn"></span> 越南</div>
+							<div class="select-option" data-value="TH"><span class="fi fi-th"></span> 泰国</div>
+							<div class="select-option" data-value="ID"><span class="fi fi-id"></span> 印尼</div>
+							<div class="select-option" data-value="CA"><span class="fi fi-ca"></span> 加拿大</div>
+							<div class="select-option" data-value="PL"><span class="fi fi-pl"></span> 波兰</div>
+							<div class="select-option" data-value="CZ"><span class="fi fi-cz"></span> 捷克</div>
+							<div class="select-option" data-value="AT"><span class="fi fi-at"></span> 奥地利</div>
+							<div class="select-option" data-value="BE"><span class="fi fi-be"></span> 比利时</div>
+							<div class="select-option" data-value="SE"><span class="fi fi-se"></span> 瑞典</div>
+							<div class="select-option" data-value="NO"><span class="fi fi-no"></span> 挪威</div>
+							<div class="select-option" data-value="DK"><span class="fi fi-dk"></span> 丹麦</div>
+							<div class="select-option" data-value="FI"><span class="fi fi-fi"></span> 芬兰</div>
+							<div class="select-option" data-value="PH"><span class="fi fi-ph"></span> 菲律宾</div>
+							<div class="select-option" data-value="IL"><span class="fi fi-il"></span> 以色列</div>
+							<div class="select-option" data-value="ZA"><span class="fi fi-za"></span> 南非</div>
+							<div class="select-option" data-value="EG"><span class="fi fi-eg"></span> 埃及</div>
+							<div class="select-option" data-value="CO"><span class="fi fi-co"></span> 哥伦比亚</div>
+							<div class="select-option" data-value="PE"><span class="fi fi-pe"></span> 秘鲁</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="action-bar">
+					<div class="action-buttons">
+						<button class="btn" onclick="addProxy()">添加节点</button>
+						<button class="btn" onclick="sortProxies()" id="sortProxiesBtn">排序节点</button>
+						<button class="btn" onclick="selectAllProxies()" id="selectAllProxiesBtn">全选</button>
+						<button class="btn" onclick="copySelectedProxies()" id="copySelectedProxiesBtn"
+							disabled>复制选中</button>
+						<button class="btn danger" onclick="deleteSelectedProxies()" id="deleteSelectedProxiesBtn"
+							disabled>删除选中</button>
+					</div>
+					<div class="action-message">
+						<div id="proxySelectionInfo" class="selection-info" style="display: none;"></div>
+						<div id="proxyMessage" class="message"></div>
+					</div>
+				</div>
+
+				<div class="list" id="proxyList">
+					<div class="empty-state">
+						<div>📡</div>
+						<p>暂无节点，请添加节点链接</p>
+					</div>
+				</div>
+
+			</div>
+
+			<!-- 节点集合管理部分 -->
+			<div id="proxy-collections" class="section">
+				<h2>节点集合管理</h2>
+				<p>创建和管理多个独立的节点整合订阅链接</p>
+
+				<div class="action-bar">
+					<div class="action-buttons">
+						<button class="btn" onclick="createProxyCollection()">创建新集合</button>
+					</div>
+					<div class="action-message">
+						<div id="collectionMessage" class="message"></div>
+					</div>
+				</div>
+
+				<div class="list" id="collectionList">
+					<div class="empty-state">
+						<div>📁</div>
+						<p>暂无节点集合，请创建新集合</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- 订阅整合部分 -->
+			<div id="submerge" class="section">
+				<!-- 订阅整合复制链接 -->
+				<div class="copy-link-single">
+					<div class="link-item">
+						<strong>订阅整合链接</strong>
+						<div class="link-url" id="submergeLinkTop"></div>
+						<button class="btn success" onclick="copyLink('submergeLinkTop')">复制链接</button>
+					</div>
+				</div>
+
+				<div class="input-group">
+					<label for="subUrl">添加订阅链接（支持批量添加，每行一个链接）</label>
+					<textarea id="subUrl" placeholder="输入Clash订阅链接，支持批量添加，每行一个链接"></textarea>
+				</div>
+
+				<div class="action-bar">
+					<div class="action-buttons">
+						<button class="btn" onclick="addSubscription()">添加订阅</button>
+						<button class="btn" onclick="activeDetection()" id="activeDetectionBtn">活跃检测</button>
+						<button class="btn" onclick="selectAllSubscriptions()"
+							id="selectAllSubscriptionsBtn">全选</button>
+						<button class="btn" onclick="copySelectedSubscriptions()" id="copySelectedSubscriptionsBtn"
+							disabled>复制选中</button>
+						<button class="btn danger" onclick="deleteSelectedSubscriptions()"
+							id="deleteSelectedSubscriptionsBtn" disabled>删除选中</button>
+					</div>
+					<div class="action-message">
+						<div id="subscriptionSelectionInfo" class="selection-info" style="display: none;"></div>
+						<div id="subMessage" class="message"></div>
+						<!-- 进度条容器 -->
+						<div id="progressContainer" class="progress-container" style="display: none;">
+							<div class="progress-info">
+								<span id="progressText">正在检测...</span>
+								<span id="progressPercent">0%</span>
+							</div>
+							<div class="progress-bar">
+								<div id="progressFill" class="progress-fill"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="list" id="subList">
+					<div class="empty-state">
+						<div>🔗</div>
+						<p>暂无订阅，请添加订阅链接</p>
+					</div>
+				</div>
+
+			</div>
+
+			<!-- 订阅集合管理部分 -->
+			<div id="sub-collections" class="section">
+				<h2>订阅集合管理</h2>
+				<p>创建和管理多个独立的订阅整合链接</p>
+
+				<div class="action-bar">
+					<div class="action-buttons">
+						<button class="btn" onclick="createSubCollection()">创建新集合</button>
+					</div>
+					<div class="action-message">
+						<div id="subCollectionMessage" class="message"></div>
+					</div>
+				</div>
+
+				<div class="list" id="subCollectionList">
+					<div class="empty-state">
+						<div>📂</div>
+						<p>暂无订阅集合，请创建新集合</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- 节点集合管理弹窗 -->
+	<div id="proxyCollectionModal" class="modal">
+		<div class="modal-content">
+			<div class="modal-header">
+				<span class="close" onclick="closeProxyCollectionModal()">&times;</span>
+				<h3 id="proxyCollectionModalTitle">管理节点集合</h3>
+			</div>
+			<div class="modal-body">
+				<!-- 复制链接 -->
+				<div class="copy-link-single">
+					<div class="link-item">
+						<strong>集合订阅链接</strong>
+						<div class="link-url" id="currentCollectionLink"></div>
+						<button class="btn success" onclick="copyCurrentCollectionLink()">复制链接</button>
+					</div>
+				</div>
+
+				<!-- 添加节点 -->
+				<div class="input-group">
+					<label for="collectionProxyUrl">添加节点（支持链接和JSON格式，支持批量添加）</label>
+					<textarea id="collectionProxyUrl"
+						placeholder="支持以下格式：&#10;1. 节点链接：vmess://, vless://, ss://, hysteria2://, hy2://, trojan:// 等，每行一个&#10;2. JSON格式：单行JSON对象，每行一个，无需外层[]&#10;3. 混合格式：链接和JSON可以混合输入，每行一个"></textarea>
+				</div>
+
+				<div class="input-group">
+					<label for="collectionRegionSelect">地区选择</label>
+					<div class="custom-select" id="collectionRegionSelect">
+						<div class="select-display" onclick="toggleCollectionRegionDropdown()">
+							<span id="selectedCollectionRegion">🌍 自动识别地区</span>
+							<span class="select-arrow">▼</span>
+						</div>
+						<div class="select-options" id="collectionRegionOptions">
+							<div class="select-option" data-value="auto">🌍 自动识别地区</div>
+							<div class="select-option" data-value="US"><span class="fi fi-us"></span> 美国</div>
+							<div class="select-option" data-value="HK"><span class="fi fi-hk"></span> 香港</div>
+							<div class="select-option" data-value="JP"><span class="fi fi-jp"></span> 日本</div>
+							<div class="select-option" data-value="KR"><span class="fi fi-kr"></span> 韩国</div>
+							<div class="select-option" data-value="SG"><span class="fi fi-sg"></span> 新加坡</div>
+							<div class="select-option" data-value="TW"><span class="fi fi-tw"></span> 台湾</div>
+							<div class="select-option" data-value="GB"><span class="fi fi-gb"></span> 英国</div>
+							<div class="select-option" data-value="DE"><span class="fi fi-de"></span> 德国</div>
+							<div class="select-option" data-value="FR"><span class="fi fi-fr"></span> 法国</div>
+							<div class="select-option" data-value="CA"><span class="fi fi-ca"></span> 加拿大</div>
+							<div class="select-option" data-value="AU"><span class="fi fi-au"></span> 澳大利亚</div>
+							<div class="select-option" data-value="RU"><span class="fi fi-ru"></span> 俄罗斯</div>
+							<div class="select-option" data-value="IN"><span class="fi fi-in"></span> 印度</div>
+							<div class="select-option" data-value="BR"><span class="fi fi-br"></span> 巴西</div>
+							<div class="select-option" data-value="TR"><span class="fi fi-tr"></span> 土耳其</div>
+							<div class="select-option" data-value="TH"><span class="fi fi-th"></span> 泰国</div>
+							<div class="select-option" data-value="MY"><span class="fi fi-my"></span> 马来西亚</div>
+							<div class="select-option" data-value="ID"><span class="fi fi-id"></span> 印度尼西亚</div>
+							<div class="select-option" data-value="PH"><span class="fi fi-ph"></span> 菲律宾</div>
+							<div class="select-option" data-value="VN"><span class="fi fi-vn"></span> 越南</div>
+							<div class="select-option" data-value="AR"><span class="fi fi-ar"></span> 阿根廷</div>
+							<div class="select-option" data-value="CL"><span class="fi fi-cl"></span> 智利</div>
+							<div class="select-option" data-value="MX"><span class="fi fi-mx"></span> 墨西哥</div>
+							<div class="select-option" data-value="ZA"><span class="fi fi-za"></span> 南非</div>
+							<div class="select-option" data-value="EG"><span class="fi fi-eg"></span> 埃及</div>
+							<div class="select-option" data-value="AE"><span class="fi fi-ae"></span> 阿联酋</div>
+							<div class="select-option" data-value="IL"><span class="fi fi-il"></span> 以色列</div>
+							<div class="select-option" data-value="NL"><span class="fi fi-nl"></span> 荷兰</div>
+							<div class="select-option" data-value="IT"><span class="fi fi-it"></span> 意大利</div>
+							<div class="select-option" data-value="ES"><span class="fi fi-es"></span> 西班牙</div>
+							<div class="select-option" data-value="SE"><span class="fi fi-se"></span> 瑞典</div>
+							<div class="select-option" data-value="NO"><span class="fi fi-no"></span> 挪威</div>
+							<div class="select-option" data-value="FI"><span class="fi fi-fi"></span> 芬兰</div>
+							<div class="select-option" data-value="DK"><span class="fi fi-dk"></span> 丹麦</div>
+							<div class="select-option" data-value="CH"><span class="fi fi-ch"></span> 瑞士</div>
+							<div class="select-option" data-value="AT"><span class="fi fi-at"></span> 奥地利</div>
+							<div class="select-option" data-value="BE"><span class="fi fi-be"></span> 比利时</div>
+							<div class="select-option" data-value="PL"><span class="fi fi-pl"></span> 波兰</div>
+							<div class="select-option" data-value="CZ"><span class="fi fi-cz"></span> 捷克</div>
+							<div class="select-option" data-value="HU"><span class="fi fi-hu"></span> 匈牙利</div>
+							<div class="select-option" data-value="RO"><span class="fi fi-ro"></span> 罗马尼亚</div>
+							<div class="select-option" data-value="BG"><span class="fi fi-bg"></span> 保加利亚</div>
+							<div class="select-option" data-value="HR"><span class="fi fi-hr"></span> 克罗地亚</div>
+							<div class="select-option" data-value="RS"><span class="fi fi-rs"></span> 塞尔维亚</div>
+							<div class="select-option" data-value="UA"><span class="fi fi-ua"></span> 乌克兰</div>
+							<div class="select-option" data-value="GR"><span class="fi fi-gr"></span> 希腊</div>
+							<div class="select-option" data-value="PT"><span class="fi fi-pt"></span> 葡萄牙</div>
+							<div class="select-option" data-value="IE"><span class="fi fi-ie"></span> 爱尔兰</div>
+							<div class="select-option" data-value="LU"><span class="fi fi-lu"></span> 卢森堡</div>
+							<div class="select-option" data-value="IS"><span class="fi fi-is"></span> 冰岛</div>
+							<div class="select-option" data-value="NZ"><span class="fi fi-nz"></span> 新西兰</div>
+							<div class="select-option" data-value="CO"><span class="fi fi-co"></span> 哥伦比亚</div>
+							<div class="select-option" data-value="PE"><span class="fi fi-pe"></span> 秘鲁</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="action-bar">
+					<div class="action-buttons">
+						<button class="btn" onclick="addProxyToCurrentCollection()">添加节点</button>
+						<button class="btn" onclick="selectAllCollectionProxies()"
+							id="selectAllCollectionProxiesBtn">全选</button>
+						<button class="btn" onclick="copySelectedCollectionProxies()"
+							id="copySelectedCollectionProxiesBtn" disabled>复制选中</button>
+						<button class="btn danger" onclick="deleteSelectedCollectionProxies()"
+							id="deleteSelectedCollectionProxiesBtn" disabled>删除选中</button>
+					</div>
+					<div class="action-message">
+						<div id="collectionProxySelectionInfo" class="selection-info" style="display: none;"></div>
+						<div id="collectionProxyMessage" class="message"></div>
+					</div>
+				</div>
+
+				<!-- 节点管理输出框 -->
+				<div class="output-section">
+					<div class="output-header">
+						<label>操作日志</label>
+						<button class="btn small" onclick="clearCollectionOutput()">清空日志</button>
+					</div>
+					<div class="output-box" id="collectionOutputBox">
+						<div class="output-placeholder">暂无操作记录</div>
+					</div>
+				</div>
+
+				<!-- 节点列表 -->
+				<div class="list" id="collectionProxyList">
+					<div class="empty-state">
+						<div>📡</div>
+						<p>暂无节点，请添加节点链接</p>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button class="btn" onclick="closeProxyCollectionModal()">关闭</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- 订阅集合管理弹窗 -->
+	<div id="subCollectionModal" class="modal">
+		<div class="modal-content">
+			<div class="modal-header">
+				<span class="close" onclick="closeSubCollectionModal()">&times;</span>
+				<h3 id="subCollectionModalTitle">管理订阅集合</h3>
+			</div>
+			<div class="modal-body">
+				<!-- 复制链接 -->
+				<div class="copy-link-single">
+					<div class="link-item">
+						<strong>集合订阅链接</strong>
+						<div class="link-url" id="currentSubCollectionLink"></div>
+						<button class="btn success" onclick="copyCurrentSubCollectionLink()">复制链接</button>
+					</div>
+				</div>
+
+				<!-- 添加订阅 -->
+				<div class="input-group">
+					<label for="collectionSubUrl">添加订阅链接（支持批量添加，每行一个链接）</label>
+					<textarea id="collectionSubUrl" placeholder="请输入订阅链接，每行一个链接"></textarea>
+				</div>
+
+				<div class="action-bar">
+					<div class="action-buttons">
+						<button class="btn" onclick="addSubscriptionToCurrentCollection()">添加订阅</button>
+						<button class="btn" onclick="activeDetectionForCurrentCollection()"
+							id="currentCollectionActiveDetectionBtn">活跃检测</button>
+						<button class="btn" onclick="selectAllCollectionSubscriptions()"
+							id="selectAllCollectionSubscriptionsBtn">全选</button>
+						<button class="btn" onclick="copySelectedCollectionSubscriptions()"
+							id="copySelectedCollectionSubscriptionsBtn" disabled>复制选中</button>
+						<button class="btn danger" onclick="deleteSelectedCollectionSubscriptions()"
+							id="deleteSelectedCollectionSubscriptionsBtn" disabled>删除选中</button>
+					</div>
+					<div class="action-message">
+						<div id="collectionSubscriptionSelectionInfo" class="selection-info" style="display: none;">
+						</div>
+						<div id="collectionSubMessage" class="message"></div>
+						<!-- 进度条容器 -->
+						<div id="collectionProgressContainer" class="progress-container" style="display: none;">
+							<div class="progress-info">
+								<span id="collectionProgressText">正在检测...</span>
+								<span id="collectionProgressPercent">0%</span>
+							</div>
+							<div class="progress-bar">
+								<div id="collectionProgressFill" class="progress-fill"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- 订阅列表 -->
+				<div class="list" id="collectionSubList">
+					<div class="empty-state">
+						<div>🔗</div>
+						<p>暂无订阅，请添加订阅链接</p>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button class="btn" onclick="closeSubCollectionModal()">关闭</button>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		let proxies = [];
+		let subscriptions = [];
+		let subscriptionNames = [];
+		let proxyCollections = []; // 节点集合
+		let subCollections = []; // 订阅集合
+		let newlyAddedProxies = new Set(); // 跟踪新添加的节点
+		let newlyAddedSubscriptions = new Set(); // 跟踪新添加的订阅
+
+		// 当前管理的集合
+		let currentManagingCollection = null;
+		let currentManagingSubCollection = null;
+		let selectedCollectionRegionValue = 'auto';
+
+		// 页面加载时初始化
+		window.addEventListener('load', function () {
+			// 设置订阅链接
+			const origin = window.location.origin;
+			const proxiesUrl = origin + '/clash/proxies';
+			const submergeUrl = origin + '/clash/submerge';
+
+			// 设置顶部复制链接
+			document.getElementById('proxiesLinkTop').textContent = proxiesUrl;
+			document.getElementById('submergeLinkTop').textContent = submergeUrl;
+
+			loadProxies();
+			loadSubscriptions();
+			loadProxyCollections();
+			loadSubCollections();
+			// 启动订阅名称定时更新（每小时）
+			startSubscriptionNameUpdater();
+
+			// 添加集合地区选择事件监听器
+			setupCollectionRegionSelector();
+		});
+
+		// 切换标签页
+		function switchTab(tab) {
+			document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+			document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+
+			event.target.classList.add('active');
+			document.getElementById(tab).classList.add('active');
+		}
+
+		// 复制文本到剪贴板
+		function copyToClipboard(text) {
+			if (navigator.clipboard) {
+				navigator.clipboard.writeText(text).then(() => {
+					// 复制成功
+				}).catch(err => {
+					// 降级方案
+					fallbackCopyTextToClipboard(text);
+				});
+			} else {
+				// 降级方案
+				fallbackCopyTextToClipboard(text);
+			}
+		}
+
+		// 降级复制方案
+		function fallbackCopyTextToClipboard(text) {
+			const textArea = document.createElement('textarea');
+			textArea.value = text;
+			textArea.style.position = 'fixed';
+			textArea.style.left = '-999999px';
+			textArea.style.top = '-999999px';
+			document.body.appendChild(textArea);
+			textArea.focus();
+			textArea.select();
+
+			try {
+				document.execCommand('copy');
+			} catch (err) {
+				console.error('复制失败:', err);
+			}
+
+			document.body.removeChild(textArea);
+		}
+
+		// 显示消息
+		function showMessage(elementId, message, type = 'success') {
+			const messageEl = document.getElementById(elementId);
+			messageEl.textContent = message;
+			messageEl.className = 'message ' + type;
+			messageEl.style.display = 'block';
+
+			// 根据消息类型和内容设置不同的显示时间
+			let displayTime;
+			if (type === 'error') {
+				displayTime = 8000; // 错误信息显示8秒
+			} else if (message.includes('活跃检测完成') && message.includes('移除的订阅')) {
+				displayTime = 15000; // 活跃检测结果包含移除信息时显示15秒
+			} else if (message.includes('活跃检测完成')) {
+				displayTime = 8000; // 活跃检测结果显示8秒
+			} else {
+				displayTime = 3000; // 其他信息显示3秒
+			}
+
+			setTimeout(() => {
+				messageEl.style.display = 'none';
+			}, displayTime);
+		}
+
+		// 自定义下拉菜单相关变量
+		let selectedRegionValue = 'auto';
+
+		// 切换下拉菜单显示/隐藏
+		function toggleRegionDropdown() {
+			const display = document.querySelector('.select-display');
+			const options = document.getElementById('regionOptions');
+
+			display.classList.toggle('active');
+			options.classList.toggle('show');
+		}
+
+		// 选择地区选项
+		function selectRegionOption(value, text) {
+			selectedRegionValue = value;
+			document.getElementById('selectedRegion').innerHTML = text;
+
+			// 更新选中状态
+			document.querySelectorAll('.select-option').forEach(option => {
+				option.classList.remove('selected');
+			});
+			document.querySelector('[data-value="' + value + '"]').classList.add('selected');
+
+			// 关闭下拉菜单
+			document.querySelector('.select-display').classList.remove('active');
+			document.getElementById('regionOptions').classList.remove('show');
+		}
+
+		// 点击选项事件处理
+		document.addEventListener('DOMContentLoaded', function () {
+			document.querySelectorAll('.select-option').forEach(option => {
+				option.addEventListener('click', function () {
+					const value = this.getAttribute('data-value');
+					const text = this.innerHTML;
+					selectRegionOption(value, text);
+				});
+			});
+
+			// 点击外部关闭下拉菜单
+			document.addEventListener('click', function (event) {
+				const customSelect = document.querySelector('.custom-select');
+				if (!customSelect.contains(event.target)) {
+					document.querySelector('.select-display').classList.remove('active');
+					document.getElementById('regionOptions').classList.remove('show');
+				}
+			});
+
+			// 设置默认选中项
+			document.querySelector('[data-value="auto"]').classList.add('selected');
+		});
+
+		// 添加节点（支持链接和JSON格式自动识别）
+		async function addProxy() {
+			const inputContent = document.getElementById('proxyUrl').value.trim();
+			const region = selectedRegionValue;
+
+			if (!inputContent) {
+				showMessage('proxyMessage', '请输入节点信息', 'error');
+				return;
+			}
+
+			try {
+				// 尝试解析输入内容，自动识别格式
+				const parsedData = parseProxyInput(inputContent, region);
+
+				const response = await fetch('/api/proxies', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(parsedData)
+				});
+
+				const result = await response.json();
+
+				if (result.error) {
+					showMessage('proxyMessage', result.error, 'error');
+				} else {
+					var message = "成功添加 " + result.successCount + " 个节点";
+					if (result.duplicateCount > 0) {
+						message += '，' + result.duplicateCount + ' 个重复节点已跳过';
+					}
+					showMessage('proxyMessage', message);
+					document.getElementById('proxyUrl').value = '';
+
+					// 标记新添加的节点用于高亮显示
+					if (result.addedProxies && result.addedProxies.length > 0) {
+						result.addedProxies.forEach(proxy => {
+							newlyAddedProxies.add(proxy.name);
+						});
+					}
+
+					loadProxies();
+				}
+			} catch (error) {
+				showMessage('proxyMessage', error.message || '添加节点失败', 'error');
+			}
+		}
+
+		// 解析代理输入内容，自动识别链接和JSON格式
+		function parseProxyInput(inputContent, region) {
+			const lines = inputContent.split('\n').map(line => line.trim()).filter(line => line);
+			const urlLines = [];
+			const jsonObjects = [];
+
+			for (let i = 0; i < lines.length; i++) {
+				const line = lines[i];
+				const lineNumber = i + 1;
+
+				// 检查是否是代理链接
+				if (line.match(/^(vmess|vless|ss|ssr|hysteria|hysteria2|hy2|trojan|tuic):\/\//)) {
+					urlLines.push(line);
+				}
+				// 检查是否是完整的单行JSON对象
+				else if (line.startsWith('{') && line.endsWith('}')) {
+					try {
+						const parsed = JSON.parse(line);
+						jsonObjects.push(parsed);
+					} catch (e) {
+						throw new Error(`第${lineNumber}行JSON格式错误: ${e.message}`);
+					}
+				}
+				else {
+					throw new Error(`第${lineNumber}行格式无法识别: ${line.substring(0, 50)}${line.length > 50 ? '...' : ''}`);
+				}
+			}
+
+			// 验证JSON对象格式
+			if (jsonObjects.length > 0) {
+				for (let i = 0; i < jsonObjects.length; i++) {
+					const obj = jsonObjects[i];
+					if (!obj.name || !obj.server || !obj.port || !obj.type) {
+						throw new Error(`第${i + 1}个JSON节点数据格式不完整，必须包含 name、server、port、type 字段`);
+					}
+				}
+			}
+
+			// 如果同时有JSON和链接，使用混合处理
+			if (jsonObjects.length > 0 && urlLines.length > 0) {
+				return {
+					action: 'addMixed',
+					data: {
+						jsonProxies: jsonObjects,
+						proxyUrls: urlLines.join('\n'),
+						region
+					}
+				};
+			}
+			// 如果只有JSON对象
+			else if (jsonObjects.length > 0) {
+				return { action: 'addJSON', proxies: jsonObjects };
+			}
+			// 如果只有链接格式
+			else if (urlLines.length > 0) {
+				return { action: 'add', data: { proxyUrls: urlLines.join('\n'), region } };
+			}
+
+			throw new Error('未找到有效的节点信息');
+		}
+
+
+
+		// 排序节点
+		async function sortProxies() {
+			const btn = document.getElementById('sortProxiesBtn');
+
+			try {
+				// 禁用按钮
+				btn.disabled = true;
+				btn.textContent = '排序中...';
+
+				const response = await fetch('/api/proxies?sort=true');
+				const result = await response.json();
+
+				if (result.success) {
+					showMessage('proxyMessage', `${result.message}，共排序 ${result.sorted} 个节点`, 'success');
+					loadProxies(); // 重新加载节点列表
+				} else {
+					showMessage('proxyMessage', result.message || '排序失败', 'error');
+				}
+			} catch (error) {
+				showMessage('proxyMessage', '排序节点失败', 'error');
+			} finally {
+				// 恢复按钮
+				btn.disabled = false;
+				btn.textContent = '排序节点';
+			}
+		}
+
+		// 加载节点集合列表
+		async function loadProxyCollections() {
+			try {
+				const response = await fetch('/api/proxy-collections');
+				proxyCollections = await response.json();
+				renderProxyCollections();
+			} catch (error) {
+				console.error('加载节点集合失败:', error);
+			}
+		}
+
+		// 渲染节点集合列表
+		function renderProxyCollections() {
+			const listEl = document.getElementById('collectionList');
+
+			if (proxyCollections.length === 0) {
+				listEl.innerHTML = '<div class="empty-state"><div>📁</div><p>暂无节点集合，请创建新集合</p></div>';
+				return;
+			}
+
+			let html = '';
+			for (let i = 0; i < proxyCollections.length; i++) {
+				const collection = proxyCollections[i];
+				const proxyCount = collection.proxies.length;
+				const origin = window.location.origin;
+				const collectionUrl = `${origin}/clash/proxies/${collection.id}`;
+
+				html += '<div class="list-item" data-index="' + i + '">';
+				html += '<div class="item-info">';
+				html += '<div class="item-name">' + collection.name + '</div>';
+				html += '<div class="item-details">节点数量: ' + proxyCount + ' | 订阅链接: ' + collectionUrl + '</div>';
+				html += '</div>';
+				html += '<div class="item-actions">';
+				html += '<button class="btn" onclick="copyCollectionLink(\'' + collection.id + '\')">复制链接</button>';
+				html += '<button class="btn" onclick="manageCollection(\'' + collection.id + '\')">管理节点</button>';
+				html += '<button class="btn" onclick="renameCollection(\'' + collection.id + '\')">重命名</button>';
+				html += '<button class="btn danger" onclick="deleteCollection(\'' + collection.id + '\')">删除</button>';
+				html += '</div>';
+				html += '</div>';
+			}
+			listEl.innerHTML = html;
+		}
+
+		// 创建新的节点集合
+		async function createProxyCollection() {
+			const name = prompt('请输入集合名称（留空使用默认名称）:');
+			if (name === null) return; // 用户取消
+
+			try {
+				const response = await fetch('/api/proxy-collections', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ action: 'create', data: { name } })
+				});
+
+				const result = await response.json();
+
+				if (result.error) {
+					showMessage('collectionMessage', result.error, 'error');
+				} else {
+					showMessage('collectionMessage', '节点集合创建成功');
+					loadProxyCollections();
+				}
+			} catch (error) {
+				showMessage('collectionMessage', '创建节点集合失败', 'error');
+			}
+		}
+
+		// 复制集合订阅链接
+		function copyCollectionLink(collectionId) {
+			const origin = window.location.origin;
+			const url = `${origin}/clash/proxies/${collectionId}`;
+			copyToClipboard(url);
+			showMessage('collectionMessage', '订阅链接已复制到剪贴板');
+		}
+
+		// 重命名集合
+		async function renameCollection(collectionId) {
+			const collection = proxyCollections.find(c => c.id === collectionId);
+			if (!collection) return;
+
+			const newName = prompt('请输入新的集合名称:', collection.name);
+			if (newName === null || newName.trim() === '') return;
+
+			try {
+				const response = await fetch('/api/proxy-collections', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ action: 'rename', data: { id: collectionId, newName } })
+				});
+
+				const result = await response.json();
+
+				if (result.error) {
+					showMessage('collectionMessage', result.error, 'error');
+				} else {
+					showMessage('collectionMessage', '集合重命名成功');
+					loadProxyCollections();
+				}
+			} catch (error) {
+				showMessage('collectionMessage', '重命名集合失败', 'error');
+			}
+		}
+
+		// 删除集合
+		async function deleteCollection(collectionId) {
+			const collection = proxyCollections.find(c => c.id === collectionId);
+			if (!collection) return;
+
+			if (!confirm(`确定要删除集合 "${collection.name}" 吗？此操作不可撤销。`)) return;
+
+			try {
+				const response = await fetch('/api/proxy-collections', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ action: 'delete', data: { id: collectionId } })
+				});
+
+				const result = await response.json();
+
+				if (result.error) {
+					showMessage('collectionMessage', result.error, 'error');
+				} else {
+					showMessage('collectionMessage', '集合删除成功');
+					loadProxyCollections();
+				}
+			} catch (error) {
+				showMessage('collectionMessage', '删除集合失败', 'error');
+			}
+		}
+
+		// 管理集合中的节点
+		function manageCollection(collectionId) {
+			const collection = proxyCollections.find(c => c.id === collectionId);
+			if (!collection) return;
+
+			currentManagingCollection = collection;
+
+			// 设置弹窗标题和链接
+			document.getElementById('proxyCollectionModalTitle').textContent = `管理节点集合: ${collection.name}`;
+			const origin = window.location.origin;
+			const collectionUrl = `${origin}/clash/proxies/${collection.id}`;
+			document.getElementById('currentCollectionLink').textContent = collectionUrl;
+
+			// 清空输入框
+			document.getElementById('collectionProxyUrl').value = '';
+			document.getElementById('collectionProxyMessage').style.display = 'none';
+
+			// 渲染节点列表
+			renderCollectionProxies();
+
+			// 显示弹窗
+			document.getElementById('proxyCollectionModal').style.display = 'block';
+		}
+
+		// 关闭节点集合管理弹窗
+		function closeProxyCollectionModal() {
+			document.getElementById('proxyCollectionModal').style.display = 'none';
+			currentManagingCollection = null;
+		}
+
+		// 渲染集合中的节点列表
+		function renderCollectionProxies() {
+			if (!currentManagingCollection) return;
+
+			const listEl = document.getElementById('collectionProxyList');
+			const proxies = currentManagingCollection.proxies;
+
+			if (proxies.length === 0) {
+				listEl.innerHTML = '<div class="empty-state"><div>📡</div><p>暂无节点，请添加节点链接</p></div>';
+				updateCollectionProxySelectionUI();
+				return;
+			}
+
+			let html = '';
+			for (let i = 0; i < proxies.length; i++) {
+				const proxy = proxies[i];
+				html += '<div class="list-item" data-index="' + i + '">';
+				html += '<input type="checkbox" class="collection-proxy-checkbox" data-index="' + i + '" onchange="updateCollectionProxySelectionUI()">';
+				html += '<div class="item-info">';
+				html += '<div class="item-name">' + proxy.name + '</div>';
+				html += '<div class="item-details">' + proxy.type + ' | ' + proxy.server + ':' + proxy.port + '</div>';
+				html += '</div>';
+				html += '</div>';
+			}
+			listEl.innerHTML = html;
+			updateCollectionProxySelectionUI();
+		}
+
+		// ========== 输出框管理功能 ==========
+
+		// 添加输出日志
+		function addCollectionOutput(message, type = 'info') {
+			const outputBox = document.getElementById('collectionOutputBox');
+			const placeholder = outputBox.querySelector('.output-placeholder');
+
+			if (placeholder) {
+				placeholder.remove();
+			}
+
+			const timestamp = new Date().toLocaleTimeString();
+			const entry = document.createElement('div');
+			entry.className = `output-entry ${type}`;
+			entry.innerHTML = `
+				<span class="output-timestamp">[${timestamp}]</span>
+				<span class="output-message">${message}</span>
+			`;
+
+			outputBox.appendChild(entry);
+			outputBox.scrollTop = outputBox.scrollHeight;
+		}
+
+		// 清空输出日志
+		function clearCollectionOutput() {
+			const outputBox = document.getElementById('collectionOutputBox');
+			outputBox.innerHTML = '<div class="output-placeholder">暂无操作记录</div>';
+		}
+
+
+
+		// 滚动到第一个新节点
+		function scrollToFirstNewNode(newlyAddedNames) {
+			setTimeout(() => {
+				const listItems = document.querySelectorAll('#collectionProxyList .list-item');
+				for (let item of listItems) {
+					const nameElement = item.querySelector('.item-name');
+					if (nameElement && newlyAddedNames.has(nameElement.textContent)) {
+						item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+						item.classList.add('newly-added');
+						addCollectionOutput(`已定位到新添加的节点: ${nameElement.textContent}`, 'info');
+						break;
+					}
+				}
+
+				// 8秒后移除高亮
+				setTimeout(() => {
+					document.querySelectorAll('#collectionProxyList .newly-added').forEach(item => {
+						item.classList.remove('newly-added');
+					});
+				}, 8000);
+			}, 100);
+		}
+
+		// ========== 集合节点选择功能 ==========
+
+		// 更新集合节点选择UI状态
+		function updateCollectionProxySelectionUI() {
+			const checkboxes = document.querySelectorAll('.collection-proxy-checkbox');
+			const selectedCheckboxes = document.querySelectorAll('.collection-proxy-checkbox:checked');
+			const selectedCount = selectedCheckboxes.length;
+			const totalCount = checkboxes.length;
+
+			// 更新选择信息显示
+			const selectionInfo = document.getElementById('collectionProxySelectionInfo');
+			const selectAllBtn = document.getElementById('selectAllCollectionProxiesBtn');
+			const copyBtn = document.getElementById('copySelectedCollectionProxiesBtn');
+			const deleteBtn = document.getElementById('deleteSelectedCollectionProxiesBtn');
+
+			if (selectedCount > 0) {
+				selectionInfo.style.display = 'block';
+				selectionInfo.textContent = `已选择 ${selectedCount} / ${totalCount} 个节点`;
+				copyBtn.disabled = false;
+				deleteBtn.disabled = false;
+			} else {
+				selectionInfo.style.display = 'none';
+				copyBtn.disabled = true;
+				deleteBtn.disabled = true;
+			}
+
+			// 更新全选按钮文本
+			if (selectedCount === totalCount && totalCount > 0) {
+				selectAllBtn.textContent = '取消全选';
+			} else {
+				selectAllBtn.textContent = '全选';
+			}
+
+			// 更新列表项的选中样式
+			document.querySelectorAll('#collectionProxyList .list-item').forEach((item, index) => {
+				const checkbox = item.querySelector('.collection-proxy-checkbox');
+				if (checkbox && checkbox.checked) {
+					item.classList.add('selected');
+				} else {
+					item.classList.remove('selected');
+				}
+			});
+		}
+
+		// 全选/取消全选集合节点
+		function selectAllCollectionProxies() {
+			const checkboxes = document.querySelectorAll('.collection-proxy-checkbox');
+			const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+			checkboxes.forEach(cb => {
+				cb.checked = !allChecked;
+			});
+
+			updateCollectionProxySelectionUI();
+		}
+
+		// 获取选中的集合节点索引
+		function getSelectedCollectionProxyIndexes() {
+			const selectedCheckboxes = document.querySelectorAll('.collection-proxy-checkbox:checked');
+			return Array.from(selectedCheckboxes).map(cb => parseInt(cb.dataset.index));
+		}
+
+		// 复制选中集合节点的JSON
+		function copySelectedCollectionProxies() {
+			const selectedIndexes = getSelectedCollectionProxyIndexes();
+			if (selectedIndexes.length === 0) {
+				showCollectionMessage('请先选择要复制的节点', 'warning');
+				return;
+			}
+
+			const selectedProxies = selectedIndexes.map(index => currentManagingCollection.proxies[index]);
+			// 修改为单行格式，每个节点一行，取消最外层的[]
+			const jsonData = selectedProxies.map(proxy => JSON.stringify(proxy)).join('\n');
+
+			navigator.clipboard.writeText(jsonData).then(() => {
+				showCollectionMessage(`已复制 ${selectedIndexes.length} 个节点的JSON数据`, 'success');
+			}).catch(() => {
+				// 降级方案
+				const textArea = document.createElement('textarea');
+				textArea.value = jsonData;
+				document.body.appendChild(textArea);
+				textArea.select();
+				document.execCommand('copy');
+				document.body.removeChild(textArea);
+				showCollectionMessage(`已复制 ${selectedIndexes.length} 个节点的JSON数据`, 'success');
+			});
+		}
+
+		// 删除选中的集合节点
+		async function deleteSelectedCollectionProxies() {
+			const selectedIndexes = getSelectedCollectionProxyIndexes();
+			if (selectedIndexes.length === 0) {
+				showCollectionMessage('请先选择要删除的节点', 'warning');
+				return;
+			}
+
+			showConfirmModal(`确定要删除选中的 ${selectedIndexes.length} 个节点吗？`, async function () {
+				try {
+					const response = await fetch('/api/proxy-collections', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							action: 'batchDeleteProxy',
+							collectionId: currentManagingCollection.id,
+							indexes: selectedIndexes
+						})
+					});
+
+					const result = await response.json();
+					if (result.success) {
+						showCollectionMessage(`成功删除 ${selectedIndexes.length} 个节点`, 'success');
+
+						// 重新加载集合数据并渲染
+						await loadProxyCollections();
+						currentManagingCollection = proxyCollections.find(c => c.id === currentManagingCollection.id);
+						renderCollectionProxies();
+					} else {
+						showCollectionMessage(result.error || '删除失败', 'error');
+					}
+				} catch (error) {
+					showCollectionMessage('删除节点失败', 'error');
+				}
+			});
+		}
+
+		// 复制当前集合链接
+		function copyCurrentCollectionLink() {
+			if (!currentManagingCollection) return;
+			const origin = window.location.origin;
+			const url = `${origin}/clash/proxies/${currentManagingCollection.id}`;
+			copyToClipboard(url);
+			showCollectionMessage('订阅链接已复制到剪贴板', 'success');
+			addCollectionOutput(`已复制集合订阅链接: ${url}`, 'info');
+		}
+
+		// 显示集合管理消息
+		function showCollectionMessage(message, type = 'success') {
+			// 原有的临时消息显示
+			const messageEl = document.getElementById('collectionProxyMessage');
+			messageEl.textContent = message;
+			messageEl.className = 'message ' + type;
+			messageEl.style.display = 'block';
+
+			// 添加到固定输出框
+			addCollectionOutput(message, type);
+
+			let displayTime;
+			if (type === 'error') {
+				displayTime = 8000;
+			} else {
+				displayTime = 3000;
+			}
+
+			setTimeout(() => {
+				messageEl.style.display = 'none';
+			}, displayTime);
+		}
+
+		// 切换集合地区下拉菜单
+		function toggleCollectionRegionDropdown() {
+			const display = document.querySelector('#collectionRegionSelect .select-display');
+			const options = document.getElementById('collectionRegionOptions');
+
+			display.classList.toggle('active');
+			options.classList.toggle('show');
+		}
+
+		// 选择集合地区选项
+		function selectCollectionRegionOption(value, text) {
+			selectedCollectionRegionValue = value;
+			document.getElementById('selectedCollectionRegion').innerHTML = text;
+			document.getElementById('collectionRegionOptions').classList.remove('show');
+			document.querySelector('#collectionRegionSelect .select-display').classList.remove('active');
+		}
+
+		// 向当前集合添加节点（支持链接和JSON格式自动识别）
+		async function addProxyToCurrentCollection() {
+			if (!currentManagingCollection) return;
+
+			const inputContent = document.getElementById('collectionProxyUrl').value.trim();
+			if (!inputContent) {
+				showCollectionMessage('请输入节点信息', 'error');
+				return;
+			}
+
+			try {
+				// 尝试解析输入内容，自动识别格式
+				const parsedData = parseCollectionProxyInput(inputContent, selectedCollectionRegionValue);
+
+				const response = await fetch('/api/proxy-collections', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(parsedData)
+				});
+
+				const result = await response.json();
+
+				if (result.error) {
+					showCollectionMessage(result.error, 'error');
+				} else {
+					const successCount = result.successCount || result.addedCount || 0;
+					let message;
+					if (successCount > 0) {
+						message = `成功添加 ${successCount} 个节点`;
+					} else {
+						message = '未能添加节点';
+					}
+
+					const skipMessages = [];
+					if (result.duplicateCount > 0) {
+						skipMessages.push(`${result.duplicateCount} 个重复节点`);
+					}
+					if (result.errorCount > 0) {
+						skipMessages.push(`${result.errorCount} 个格式错误节点`);
+					}
+					if (skipMessages.length > 0) {
+						message += `，跳过 ${skipMessages.join('、')}`;
+					}
+
+					showCollectionMessage(message);
+
+					// 清空输入框
+					document.getElementById('collectionProxyUrl').value = '';
+
+					// 记录新添加的节点名称用于高亮和滚动
+					const newlyAddedNames = new Set();
+					if (result.addedProxies && result.addedProxies.length > 0) {
+						result.addedProxies.forEach(proxy => {
+							newlyAddedNames.add(proxy.name);
+						});
+					}
+
+					// 重新加载集合数据并渲染
+					await loadProxyCollections();
+					currentManagingCollection = proxyCollections.find(c => c.id === currentManagingCollection.id);
+					renderCollectionProxies();
+
+					// 如果有新添加的节点，自动滚动到第一个新节点
+					if (newlyAddedNames.size > 0) {
+						scrollToFirstNewNode(newlyAddedNames);
+					}
+				}
+			} catch (error) {
+				showCollectionMessage(error.message || '添加节点失败', 'error');
+			}
+		}
+
+		// 解析集合代理输入内容，自动识别链接和JSON格式
+		function parseCollectionProxyInput(inputContent, region) {
+			const lines = inputContent.split('\n').map(line => line.trim()).filter(line => line);
+			const urlLines = [];
+			const jsonObjects = [];
+
+			for (let i = 0; i < lines.length; i++) {
+				const line = lines[i];
+				const lineNumber = i + 1;
+
+				// 检查是否是代理链接
+				if (line.match(/^(vmess|vless|ss|ssr|hysteria|hysteria2|hy2|trojan|tuic):\/\//)) {
+					urlLines.push(line);
+				}
+				// 检查是否是完整的单行JSON对象
+				else if (line.startsWith('{') && line.endsWith('}')) {
+					try {
+						const parsed = JSON.parse(line);
+						// 不在前端验证JSON字段完整性，交给后端处理
+						jsonObjects.push(parsed);
+					} catch (e) {
+						// JSON解析错误时，将原始字符串作为无效JSON传递给后端
+						jsonObjects.push({ _invalid: true, _originalLine: line, _error: e.message });
+					}
+				}
+				else {
+					throw new Error(`第${lineNumber}行格式无法识别: ${line.substring(0, 50)}${line.length > 50 ? '...' : ''}`);
+				}
+			}
+
+			// 移除前端JSON字段验证，交给后端处理
+
+			// 如果同时有JSON和链接，使用混合处理
+			if (jsonObjects.length > 0 && urlLines.length > 0) {
+				return {
+					action: 'addMixedProxy',
+					collectionId: currentManagingCollection.id,
+					data: {
+						jsonProxies: jsonObjects,
+						proxyUrls: urlLines.join('\n'),
+						region
+					}
+				};
+			}
+			// 如果只有JSON对象
+			else if (jsonObjects.length > 0) {
+				return {
+					action: 'addJSONProxy',
+					collectionId: currentManagingCollection.id,
+					proxies: jsonObjects
+				};
+			}
+			// 如果只有链接格式
+			else if (urlLines.length > 0) {
+				return {
+					action: 'addProxy',
+					data: {
+						collectionId: currentManagingCollection.id,
+						proxyUrls: urlLines.join('\n'),
+						region
+					}
+				};
+			}
+
+			throw new Error('未找到有效的节点信息');
+		}
+
+
+
+		// 设置集合地区选择器
+		function setupCollectionRegionSelector() {
+			// 为集合地区选择器添加事件监听器
+			const collectionOptions = document.querySelectorAll('#collectionRegionOptions .select-option');
+			collectionOptions.forEach(option => {
+				option.addEventListener('click', function () {
+					const value = this.getAttribute('data-value');
+					const text = this.innerHTML;
+					selectCollectionRegionOption(value, text);
+				});
+			});
+
+			// 点击外部关闭下拉菜单
+			document.addEventListener('click', function (event) {
+				const collectionSelect = document.getElementById('collectionRegionSelect');
+				if (collectionSelect && !collectionSelect.contains(event.target)) {
+					document.getElementById('collectionRegionOptions').classList.remove('show');
+					document.querySelector('#collectionRegionSelect .select-display').classList.remove('active');
+				}
+			});
+		}
+
+		// 加载订阅集合列表
+		async function loadSubCollections() {
+			try {
+				const response = await fetch('/api/sub-collections');
+				subCollections = await response.json();
+				renderSubCollections();
+			} catch (error) {
+				console.error('加载订阅集合失败:', error);
+			}
+		}
+
+		// 渲染订阅集合列表
+		function renderSubCollections() {
+			const listEl = document.getElementById('subCollectionList');
+
+			if (subCollections.length === 0) {
+				listEl.innerHTML = '<div class="empty-state"><div>📂</div><p>暂无订阅集合，请创建新集合</p></div>';
+				return;
+			}
+
+			let html = '';
+			for (let i = 0; i < subCollections.length; i++) {
+				const collection = subCollections[i];
+				const subCount = collection.subscriptions.length;
+				const origin = window.location.origin;
+				const collectionUrl = `${origin}/clash/submerge/${collection.id}`;
+
+				html += '<div class="list-item" data-index="' + i + '">';
+				html += '<div class="item-info">';
+				html += '<div class="item-name">' + collection.name + '</div>';
+				html += '<div class="item-details">订阅数量: ' + subCount + ' | 订阅链接: ' + collectionUrl + '</div>';
+				html += '</div>';
+				html += '<div class="item-actions">';
+				html += '<button class="btn" onclick="copySubCollectionLink(\'' + collection.id + '\')">复制链接</button>';
+				html += '<button class="btn" onclick="manageSubCollection(\'' + collection.id + '\')">管理订阅</button>';
+				html += '<button class="btn" onclick="renameSubCollection(\'' + collection.id + '\')">重命名</button>';
+				html += '<button class="btn danger" onclick="deleteSubCollection(\'' + collection.id + '\')">删除</button>';
+				html += '</div>';
+				html += '</div>';
+			}
+			listEl.innerHTML = html;
+		}
+
+		// 创建新的订阅集合
+		async function createSubCollection() {
+			const name = prompt('请输入集合名称（留空使用默认名称）:');
+			if (name === null) return; // 用户取消
+
+			try {
+				const response = await fetch('/api/sub-collections', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ action: 'create', data: { name } })
+				});
+
+				const result = await response.json();
+
+				if (result.error) {
+					showMessage('subCollectionMessage', result.error, 'error');
+				} else {
+					showMessage('subCollectionMessage', '订阅集合创建成功');
+					loadSubCollections();
+				}
+			} catch (error) {
+				showMessage('subCollectionMessage', '创建订阅集合失败', 'error');
+			}
+		}
+
+		// 复制集合订阅链接
+		function copySubCollectionLink(collectionId) {
+			const origin = window.location.origin;
+			const url = `${origin}/clash/submerge/${collectionId}`;
+			copyToClipboard(url);
+			showMessage('subCollectionMessage', '订阅链接已复制到剪贴板');
+		}
+
+		// 重命名订阅集合
+		async function renameSubCollection(collectionId) {
+			const collection = subCollections.find(c => c.id === collectionId);
+			if (!collection) return;
+
+			const newName = prompt('请输入新的集合名称:', collection.name);
+			if (newName === null || newName.trim() === '') return;
+
+			try {
+				const response = await fetch('/api/sub-collections', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ action: 'rename', data: { id: collectionId, newName } })
+				});
+
+				const result = await response.json();
+
+				if (result.error) {
+					showMessage('subCollectionMessage', result.error, 'error');
+				} else {
+					showMessage('subCollectionMessage', '集合重命名成功');
+					loadSubCollections();
+				}
+			} catch (error) {
+				showMessage('subCollectionMessage', '重命名集合失败', 'error');
+			}
+		}
+
+		// 删除订阅集合
+		async function deleteSubCollection(collectionId) {
+			const collection = subCollections.find(c => c.id === collectionId);
+			if (!collection) return;
+
+			if (!confirm(`确定要删除集合 "${collection.name}" 吗？此操作不可撤销。`)) return;
+
+			try {
+				const response = await fetch('/api/sub-collections', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ action: 'delete', data: { id: collectionId } })
+				});
+
+				const result = await response.json();
+
+				if (result.error) {
+					showMessage('subCollectionMessage', result.error, 'error');
+				} else {
+					showMessage('subCollectionMessage', '集合删除成功');
+					loadSubCollections();
+				}
+			} catch (error) {
+				showMessage('subCollectionMessage', '删除集合失败', 'error');
+			}
+		}
+
+		// 管理集合中的订阅
+		function manageSubCollection(collectionId) {
+			const collection = subCollections.find(c => c.id === collectionId);
+			if (!collection) return;
+
+			currentManagingSubCollection = collection;
+
+			// 设置弹窗标题和链接
+			document.getElementById('subCollectionModalTitle').textContent = `管理订阅集合: ${collection.name}`;
+			const origin = window.location.origin;
+			const collectionUrl = `${origin}/clash/submerge/${collection.id}`;
+			document.getElementById('currentSubCollectionLink').textContent = collectionUrl;
+
+			// 清空输入框
+			document.getElementById('collectionSubUrl').value = '';
+			document.getElementById('collectionSubMessage').style.display = 'none';
+
+			// 渲染订阅列表
+			renderCollectionSubscriptions();
+
+			// 显示弹窗
+			document.getElementById('subCollectionModal').style.display = 'block';
+		}
+
+		// 关闭订阅集合管理弹窗
+		function closeSubCollectionModal() {
+			document.getElementById('subCollectionModal').style.display = 'none';
+			currentManagingSubCollection = null;
+		}
+
+		// 渲染集合中的订阅列表
+		function renderCollectionSubscriptions() {
+			if (!currentManagingSubCollection) return;
+
+			const listEl = document.getElementById('collectionSubList');
+			const subscriptions = currentManagingSubCollection.subscriptions;
+			const subscriptionNames = currentManagingSubCollection.subscriptionNames;
+
+			if (subscriptions.length === 0) {
+				listEl.innerHTML = '<div class="empty-state"><div>🔗</div><p>暂无订阅，请添加订阅链接</p></div>';
+				updateCollectionSubscriptionSelectionUI();
+				return;
+			}
+
+			let html = '';
+			for (let i = 0; i < subscriptions.length; i++) {
+				const sub = subscriptions[i];
+				const name = subscriptionNames[i] || ('订阅' + (i + 1));
+
+				html += '<div class="list-item" data-index="' + i + '">';
+				html += '<input type="checkbox" class="collection-subscription-checkbox" data-index="' + i + '" onchange="updateCollectionSubscriptionSelectionUI()">';
+				html += '<div class="item-info">';
+				html += '<div class="item-name" id="collectionSubName-' + i + '">' + name + '</div>';
+				html += '<div class="item-details">' + sub + '</div>';
+				html += '</div>';
+				html += '<div class="item-actions">';
+				html += '<button class="btn" onclick="editCollectionSubscriptionName(' + i + ')">编辑名称</button>';
+				html += '</div>';
+				html += '</div>';
+			}
+			listEl.innerHTML = html;
+			updateCollectionSubscriptionSelectionUI();
+		}
+
+		// ========== 集合订阅选择功能 ==========
+
+		// 更新集合订阅选择UI状态
+		function updateCollectionSubscriptionSelectionUI() {
+			const checkboxes = document.querySelectorAll('.collection-subscription-checkbox');
+			const selectedCheckboxes = document.querySelectorAll('.collection-subscription-checkbox:checked');
+			const selectedCount = selectedCheckboxes.length;
+			const totalCount = checkboxes.length;
+
+			// 更新选择信息显示
+			const selectionInfo = document.getElementById('collectionSubscriptionSelectionInfo');
+			const selectAllBtn = document.getElementById('selectAllCollectionSubscriptionsBtn');
+			const copyBtn = document.getElementById('copySelectedCollectionSubscriptionsBtn');
+			const deleteBtn = document.getElementById('deleteSelectedCollectionSubscriptionsBtn');
+
+			if (selectedCount > 0) {
+				selectionInfo.style.display = 'block';
+				selectionInfo.textContent = `已选择 ${selectedCount} / ${totalCount} 个订阅`;
+				copyBtn.disabled = false;
+				deleteBtn.disabled = false;
+			} else {
+				selectionInfo.style.display = 'none';
+				copyBtn.disabled = true;
+				deleteBtn.disabled = true;
+			}
+
+			// 更新全选按钮文本
+			if (selectedCount === totalCount && totalCount > 0) {
+				selectAllBtn.textContent = '取消全选';
+			} else {
+				selectAllBtn.textContent = '全选';
+			}
+
+			// 更新列表项的选中样式
+			document.querySelectorAll('#collectionSubList .list-item').forEach((item, index) => {
+				const checkbox = item.querySelector('.collection-subscription-checkbox');
+				if (checkbox && checkbox.checked) {
+					item.classList.add('selected');
+				} else {
+					item.classList.remove('selected');
+				}
+			});
+		}
+
+		// 全选/取消全选集合订阅
+		function selectAllCollectionSubscriptions() {
+			const checkboxes = document.querySelectorAll('.collection-subscription-checkbox');
+			const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+			checkboxes.forEach(cb => {
+				cb.checked = !allChecked;
+			});
+
+			updateCollectionSubscriptionSelectionUI();
+		}
+
+		// 获取选中的集合订阅索引
+		function getSelectedCollectionSubscriptionIndexes() {
+			const selectedCheckboxes = document.querySelectorAll('.collection-subscription-checkbox:checked');
+			return Array.from(selectedCheckboxes).map(cb => parseInt(cb.dataset.index));
+		}
+
+		// 复制选中集合订阅的链接
+		function copySelectedCollectionSubscriptions() {
+			const selectedIndexes = getSelectedCollectionSubscriptionIndexes();
+			if (selectedIndexes.length === 0) {
+				showCollectionSubMessage('请先选择要复制的订阅', 'warning');
+				return;
+			}
+
+			const selectedUrls = selectedIndexes.map(index => currentManagingSubCollection.subscriptions[index]);
+			const urlsText = selectedUrls.join('\n');
+
+			navigator.clipboard.writeText(urlsText).then(() => {
+				showCollectionSubMessage(`已复制 ${selectedIndexes.length} 个订阅链接`, 'success');
+			}).catch(() => {
+				// 降级方案
+				const textArea = document.createElement('textarea');
+				textArea.value = urlsText;
+				document.body.appendChild(textArea);
+				textArea.select();
+				document.execCommand('copy');
+				document.body.removeChild(textArea);
+				showCollectionSubMessage(`已复制 ${selectedIndexes.length} 个订阅链接`, 'success');
+			});
+		}
+
+		// 删除选中的集合订阅
+		async function deleteSelectedCollectionSubscriptions() {
+			const selectedIndexes = getSelectedCollectionSubscriptionIndexes();
+			if (selectedIndexes.length === 0) {
+				showCollectionSubMessage('请先选择要删除的订阅', 'warning');
+				return;
+			}
+
+			showConfirmModal(`确定要删除选中的 ${selectedIndexes.length} 个订阅吗？`, async function () {
+				try {
+					const response = await fetch('/api/sub-collections', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							action: 'batchDeleteSubscription',
+							collectionId: currentManagingSubCollection.id,
+							indexes: selectedIndexes
+						})
+					});
+
+					const result = await response.json();
+					if (result.success) {
+						showCollectionSubMessage(`成功删除 ${selectedIndexes.length} 个订阅`, 'success');
+
+						// 重新加载集合数据并渲染
+						await loadSubCollections();
+						currentManagingSubCollection = subCollections.find(c => c.id === currentManagingSubCollection.id);
+						renderCollectionSubscriptions();
+					} else {
+						showCollectionSubMessage(result.error || '删除失败', 'error');
+					}
+				} catch (error) {
+					showCollectionSubMessage('删除订阅失败', 'error');
+				}
+			});
+		}
+
+		// 复制当前订阅集合链接
+		function copyCurrentSubCollectionLink() {
+			if (!currentManagingSubCollection) return;
+			const origin = window.location.origin;
+			const url = `${origin}/clash/submerge/${currentManagingSubCollection.id}`;
+			copyToClipboard(url);
+			showCollectionSubMessage('订阅链接已复制到剪贴板');
+		}
+
+		// 显示订阅集合管理消息
+		function showCollectionSubMessage(message, type = 'success') {
+			const messageEl = document.getElementById('collectionSubMessage');
+			messageEl.textContent = message;
+			messageEl.className = 'message ' + type;
+			messageEl.style.display = 'block';
+
+			let displayTime;
+			if (type === 'error') {
+				displayTime = 8000;
+			} else if (message.includes('活跃检测完成') && message.includes('移除的订阅')) {
+				displayTime = 15000;
+			} else if (message.includes('活跃检测完成')) {
+				displayTime = 8000;
+			} else {
+				displayTime = 3000;
+			}
+
+			setTimeout(() => {
+				messageEl.style.display = 'none';
+			}, displayTime);
+		}
+
+		// 向当前集合添加订阅
+		async function addSubscriptionToCurrentCollection() {
+			if (!currentManagingSubCollection) return;
+
+			const subscriptionUrls = document.getElementById('collectionSubUrl').value.trim();
+			if (!subscriptionUrls) {
+				showCollectionSubMessage('请输入订阅链接', 'error');
+				return;
+			}
+
+			try {
+				const response = await fetch('/api/sub-collections', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						action: 'addSubscription',
+						data: {
+							collectionId: currentManagingSubCollection.id,
+							subscriptionUrls: subscriptionUrls
+						}
+					})
+				});
+
+				const result = await response.json();
+
+				if (result.error) {
+					showCollectionSubMessage(result.error, 'error');
+				} else {
+					let message = `成功添加 ${result.successCount} 个订阅`;
+					if (result.duplicateCount > 0) {
+						message += `，跳过 ${result.duplicateCount} 个重复订阅`;
+					}
+					if (result.failedCount > 0) {
+						message += `，${result.failedCount} 个订阅添加失败`;
+					}
+					showCollectionSubMessage(message);
+
+					// 清空输入框
+					document.getElementById('collectionSubUrl').value = '';
+
+					// 重新加载集合数据并渲染
+					await loadSubCollections();
+					currentManagingSubCollection = subCollections.find(c => c.id === currentManagingSubCollection.id);
+					renderCollectionSubscriptions();
+				}
+			} catch (error) {
+				showCollectionSubMessage('添加订阅失败', 'error');
+			}
+		}
+
+		// 编辑集合中订阅的名称
+		function editCollectionSubscriptionName(index) {
+			if (!currentManagingSubCollection) return;
+
+			const nameElement = document.getElementById('collectionSubName-' + index);
+			const currentName = currentManagingSubCollection.subscriptionNames[index] || ('订阅' + (index + 1));
+
+			// 创建输入框
+			const input = document.createElement('input');
+			input.type = 'text';
+			input.value = currentName;
+			input.className = 'edit-name-input';
+			input.style.cssText = `
+				width: 100%;
+				padding: 4px 8px;
+				border: 1px solid #3498db;
+				border-radius: 4px;
+				font-size: 14px;
+				background: white;
+			`;
+
+			// 保存原始内容
+			const originalContent = nameElement.innerHTML;
+
+			// 替换为输入框
+			nameElement.innerHTML = '';
+			nameElement.appendChild(input);
+			input.focus();
+			input.select();
+
+			// 处理保存
+			async function saveName() {
+				const newName = input.value.trim();
+				if (newName === '' || newName === currentName) {
+					// 取消编辑，恢复原始内容
+					nameElement.innerHTML = originalContent;
+					return;
+				}
+
+				try {
+					const response = await fetch('/api/sub-collections', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							action: 'updateSubscriptionName',
+							data: {
+								collectionId: currentManagingSubCollection.id,
+								index,
+								newName
+							}
+						})
+					});
+
+					const result = await response.json();
+
+					if (result.error) {
+						showCollectionSubMessage(result.error, 'error');
+						nameElement.innerHTML = originalContent;
+					} else {
+						showCollectionSubMessage('订阅名称更新成功');
+						// 更新本地数据
+						currentManagingSubCollection.subscriptionNames[index] = newName;
+						nameElement.innerHTML = newName;
+					}
+				} catch (error) {
+					showCollectionSubMessage('更新订阅名称失败', 'error');
+					nameElement.innerHTML = originalContent;
+				}
+			}
+
+			// 处理取消
+			function cancelEdit() {
+				nameElement.innerHTML = originalContent;
+			}
+
+			// 绑定事件
+			input.addEventListener('blur', saveName);
+			input.addEventListener('keydown', function (e) {
+				if (e.key === 'Enter') {
+					e.preventDefault();
+					saveName();
+				} else if (e.key === 'Escape') {
+					e.preventDefault();
+					cancelEdit();
+				}
+			});
+		}
+
+		// 当前集合的活跃检测
+		async function activeDetectionForCurrentCollection() {
+			if (!currentManagingSubCollection) return;
+
+			const subscriptions = currentManagingSubCollection.subscriptions;
+			if (subscriptions.length === 0) {
+				showCollectionSubMessage('没有订阅可以检测', 'error');
+				return;
+			}
+
+			const btn = document.getElementById('currentCollectionActiveDetectionBtn');
+			const progressContainer = document.getElementById('collectionProgressContainer');
+			const progressText = document.getElementById('collectionProgressText');
+			const progressPercent = document.getElementById('collectionProgressPercent');
+			const progressFill = document.getElementById('collectionProgressFill');
+
+			// 禁用按钮并显示进度条
+			btn.disabled = true;
+			btn.textContent = '检测中...';
+			progressContainer.style.display = 'block';
+			document.getElementById('collectionSubMessage').style.display = 'none';
+
+			try {
+				// 准备检测数据
+				const results = subscriptions.map((url, index) => ({
+					url: url,
+					name: currentManagingSubCollection.subscriptionNames[index] || `订阅${index + 1}`,
+					index: index
+				}));
+
+				// 发送批量检测请求
+				const response = await fetch('/api/sub-collections', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						action: 'activeDetection',
+						data: {
+							collectionId: currentManagingSubCollection.id,
+							results: results
+						}
+					})
+				});
+
+				const result = await response.json();
+
+				if (result.error) {
+					showCollectionSubMessage(result.error, 'error');
+				} else {
+					// 处理检测结果
+					const removedSubscriptions = result.removedSubscriptions || [];
+					const totalChecked = result.totalChecked || 0;
+					const totalRemoved = removedSubscriptions.length;
+
+					let message = `活跃检测完成！检测了 ${totalChecked} 个订阅`;
+					if (totalRemoved > 0) {
+						message += `，移除了 ${totalRemoved} 个无效订阅`;
+
+						// 显示移除的订阅详情
+						const removedDetails = removedSubscriptions.map(sub =>
+							`• ${sub.name}: ${sub.reason}`
+						).join('\n');
+
+						message += `\n\n移除的订阅:\n${removedDetails}`;
+					} else {
+						message += '，所有订阅都是有效的';
+					}
+
+					showCollectionSubMessage(message);
+
+					// 重新加载集合数据并渲染
+					await loadSubCollections();
+					currentManagingSubCollection = subCollections.find(c => c.id === currentManagingSubCollection.id);
+					renderCollectionSubscriptions();
+				}
+			} catch (error) {
+				showCollectionSubMessage('活跃检测失败', 'error');
+			} finally {
+				// 恢复按钮状态并隐藏进度条
+				btn.disabled = false;
+				btn.textContent = '活跃检测';
+				progressContainer.style.display = 'none';
+			}
+		}
+
+		// 加载节点列表
+		async function loadProxies() {
+			try {
+				const response = await fetch('/api/proxies');
+				proxies = await response.json();
+				renderProxies();
+			} catch (error) {
+				console.error('加载节点失败:', error);
+			}
+		}
+
+		// 渲染节点列表
+		function renderProxies() {
+			const listEl = document.getElementById('proxyList');
+
+			if (proxies.length === 0) {
+				listEl.innerHTML = '<div class="empty-state"><div>📡</div><p>暂无节点，请添加节点链接</p></div>';
+				updateProxySelectionUI();
+				return;
+			}
+
+			let html = '';
+			let firstNewlyAddedIndex = -1;
+
+			for (let i = 0; i < proxies.length; i++) {
+				const proxy = proxies[i];
+				const isNewlyAdded = newlyAddedProxies.has(proxy.name);
+				const highlightClass = isNewlyAdded ? ' newly-added' : '';
+
+				// 记录第一个新添加节点的位置
+				if (isNewlyAdded && firstNewlyAddedIndex === -1) {
+					firstNewlyAddedIndex = i;
+				}
+
+				html += '<div class="list-item' + highlightClass + '" data-index="' + i + '">';
+				html += '<input type="checkbox" class="proxy-checkbox" data-index="' + i + '" onchange="updateProxySelectionUI()">';
+				html += '<div class="item-info">';
+				html += '<div class="item-name">' + proxy.name + '</div>';
+				html += '<div class="item-details">' + proxy.server + ':' + proxy.port + ' (' + proxy.type.toUpperCase() + ')</div>';
+				html += '</div>';
+				html += '</div>';
+			}
+			listEl.innerHTML = html;
+
+			// 滚动到第一个新添加的节点
+			if (firstNewlyAddedIndex !== -1) {
+				setTimeout(() => {
+					const firstNewItem = listEl.querySelector('[data-index="' + firstNewlyAddedIndex + '"]');
+					if (firstNewItem) {
+						firstNewItem.scrollIntoView({
+							behavior: 'smooth',
+							block: 'center'
+						});
+					}
+				}, 100);
+			}
+
+			// 8秒后移除高亮效果
+			setTimeout(() => {
+				newlyAddedProxies.clear();
+				document.querySelectorAll('.list-item.newly-added').forEach(item => {
+					item.classList.remove('newly-added');
+				});
+			}, 8000);
+		}
+
+		// 添加订阅
+		async function addSubscription() {
+			const subUrl = document.getElementById('subUrl').value.trim();
+			if (!subUrl) {
+				showMessage('subMessage', '请输入订阅链接', 'error');
+				return;
+			}
+
+			try {
+				const response = await fetch('/api/submerge', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ action: 'add', data: subUrl })
+				});
+
+				const result = await response.json();
+
+				if (result.error) {
+					showMessage('subMessage', result.error, 'error');
+				} else {
+					var message = '成功添加 ' + result.successCount + ' 个订阅';
+					if (result.duplicateCount > 0) {
+						message += '，' + result.duplicateCount + ' 个重复订阅已跳过';
+					}
+					if (result.failedCount > 0) {
+						message += '，' + result.failedCount + ' 个订阅添加失败';
+
+						// 显示失败订阅的详细信息
+						if (result.failedSubscriptions && result.failedSubscriptions.length > 0) {
+							let failedDetails = '\n\n失败的订阅链接：\n';
+							result.failedSubscriptions.forEach((failed, index) => {
+								failedDetails += `${index + 1}. ${failed.url}\n   错误：${failed.error}\n`;
+							});
+							message += failedDetails;
+						}
+					}
+
+					const messageType = result.failedCount > 0 ? 'info' : 'success';
+					showMessage('subMessage', message, messageType);
+					document.getElementById('subUrl').value = '';
+
+					// 标记新添加的订阅用于高亮显示
+					if (result.addedSubscriptions && result.addedSubscriptions.length > 0) {
+						result.addedSubscriptions.forEach(sub => {
+							newlyAddedSubscriptions.add(sub.name);
+						});
+					}
+
+					loadSubscriptions();
+				}
+			} catch (error) {
+				showMessage('subMessage', '添加订阅失败', 'error');
+			}
+		}
+
+		// 编辑订阅名称
+		function editSubscriptionName(index) {
+			const nameElement = document.getElementById('subName-' + index);
+			const currentName = subscriptionNames[index] || ('订阅' + (index + 1));
+
+			// 创建输入框
+			const input = document.createElement('input');
+			input.type = 'text';
+			input.value = currentName;
+			input.className = 'edit-name-input';
+			input.style.cssText = `
+				width: 100%;
+				padding: 4px 8px;
+				border: 1px solid #3498db;
+				border-radius: 4px;
+				font-size: 14px;
+				background: white;
+			`;
+
+			// 保存原始内容
+			const originalContent = nameElement.innerHTML;
+
+			// 替换为输入框
+			nameElement.innerHTML = '';
+			nameElement.appendChild(input);
+			input.focus();
+			input.select();
+
+			// 处理保存
+			async function saveName() {
+				const newName = input.value.trim();
+				if (newName === '' || newName === currentName) {
+					// 取消编辑，恢复原始内容
+					nameElement.innerHTML = originalContent;
+					return;
+				}
+
+				try {
+					const response = await fetch('/api/submerge', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							action: 'updateName',
+							data: { index, newName }
+						})
+					});
+
+					const result = await response.json();
+
+					if (result.error) {
+						showMessage('subMessage', result.error, 'error');
+						nameElement.innerHTML = originalContent;
+					} else {
+						showMessage('subMessage', '订阅名称更新成功');
+						// 更新本地数据
+						subscriptionNames[index] = newName;
+						nameElement.innerHTML = newName;
+					}
+				} catch (error) {
+					showMessage('subMessage', '更新订阅名称失败', 'error');
+					nameElement.innerHTML = originalContent;
+				}
+			}
+
+			// 处理取消
+			function cancelEdit() {
+				nameElement.innerHTML = originalContent;
+			}
+
+			// 绑定事件
+			input.addEventListener('blur', saveName);
+			input.addEventListener('keydown', function (e) {
+				if (e.key === 'Enter') {
+					e.preventDefault();
+					saveName();
+				} else if (e.key === 'Escape') {
+					e.preventDefault();
+					cancelEdit();
+				}
+			});
+		}
+
+		// 加载订阅列表
+		async function loadSubscriptions() {
+			try {
+				const response = await fetch('/api/submerge');
+				const data = await response.json();
+				subscriptions = data;
+
+				// 获取订阅名称
+				const namesResponse = await fetch('/api/submerge?names=true');
+				if (namesResponse.ok) {
+					subscriptionNames = await namesResponse.json();
+				} else {
+					subscriptionNames = subscriptions.map((_, index) => '订阅' + (index + 1));
+				}
+
+				renderSubscriptions();
+			} catch (error) {
+				console.error('加载订阅失败:', error);
+			}
+		}
+
+		// 渲染订阅列表
+		function renderSubscriptions() {
+			const listEl = document.getElementById('subList');
+
+			if (subscriptions.length === 0) {
+				listEl.innerHTML = '<div class="empty-state"><div>🔗</div><p>暂无订阅，请添加订阅链接</p></div>';
+				updateSubscriptionSelectionUI();
+				return;
+			}
+
+			let html = '';
+			let firstNewlyAddedIndex = -1;
+
+			for (let i = 0; i < subscriptions.length; i++) {
+				const sub = subscriptions[i];
+				const name = subscriptionNames[i] || ('订阅' + (i + 1));
+				const isNewlyAdded = newlyAddedSubscriptions.has(name);
+				const highlightClass = isNewlyAdded ? ' newly-added' : '';
+
+				// 记录第一个新添加订阅的位置
+				if (isNewlyAdded && firstNewlyAddedIndex === -1) {
+					firstNewlyAddedIndex = i;
+				}
+
+				html += '<div class="list-item' + highlightClass + '" data-index="' + i + '">';
+				html += '<input type="checkbox" class="subscription-checkbox" data-index="' + i + '" onchange="updateSubscriptionSelectionUI()">';
+				html += '<div class="item-info">';
+				html += '<div class="item-name" id="subName-' + i + '">' + name + '</div>';
+				html += '<div class="item-details">' + sub + '</div>';
+				html += '</div>';
+				html += '<div class="item-actions">';
+				html += '<button class="btn" onclick="editSubscriptionName(' + i + ')">编辑名称</button>';
+				html += '</div>';
+				html += '</div>';
+			}
+			listEl.innerHTML = html;
+
+			// 滚动到第一个新添加的订阅
+			if (firstNewlyAddedIndex !== -1) {
+				setTimeout(() => {
+					const firstNewItem = listEl.querySelector('[data-index="' + firstNewlyAddedIndex + '"]');
+					if (firstNewItem) {
+						firstNewItem.scrollIntoView({
+							behavior: 'smooth',
+							block: 'center'
+						});
+					}
+				}, 100);
+			}
+
+			// 8秒后移除高亮效果
+			setTimeout(() => {
+				newlyAddedSubscriptions.clear();
+				document.querySelectorAll('.list-item.newly-added').forEach(item => {
+					item.classList.remove('newly-added');
+				});
+			}, 8000);
+		}
+
+		// ========== 节点选择功能 ==========
+
+		// 更新节点选择UI状态
+		function updateProxySelectionUI() {
+			const checkboxes = document.querySelectorAll('.proxy-checkbox');
+			const selectedCheckboxes = document.querySelectorAll('.proxy-checkbox:checked');
+			const selectedCount = selectedCheckboxes.length;
+			const totalCount = checkboxes.length;
+
+			// 更新选择信息显示
+			const selectionInfo = document.getElementById('proxySelectionInfo');
+			const selectAllBtn = document.getElementById('selectAllProxiesBtn');
+			const copyBtn = document.getElementById('copySelectedProxiesBtn');
+			const deleteBtn = document.getElementById('deleteSelectedProxiesBtn');
+
+			if (selectedCount > 0) {
+				selectionInfo.style.display = 'block';
+				selectionInfo.textContent = `已选择 ${selectedCount} / ${totalCount} 个节点`;
+				copyBtn.disabled = false;
+				deleteBtn.disabled = false;
+			} else {
+				selectionInfo.style.display = 'none';
+				copyBtn.disabled = true;
+				deleteBtn.disabled = true;
+			}
+
+			// 更新全选按钮文本
+			if (selectedCount === totalCount && totalCount > 0) {
+				selectAllBtn.textContent = '取消全选';
+			} else {
+				selectAllBtn.textContent = '全选';
+			}
+
+			// 更新列表项的选中样式
+			document.querySelectorAll('.list-item').forEach((item, index) => {
+				const checkbox = item.querySelector('.proxy-checkbox');
+				if (checkbox && checkbox.checked) {
+					item.classList.add('selected');
+				} else {
+					item.classList.remove('selected');
+				}
+			});
+		}
+
+		// 全选/取消全选节点
+		function selectAllProxies() {
+			const checkboxes = document.querySelectorAll('.proxy-checkbox');
+			const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+			checkboxes.forEach(cb => {
+				cb.checked = !allChecked;
+			});
+
+			updateProxySelectionUI();
+		}
+
+		// 获取选中的节点索引
+		function getSelectedProxyIndexes() {
+			const selectedCheckboxes = document.querySelectorAll('.proxy-checkbox:checked');
+			return Array.from(selectedCheckboxes).map(cb => parseInt(cb.dataset.index));
+		}
+
+		// 复制选中节点的JSON
+		function copySelectedProxies() {
+			const selectedIndexes = getSelectedProxyIndexes();
+			if (selectedIndexes.length === 0) {
+				showMessage('proxyMessage', '请先选择要复制的节点', 'warning');
+				return;
+			}
+
+			const selectedProxies = selectedIndexes.map(index => proxies[index]);
+			// 修改为单行格式，每个节点一行，取消最外层的[]
+			const jsonData = selectedProxies.map(proxy => JSON.stringify(proxy)).join('\n');
+
+			navigator.clipboard.writeText(jsonData).then(() => {
+				showMessage('proxyMessage', `已复制 ${selectedIndexes.length} 个节点的JSON数据`, 'success');
+			}).catch(() => {
+				// 降级方案
+				const textArea = document.createElement('textarea');
+				textArea.value = jsonData;
+				document.body.appendChild(textArea);
+				textArea.select();
+				document.execCommand('copy');
+				document.body.removeChild(textArea);
+				showMessage('proxyMessage', `已复制 ${selectedIndexes.length} 个节点的JSON数据`, 'success');
+			});
+		}
+
+		// 删除选中的节点
+		async function deleteSelectedProxies() {
+			const selectedIndexes = getSelectedProxyIndexes();
+			if (selectedIndexes.length === 0) {
+				showMessage('proxyMessage', '请先选择要删除的节点', 'warning');
+				return;
+			}
+
+			showConfirmModal(`确定要删除选中的 ${selectedIndexes.length} 个节点吗？`, async function () {
+				try {
+					const response = await fetch('/api/proxies', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							action: 'batchDelete',
+							indexes: selectedIndexes
+						})
+					});
+
+					const result = await response.json();
+					if (result.success) {
+						showMessage('proxyMessage', `成功删除 ${selectedIndexes.length} 个节点`, 'success');
+						loadProxies();
+					} else {
+						showMessage('proxyMessage', result.error || '删除失败', 'error');
+					}
+				} catch (error) {
+					showMessage('proxyMessage', '删除节点失败', 'error');
+				}
+			});
+		}
+
+
+
+		// ========== 订阅选择功能 ==========
+
+		// 更新订阅选择UI状态
+		function updateSubscriptionSelectionUI() {
+			const checkboxes = document.querySelectorAll('.subscription-checkbox');
+			const selectedCheckboxes = document.querySelectorAll('.subscription-checkbox:checked');
+			const selectedCount = selectedCheckboxes.length;
+			const totalCount = checkboxes.length;
+
+			// 更新选择信息显示
+			const selectionInfo = document.getElementById('subscriptionSelectionInfo');
+			const selectAllBtn = document.getElementById('selectAllSubscriptionsBtn');
+			const copyBtn = document.getElementById('copySelectedSubscriptionsBtn');
+			const deleteBtn = document.getElementById('deleteSelectedSubscriptionsBtn');
+
+			if (selectedCount > 0) {
+				selectionInfo.style.display = 'block';
+				selectionInfo.textContent = `已选择 ${selectedCount} / ${totalCount} 个订阅`;
+				copyBtn.disabled = false;
+				deleteBtn.disabled = false;
+			} else {
+				selectionInfo.style.display = 'none';
+				copyBtn.disabled = true;
+				deleteBtn.disabled = true;
+			}
+
+			// 更新全选按钮文本
+			if (selectedCount === totalCount && totalCount > 0) {
+				selectAllBtn.textContent = '取消全选';
+			} else {
+				selectAllBtn.textContent = '全选';
+			}
+
+			// 更新列表项的选中样式
+			document.querySelectorAll('#subList .list-item').forEach((item, index) => {
+				const checkbox = item.querySelector('.subscription-checkbox');
+				if (checkbox && checkbox.checked) {
+					item.classList.add('selected');
+				} else {
+					item.classList.remove('selected');
+				}
+			});
+		}
+
+		// 全选/取消全选订阅
+		function selectAllSubscriptions() {
+			const checkboxes = document.querySelectorAll('.subscription-checkbox');
+			const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+			checkboxes.forEach(cb => {
+				cb.checked = !allChecked;
+			});
+
+			updateSubscriptionSelectionUI();
+		}
+
+		// 获取选中的订阅索引
+		function getSelectedSubscriptionIndexes() {
+			const selectedCheckboxes = document.querySelectorAll('.subscription-checkbox:checked');
+			return Array.from(selectedCheckboxes).map(cb => parseInt(cb.dataset.index));
+		}
+
+		// 复制选中订阅的链接
+		function copySelectedSubscriptions() {
+			const selectedIndexes = getSelectedSubscriptionIndexes();
+			if (selectedIndexes.length === 0) {
+				showMessage('subMessage', '请先选择要复制的订阅', 'warning');
+				return;
+			}
+
+			const selectedUrls = selectedIndexes.map(index => subscriptions[index]);
+			const urlsText = selectedUrls.join('\n');
+
+			navigator.clipboard.writeText(urlsText).then(() => {
+				showMessage('subMessage', `已复制 ${selectedIndexes.length} 个订阅链接`, 'success');
+			}).catch(() => {
+				// 降级方案
+				const textArea = document.createElement('textarea');
+				textArea.value = urlsText;
+				document.body.appendChild(textArea);
+				textArea.select();
+				document.execCommand('copy');
+				document.body.removeChild(textArea);
+				showMessage('subMessage', `已复制 ${selectedIndexes.length} 个订阅链接`, 'success');
+			});
+		}
+
+		// 删除选中的订阅
+		async function deleteSelectedSubscriptions() {
+			const selectedIndexes = getSelectedSubscriptionIndexes();
+			if (selectedIndexes.length === 0) {
+				showMessage('subMessage', '请先选择要删除的订阅', 'warning');
+				return;
+			}
+
+			showConfirmModal(`确定要删除选中的 ${selectedIndexes.length} 个订阅吗？`, async function () {
+				try {
+					const response = await fetch('/api/submerge', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							action: 'batchDelete',
+							indexes: selectedIndexes
+						})
+					});
+
+					const result = await response.json();
+					if (result.success) {
+						showMessage('subMessage', `成功删除 ${selectedIndexes.length} 个订阅`, 'success');
+						loadSubscriptions();
+					} else {
+						showMessage('subMessage', result.error || '删除失败', 'error');
+					}
+				} catch (error) {
+					showMessage('subMessage', '删除订阅失败', 'error');
+				}
+			});
+		}
+
+		// 复制链接
+		function copyLink(elementId) {
+			const linkElement = document.getElementById(elementId);
+			const text = linkElement.textContent;
+
+			navigator.clipboard.writeText(text).then(() => {
+				// 简单的视觉反馈
+				const originalText = linkElement.textContent;
+				linkElement.textContent = '已复制!';
+				linkElement.style.color = '#27ae60';
+
+				setTimeout(() => {
+					linkElement.textContent = originalText;
+					linkElement.style.color = '';
+				}, 1000);
+			}).catch(() => {
+				// 降级方案
+				const textArea = document.createElement('textarea');
+				textArea.value = text;
+				document.body.appendChild(textArea);
+				textArea.select();
+				document.execCommand('copy');
+				document.body.removeChild(textArea);
+
+				const originalText = linkElement.textContent;
+				linkElement.textContent = '已复制!';
+				linkElement.style.color = '#27ae60';
+
+				setTimeout(() => {
+					linkElement.textContent = originalText;
+					linkElement.style.color = '';
+				}, 1000);
+			});
+		}
+
+		// 启动订阅名称定时更新器
+		function startSubscriptionNameUpdater() {
+			// 每小时更新一次订阅名称 (3600000毫秒 = 1小时)
+			setInterval(async () => {
+				try {
+					const response = await fetch('/api/submerge?update=true');
+					if (response.ok) {
+						const result = await response.json();
+						if (result.success) {
+							console.log('订阅名称自动更新成功:', result.updated + ' 个订阅已更新');
+							// 如果当前页面显示的是订阅整合，刷新列表
+							if (document.getElementById('submerge').classList.contains('active')) {
+								loadSubscriptions();
+							}
+						}
+					}
+				} catch (error) {
+					console.warn('订阅名称自动更新失败:', error.message);
+				}
+			}, 3600000); // 1小时 = 3600000毫秒
+		}
+
+		// 显示进度条
+		function showProgress(current, total, text) {
+			const progressContainer = document.getElementById('progressContainer');
+			const progressText = document.getElementById('progressText');
+			const progressPercent = document.getElementById('progressPercent');
+			const progressFill = document.getElementById('progressFill');
+
+			// 确保所有元素都存在
+			if (!progressContainer || !progressText || !progressPercent || !progressFill) {
+				console.error('进度条元素未找到');
+				return;
+			}
+
+			progressContainer.style.display = 'block';
+			const percentage = Math.round((current / total) * 100);
+			progressText.textContent = text || '正在处理...';
+			progressPercent.textContent = `${percentage}%`;
+			progressFill.style.width = `${percentage}%`;
+
+			// 添加调试日志
+			console.log(`进度更新: ${current}/${total} (${percentage}%) - ${text}`);
+		}
+
+		// 隐藏进度条
+		function hideProgress() {
+			const progressContainer = document.getElementById('progressContainer');
+			progressContainer.style.display = 'none';
+		}
+
+		// 活跃检测
+		async function activeDetection() {
+			const btn = document.getElementById('activeDetectionBtn');
+
+			try {
+				// 禁用按钮
+				btn.disabled = true;
+				btn.textContent = '检测中...';
+
+				// 隐藏之前的消息
+				document.getElementById('subMessage').style.display = 'none';
+
+				// 获取当前订阅列表
+				const response = await fetch('/api/submerge');
+				const currentSubscriptions = await response.json();
+
+				if (currentSubscriptions.length === 0) {
+					showMessage('subMessage', '没有订阅需要检测', 'info');
+					return;
+				}
+
+				// 显示进度条
+				showProgress(0, currentSubscriptions.length, '准备开始检测...');
+
+				// 逐个检测订阅
+				const results = [];
+				for (let i = 0; i < currentSubscriptions.length; i++) {
+					const subUrl = currentSubscriptions[i];
+					showProgress(i, currentSubscriptions.length, `正在检测订阅 ${i + 1}/${currentSubscriptions.length}...`);
+
+					try {
+						const checkResponse = await fetch('/api/submerge/check', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ url: subUrl })
+						});
+
+						const checkResult = await checkResponse.json();
+						results.push({
+							url: subUrl,
+							valid: checkResult.valid,
+							name: checkResult.name,
+							reason: checkResult.reason,
+							download: checkResult.download,
+							total: checkResult.total,
+							expire: checkResult.expire
+						});
+					} catch (error) {
+						results.push({
+							url: subUrl,
+							valid: false,
+							name: '',
+							reason: '检测失败: ' + error.message,
+							download: 0,
+							total: 0,
+							expire: null
+						});
+					}
+				}
+
+				// 完成检测
+				showProgress(currentSubscriptions.length, currentSubscriptions.length, '检测完成，正在处理结果...');
+
+				// 发送批量处理请求
+				console.log('发送批量处理请求，结果数量:', results.length);
+				console.log('发送的数据结构:', JSON.stringify(results, null, 2));
+				const batchResponse = await fetch('/api/submerge?active_detection_batch=true', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ results: results })
+				});
+				console.log('批量处理响应状态:', batchResponse.status);
+
+				if (batchResponse.ok) {
+					const result = await batchResponse.json();
+					if (result.success) {
+						let message = '活跃检测完成';
+						if (result.updated > 0) {
+							message += `，更新了 ${result.updated} 个订阅名称`;
+						}
+						if (result.removed > 0) {
+							message += `，移除了 ${result.removed} 个无效订阅`;
+						}
+						if (result.removedSubscriptions && result.removedSubscriptions.length > 0) {
+							message += '\n\n移除的订阅：\n';
+							result.removedSubscriptions.forEach((sub, index) => {
+								message += `${index + 1}. 名称：${sub.name || '未知'}\n`;
+								message += `   链接：${sub.url}\n`;
+								message += `   原因：${sub.reason}\n\n`;
+							});
+						}
+						const messageType = result.removed > 0 ? 'info' : 'success';
+						showMessage('subMessage', message, messageType);
+						loadSubscriptions();
+					} else {
+						showMessage('subMessage', result.message || '活跃检测处理失败', 'error');
+					}
+				} else {
+					// 获取详细的错误信息
+					let errorMessage = '活跃检测处理失败';
+					try {
+						const errorResult = await batchResponse.json();
+						if (errorResult.message) {
+							errorMessage += ': ' + errorResult.message;
+						}
+					} catch (e) {
+						errorMessage += ` (HTTP ${batchResponse.status})`;
+					}
+					showMessage('subMessage', errorMessage, 'error');
+				}
+
+			} catch (error) {
+				showMessage('subMessage', '活跃检测失败: ' + error.message, 'error');
+			} finally {
+				// 恢复按钮状态
+				btn.disabled = false;
+				btn.textContent = '活跃检测';
+				hideProgress();
+			}
+		}
+
+		// ========== 确认删除弹窗功能 ==========
+
+		let confirmCallback = null;
+
+		// 显示确认删除弹窗
+		function showConfirmModal(message, callback) {
+			document.getElementById('confirmMessage').textContent = message;
+			document.getElementById('confirmModal').style.display = 'block';
+			confirmCallback = callback;
+		}
+
+		// 隐藏确认删除弹窗
+		function hideConfirmModal() {
+			document.getElementById('confirmModal').style.display = 'none';
+			confirmCallback = null;
+		}
+
+		// 确认删除
+		function confirmDelete() {
+			if (confirmCallback) {
+				confirmCallback();
+			}
+			hideConfirmModal();
+		}
+
+		// 点击弹窗外部关闭
+		document.getElementById('confirmModal').addEventListener('click', function (event) {
+			if (event.target === this) {
+				hideConfirmModal();
+			}
+		});
+
+		// ESC键关闭弹窗
+		document.addEventListener('keydown', function (event) {
+			if (event.key === 'Escape' && document.getElementById('confirmModal').style.display === 'block') {
+				hideConfirmModal();
+			}
+		});
+	</script>
+
+	<!-- 确认删除弹窗 -->
+	<div id="confirmModal" class="confirm-modal">
+		<div class="confirm-modal-content">
+			<div class="confirm-modal-header">
+				<h3>⚠️ 确认删除</h3>
+			</div>
+			<div class="confirm-modal-body">
+				<p id="confirmMessage">确定要删除选中的项目吗？</p>
+				<div class="confirm-modal-actions">
+					<button class="confirm-btn secondary" onclick="hideConfirmModal()">取消</button>
+					<button class="confirm-btn danger" id="confirmDeleteBtn" onclick="confirmDelete()">删除</button>
+				</div>
+			</div>
+		</div>
+	</div>
 </body>
+
 </html>
