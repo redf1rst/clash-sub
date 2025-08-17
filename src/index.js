@@ -3178,6 +3178,7 @@ async function generateProxiesConfig(env) {
 
 			// 规则配置 - 参照clash.yaml
 			rules: [
+				'DOMAIN-SUFFIX,linux.do,Linux DO',
 				'DOMAIN-KEYWORD,ad,REJECT',
 				'DOMAIN-KEYWORD,ads,REJECT',
 				'DOMAIN-KEYWORD,analytics,REJECT',
@@ -3185,7 +3186,6 @@ async function generateProxiesConfig(env) {
 				'DOMAIN-KEYWORD,googlesyndication,REJECT',
 				'DOMAIN-SUFFIX,cursor.sh,节点选择',
 				'DOMAIN-SUFFIX,cursorapi.com,节点选择',
-				'DOMAIN-SUFFIX,linux.do,Linux DO',
 				'DOMAIN-SUFFIX,bilibili.com,DIRECT',
 				'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
 				'RULE-SET,github_domain,节点选择',
@@ -3640,6 +3640,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 
 			// 规则配置 - 参照clash.yaml
 			rules: [
+				'DOMAIN-SUFFIX,linux.do,Linux DO',
 				'DOMAIN-KEYWORD,ad,REJECT',
 				'DOMAIN-KEYWORD,ads,REJECT',
 				'DOMAIN-KEYWORD,analytics,REJECT',
@@ -3647,7 +3648,6 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				'DOMAIN-KEYWORD,googlesyndication,REJECT',
 				'DOMAIN-SUFFIX,cursor.sh,节点选择',
 				'DOMAIN-SUFFIX,cursorapi.com,节点选择',
-				'DOMAIN-SUFFIX,linux.do,Linux DO',
 				'DOMAIN-SUFFIX,bilibili.com,DIRECT',
 				'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
 				'RULE-SET,github_domain,节点选择',
@@ -4501,6 +4501,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 
 		// 规则配置
 		config.rules = [
+			'DOMAIN-SUFFIX,linux.do,Linux DO',
 			'RULE-SET,reject_ip,REJECT',
 			'RULE-SET,reject_non_ip,REJECT',
 			'RULE-SET,reject_domainset,REJECT',
@@ -4510,7 +4511,6 @@ async function generateSubCollectionConfig(collectionId, env) {
 			'RULE-SET,advertising-ads,REJECT',
 			'DOMAIN-SUFFIX,adobe.io,REJECT',
 			'DOMAIN-SUFFIX,adobestats.io,REJECT',
-			'DOMAIN-SUFFIX,linux.do,Linux DO',
 			'RULE-SET,apple_cdn,苹果服务',
 			'RULE-SET,apple_cn_non_ip,苹果服务',
 			'RULE-SET,apple_services,苹果服务',
@@ -5329,10 +5329,10 @@ async function generateSubMergeConfig(env) {
 		config.rules = [
 			'RULE-SET,Private,DIRECT',
 			'RULE-SET,LAN,DIRECT',
+			'DOMAIN-SUFFIX,linux.do,Linux DO',
 			'RULE-SET,Fakeip_Filter,DIRECT',
 			'DOMAIN-SUFFIX,adobe.io,REJECT',
 			'DOMAIN-SUFFIX,adobestats.io,REJECT',
-			'DOMAIN-SUFFIX,linux.do,Linux DO',
 			'DOMAIN-SUFFIX,bilibili.com,DIRECT',
 			'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
 			'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
