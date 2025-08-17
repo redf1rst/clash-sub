@@ -3164,6 +3164,15 @@ async function generateProxiesConfig(env) {
 					proxy: '节点选择',
 					url: 'https://ruleset.skk.moe/Clash/ip/china_ip.txt',
 					path: './rule_set/sukkaw_ruleset/china_ip.txt'
+				},
+				github_domain: {
+					type: 'http',
+					interval: 43200,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/github.mrs',
+					path: './ruleset/github_domain.mrs'
 				}
 			},
 
@@ -3179,6 +3188,7 @@ async function generateProxiesConfig(env) {
 				'DOMAIN-SUFFIX,linux.do,Linux DO',
 				'DOMAIN-SUFFIX,bilibili.com,DIRECT',
 				'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
+				'RULE-SET,github_domain,节点选择',
 				'DOMAIN-SUFFIX,github.com,节点选择',
 				'RULE-SET,reject_ip,REJECT',
 				'RULE-SET,reject_non_ip,REJECT',
@@ -3616,6 +3626,15 @@ async function generateProxyCollectionConfig(collectionId, env) {
 					proxy: '节点选择',
 					url: 'https://ruleset.skk.moe/Clash/ip/china_ip.txt',
 					path: './rule_set/sukkaw_ruleset/china_ip.txt'
+				},
+				github_domain: {
+					type: 'http',
+					interval: 43200,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/github.mrs',
+					path: './ruleset/github_domain.mrs'
 				}
 			},
 
@@ -3631,6 +3650,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				'DOMAIN-SUFFIX,linux.do,Linux DO',
 				'DOMAIN-SUFFIX,bilibili.com,DIRECT',
 				'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
+				'RULE-SET,github_domain,节点选择',
 				'DOMAIN-SUFFIX,github.com,节点选择',
 				'RULE-SET,reject_ip,REJECT',
 				'RULE-SET,reject_non_ip,REJECT',
@@ -5316,10 +5336,10 @@ async function generateSubMergeConfig(env) {
 			'DOMAIN-SUFFIX,bilibili.com,DIRECT',
 			'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
 			'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
-			'DOMAIN-SUFFIX,github.com,🚀 默认代理',
 			// 特定服务规则
 			'RULE-SET,ai,AI服务',
 			'RULE-SET,github_domain,🚀 默认代理',
+			'DOMAIN-SUFFIX,github.com,🚀 默认代理',
 			'RULE-SET,youtube_domain,🚀 默认代理',
 			'RULE-SET,google_domain,AI服务',
 			'RULE-SET,onedrive_domain,🚀 默认代理',
