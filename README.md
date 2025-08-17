@@ -66,7 +66,7 @@ cd clash-sub
 ### 2. 安装依赖
 ```bash
 # 安装 wrangler
-npm install
+npm install -g wrangler
 
 # 登录 wrangler
 npx wrangler login
