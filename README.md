@@ -8,12 +8,12 @@
   <table border="0" style="border-collapse: collapse;">
     <tr>
       <td align="center">
-        <img src="https://github.com/redf1rst/clash-sub/blob/main/img/proxysub.png?raw=true" alt="代理订阅界面" width="700">
+        <img src="https://github.com/redf1rst/clash-sub/blob/main/img/proxyhub.png?raw=true" alt="collection" width="700">
       </td>
     </tr>
     <tr>
       <td align="center" style="padding-top: 5px;">
-        <em><small>节点整合-Proxysub</small></em>
+        <em><small>集合页面</small></em>
       </td>
     </tr>
   </table>
@@ -25,12 +25,12 @@
   <table border="0" style="border-collapse: collapse;">
     <tr>
       <td align="center">
-        <img src="https://github.com/redf1rst/clash-sub/blob/main/img/submerge.png?raw=true" alt="订阅整合界面" width="700">
+        <img src="https://github.com/redf1rst/clash-sub/blob/main/img/proxymanage.png?raw=true" alt="manager" width="700">
       </td>
     </tr>
     <tr>
       <td align="center" style="padding-top: 5px;">
-        <em><small>订阅整合-SubMerge</small></em>
+        <em><small>管理窗口</small></em>
       </td>
     </tr>
   </table>
