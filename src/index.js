@@ -3252,25 +3252,19 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				'DOMAIN-SUFFIX,adobestats.io,REJECT',
 				'DOMAIN-SUFFIX,bilibili.com,DIRECT',
 				'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
-				// 国内&局域网
-				'GEOIP,CN,DIRECT',
-				'RULE-SET,cn_ip,DIRECT',
-				'IP-CIDR,224.0.0.0/24,DIRECT,no-resolve',
-				'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve',
-				'RULE-SET,cn_domain,DIRECT',
-				'RULE-SET,ChinaMedia,DIRECT',
-				'RULE-SET,China,DIRECT',
-				// 特定服务规则
+				// 内网
 				'RULE-SET,Private,DIRECT',
 				'RULE-SET,LAN,DIRECT',
 				'RULE-SET,Fakeip_Filter,DIRECT',
+				'IP-CIDR,224.0.0.0/24,DIRECT,no-resolve',
+				// 特定服务规则
 				'RULE-SET,ai,AI服务',
 				'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
 				'RULE-SET,github_domain,节点选择',
 				'DOMAIN-SUFFIX,github.com,节点选择',
 				'RULE-SET,youtube_domain,节点选择',
 				'RULE-SET,google_domain,AI服务',
-				'RULE-SET,onedrive_domain,节点选择',
+				'RULE-SET,onedrive_domain,微软服务',
 				'RULE-SET,microsoft_domain,微软服务',
 				'RULE-SET,tiktok_domain,节点选择',
 				'RULE-SET,telegram_domain,节点选择',
@@ -3282,10 +3276,16 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				// 通用国内/国外流量
 				'RULE-SET,gfw_domain,节点选择',
 				'RULE-SET,geolocation-!cn,节点选择',
-				// 国外特定 IP 规则
+				// IP 规则
+				'GEOIP,CN,DIRECT',
+				'RULE-SET,cn_ip,DIRECT',
 				'RULE-SET,google_ip,节点选择,no-resolve',
 				'RULE-SET,netflix_ip,节点选择,no-resolve',
 				'RULE-SET,telegram_ip,节点选择,no-resolve',
+				// 国内域名
+				'RULE-SET,cn_domain,DIRECT',
+				'RULE-SET,ChinaMedia,DIRECT',
+				'RULE-SET,China,DIRECT',
 				// 为常用的CDN和规则集提供代理
 				'DOMAIN,cdn.jsdmirror.com,节点选择',
 				'DOMAIN,raw.githubusercontent.com,节点选择',
@@ -3294,9 +3294,9 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				'DOMAIN-SUFFIX,gstatic.com,节点选择',
 
 				// 特殊协议和端口拦截
-				'DST-PORT,3478,REJECT', // STUN 端口
-				'DST-PORT,53,REJECT', // DNS 端口，防止DNS泄漏
-				'DST-PORT,6881-6889,REJECT', // BitTorrent 端口
+				// 'DST-PORT,3478,REJECT', // STUN 端口
+				// 'DST-PORT,53,REJECT', // DNS 端口，防止DNS泄漏
+				// 'DST-PORT,6881-6889,REJECT', // BitTorrent 端口
 				// 拦截
 				'RULE-SET,Advertising-ads,REJECT',
 				// 'RULE-SET,reject_ip,REJECT',
@@ -4210,55 +4210,55 @@ async function generateSubCollectionConfig(collectionId, env) {
 		config.rules = [
 			// 自定义优先规则
 			'DOMAIN-SUFFIX,linux.do,Linux DO',
-			'DOMAIN-SUFFIX,bilibili.com,DIRECT',
-			'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
-			'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
-			// 国内&局域网
-			'GEOIP,CN,DIRECT',
-			'RULE-SET,cn_ip,DIRECT',
-			'IP-CIDR,224.0.0.0/24,DIRECT,no-resolve',
-			'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve',
-			'RULE-SET,cn_domain,DIRECT',
-			'RULE-SET,ChinaMedia,DIRECT',
-			'RULE-SET,China,DIRECT',
-			// 阻止Adobe弹窗
 			'DOMAIN-SUFFIX,adobe.io,REJECT',
 			'DOMAIN-SUFFIX,adobestats.io,REJECT',
-			// 特定服务规则
+			'DOMAIN-SUFFIX,bilibili.com,DIRECT',
+			'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
+			// 内网
 			'RULE-SET,Private,DIRECT',
 			'RULE-SET,LAN,DIRECT',
 			'RULE-SET,Fakeip_Filter,DIRECT',
+			'IP-CIDR,224.0.0.0/24,DIRECT,no-resolve',
+			// 特定服务规则
 			'RULE-SET,ai,AI服务',
-			'RULE-SET,github_domain,🚀 默认代理',
-			'DOMAIN-SUFFIX,github.com,🚀 默认代理',
-			'RULE-SET,youtube_domain,🚀 默认代理',
+			'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
+			'RULE-SET,github_domain,节点选择',
+			'DOMAIN-SUFFIX,github.com,节点选择',
+			'RULE-SET,youtube_domain,节点选择',
 			'RULE-SET,google_domain,AI服务',
-			'RULE-SET,onedrive_domain,🚀 默认代理',
+			'RULE-SET,onedrive_domain,微软服务',
 			'RULE-SET,microsoft_domain,微软服务',
-			'RULE-SET,tiktok_domain,🚀 默认代理',
-			'RULE-SET,telegram_domain,🚀 默认代理',
-			'RULE-SET,spotify_domain,🚀 默认代理',
-			'RULE-SET,netflix_domain,🚀 默认代理',
-			'RULE-SET,paypal_domain,🚀 默认代理',
+			'RULE-SET,tiktok_domain,节点选择',
+			'RULE-SET,telegram_domain,节点选择',
+			'RULE-SET,spotify_domain,节点选择',
+			'RULE-SET,netflix_domain,节点选择',
+			'RULE-SET,paypal_domain,节点选择',
 			'RULE-SET,apple_domain,苹果服务',
-			'RULE-SET,speedtest_domain,🚀 默认代理',
-			// 通用国外流量
-			'RULE-SET,gfw_domain,🚀 默认代理',
-			'RULE-SET,geolocation-!cn,🚀 默认代理',
-			// 国外特定 IP 规则
-			'RULE-SET,google_ip,🚀 默认代理,no-resolve',
-			'RULE-SET,netflix_ip,🚀 默认代理,no-resolve',
-			'RULE-SET,telegram_ip,🚀 默认代理,no-resolve',
+			'RULE-SET,speedtest_domain,节点选择',
+			// 通用国内/国外流量
+			'RULE-SET,gfw_domain,节点选择',
+			'RULE-SET,geolocation-!cn,节点选择',
+			// IP 规则
+			'GEOIP,CN,DIRECT',
+			'RULE-SET,cn_ip,DIRECT',
+			'RULE-SET,google_ip,节点选择,no-resolve',
+			'RULE-SET,netflix_ip,节点选择,no-resolve',
+			'RULE-SET,telegram_ip,节点选择,no-resolve',
+			// 国内域名
+			'RULE-SET,cn_domain,DIRECT',
+			'RULE-SET,ChinaMedia,DIRECT',
+			'RULE-SET,China,DIRECT',
 			// 为常用的CDN和规则集提供代理
-			'DOMAIN,cdn.jsdmirror.com,🚀 默认代理',
-			'DOMAIN,raw.githubusercontent.com,🚀 默认代理',
-			'DOMAIN-SUFFIX,cdn.jsdelivr.net,🚀 默认代理',
-			'DOMAIN-SUFFIX,cdnjs.cloudflare.com,🚀 默认代理',
-			'DOMAIN-SUFFIX,gstatic.com,🚀 默认代理',
+			'DOMAIN,cdn.jsdmirror.com,节点选择',
+			'DOMAIN,raw.githubusercontent.com,节点选择',
+			'DOMAIN-SUFFIX,cdn.jsdelivr.net,节点选择',
+			'DOMAIN-SUFFIX,cdnjs.cloudflare.com,节点选择',
+			'DOMAIN-SUFFIX,gstatic.com,节点选择',
+
 			// 特殊协议和端口拦截
-			'DST-PORT,3478,REJECT', // STUN 端口
-			'DST-PORT,53,REJECT', // DNS 端口，防止DNS泄漏
-			'DST-PORT,6881-6889,REJECT', // BitTorrent 端口
+			// 'DST-PORT,3478,REJECT', // STUN 端口
+			// 'DST-PORT,53,REJECT', // DNS 端口，防止DNS泄漏
+			// 'DST-PORT,6881-6889,REJECT', // BitTorrent 端口
 			// 拦截
 			'RULE-SET,Advertising-ads,REJECT',
 			// 'RULE-SET,reject_ip,REJECT',
@@ -4268,7 +4268,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 			// 'RULE-SET,reject_non_ip_drop,REJECT-DROP',
 			// 'RULE-SET,reject_non_ip_no_drop,REJECT',
 			// 兜底规则
-			'MATCH,🚀 默认代理'
+			'MATCH,节点选择'
 		];
 
 		const yamlContent = convertToYAML(config);
@@ -4318,7 +4318,7 @@ function parseVmess(url) {
 	const config = {
 		name: data.ps || 'VMess',
 		type: 'vmess',
-		server: data.add,
+		server: formatServerAddress(data.add),
 		port: parseInt(data.port),
 		uuid: data.id,
 		alterId: parseInt(data.aid) || 0,
@@ -4360,6 +4360,20 @@ function parseVmess(url) {
 	// 添加 ECH 配置
 	if (data['ech-opts']) {
 		config['ech-opts'] = data['ech-opts'];
+	}
+
+	// 添加 Reality 配置
+	if (data.tls === 'reality' || data.security === 'reality') {
+		config['reality-opts'] = {};
+		if (data.pbk) {
+			config['reality-opts']['public-key'] = data.pbk;
+		}
+		if (data.sid) {
+			config['reality-opts']['short-id'] = data.sid;
+		}
+		if (data['support-x25519mlkem768']) {
+			config['reality-opts']['support-x25519mlkem768'] = data['support-x25519mlkem768'] === true || data['support-x25519mlkem768'] === 'true';
+		}
 	}
 
 	// 添加 WebSocket 配置
@@ -4445,7 +4459,7 @@ function parseVless(url) {
 	const config = {
 		name: decodeURIComponent(parsed.hash.substring(1)) || 'VLess',
 		type: 'vless',
-		server: parsed.hostname,
+		server: formatServerAddress(parsed.hostname),
 		port: parseInt(parsed.port),
 		uuid: parsed.username,
 		network: params.get('type') || 'tcp',
@@ -4639,7 +4653,7 @@ function parseShadowsocks(url) {
 	const config = {
 		name: name,
 		type: 'ss',
-		server: server,
+		server: formatServerAddress(server),
 		port: port,
 		cipher: method,
 		password: password
@@ -4806,7 +4820,7 @@ function parseShadowsocksR(url) {
 	const config = {
 		name: 'ShadowsocksR',
 		type: 'ssr',
-		server: server,
+		server: formatServerAddress(server),
 		port: port,
 		cipher: method,
 		password: password,
@@ -4862,7 +4876,7 @@ function parseHysteria(url) {
 	const config = {
 		name: decodeURIComponent(parsed.hash.substring(1)) || 'Hysteria',
 		type: 'hysteria',
-		server: parsed.hostname,
+		server: formatServerAddress(parsed.hostname),
 		port: parseInt(parsed.port)
 	};
 
@@ -4961,7 +4975,7 @@ function parseHysteria2(url) {
 	const config = {
 		name: decodeURIComponent(parsed.hash.substring(1)) || 'Hysteria2',
 		type: 'hysteria2',
-		server: parsed.hostname,
+		server: formatServerAddress(parsed.hostname),
 		port: parseInt(parsed.port),
 		password: parsed.username
 	};
@@ -5060,7 +5074,7 @@ function parseTrojan(url) {
 	const config = {
 		name: decodeURIComponent(parsed.hash.substring(1)) || 'Trojan',
 		type: 'trojan',
-		server: parsed.hostname,
+		server: formatServerAddress(parsed.hostname),
 		port: parseInt(parsed.port),
 		password: parsed.username,
 		udp: true  // Trojan通常默认开启UDP
@@ -5163,6 +5177,20 @@ function parseTrojan(url) {
 		config['client-fingerprint'] = params.get('fp');
 	}
 
+	// 添加 Reality 配置
+	if (params.get('security') === 'reality' || params.get('tls') === 'reality') {
+		config['reality-opts'] = {};
+		if (params.get('pbk')) {
+			config['reality-opts']['public-key'] = params.get('pbk');
+		}
+		if (params.get('sid')) {
+			config['reality-opts']['short-id'] = params.get('sid');
+		}
+		if (params.get('support-x25519mlkem768')) {
+			config['reality-opts']['support-x25519mlkem768'] = params.get('support-x25519mlkem768') === 'true';
+		}
+	}
+
 	return config;
 }
 
@@ -5193,7 +5221,7 @@ function parseTuic(url) {
 	const config = {
 		name: decodeURIComponent(parsed.hash.substring(1)) || 'TUIC',
 		type: 'tuic',
-		server: parsed.hostname,
+		server: formatServerAddress(parsed.hostname),
 		port: parseInt(parsed.port)
 	};
 
@@ -6109,4 +6137,23 @@ function isIPv6Address(address) {
 	const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^([0-9a-fA-F]{1,4}:)*::([0-9a-fA-F]{1,4}:)*[0-9a-fA-F]{1,4}$|^::([0-9a-fA-F]{1,4}:)*[0-9a-fA-F]{1,4}$|^([0-9a-fA-F]{1,4}:)+::$|^::$/;
 
 	return ipv6Regex.test(cleanAddress);
+}
+
+// 格式化server字段，确保IPv6地址格式正确
+function formatServerAddress(server, port) {
+	if (!server) return server;
+
+	// 移除可能已存在的方括号
+	const cleanServer = server.replace(/^\[|\]$/g, '');
+
+	// 检查是否为IPv6地址
+	if (isIPv6Address(cleanServer)) {
+		// IPv6地址需要用方括号包围（当有端口时）
+		// 但在Clash配置中，server字段只包含地址，不包含端口
+		// 所以这里只返回纯IPv6地址，不加方括号
+		return cleanServer;
+	}
+
+	// IPv4地址或域名直接返回
+	return cleanServer;
 }
