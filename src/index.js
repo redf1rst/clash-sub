@@ -3258,6 +3258,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				'DOMAIN-SUFFIX,adobestats.io,REJECT',
 				'DOMAIN-SUFFIX,bilibili.com,DIRECT',
 				'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
+				'RULE-SET,Advertising-ads,REJECT',
 				// 内网
 				'RULE-SET,Private,DIRECT',
 				'RULE-SET,LAN,DIRECT,no-resolve',
@@ -3304,7 +3305,6 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				// 'DST-PORT,53,REJECT', // DNS 端口，防止DNS泄漏
 				// 'DST-PORT,6881-6889,REJECT', // BitTorrent 端口
 				// 拦截
-				'RULE-SET,Advertising-ads,REJECT',
 				// 'RULE-SET,reject_ip,REJECT',
 				// 'RULE-SET,reject_non_ip,REJECT',
 				// 'RULE-SET,reject_domainset,REJECT',
@@ -4220,6 +4220,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 			'DOMAIN-SUFFIX,adobestats.io,REJECT',
 			'DOMAIN-SUFFIX,bilibili.com,DIRECT',
 			'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
+			'RULE-SET,Advertising-ads,REJECT',
 			// 内网
 			'RULE-SET,Private,DIRECT',
 			'RULE-SET,LAN,DIRECT,no-resolve',
@@ -4266,7 +4267,6 @@ async function generateSubCollectionConfig(collectionId, env) {
 			// 'DST-PORT,53,REJECT', // DNS 端口，防止DNS泄漏
 			// 'DST-PORT,6881-6889,REJECT', // BitTorrent 端口
 			// 拦截
-			'RULE-SET,Advertising-ads,REJECT',
 			// 'RULE-SET,reject_ip,REJECT',
 			// 'RULE-SET,reject_non_ip,REJECT',
 			// 'RULE-SET,reject_domainset,REJECT',
