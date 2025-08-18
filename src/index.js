@@ -1533,9 +1533,12 @@ async function addJSONProxiesToCollection(collectionId, proxiesToAdd, env) {
 				continue; // 跳过端口号无效的节点
 			}
 
+			// 格式化server地址
+			const formattedServer = formatServerAddress(proxyData.server.trim());
+
 			// 检查重复节点 - 基于server和port，忽略名称
 			const isDuplicate = collection.proxies.some(p =>
-				p.server === proxyData.server.trim() && p.port === port
+				p.server === formattedServer && p.port === port
 			);
 
 			if (isDuplicate) {
@@ -1544,7 +1547,7 @@ async function addJSONProxiesToCollection(collectionId, proxiesToAdd, env) {
 			}
 
 			// 自动检测地区 - 与addProxyToCollection相同的逻辑
-			const detectedRegion = await detectRegion(proxyData.server.trim());
+			const detectedRegion = await detectRegion(formattedServer);
 
 			// 地区代码映射为英文缩写+中文格式
 			const regionNames = {
@@ -1724,7 +1727,7 @@ async function addJSONProxiesToCollection(collectionId, proxiesToAdd, env) {
 			};
 
 			const regionName = regionNames[detectedRegion] || `${detectedRegion}未知`;
-			const isIPv6 = isIPv6Address(proxyData.server.trim());
+			const isIPv6 = isIPv6Address(formattedServer);
 			const suffix = isIPv6 ? '-IPv6' : '-IPv4';
 
 			// 计算序号 - 找到该地区可用的最小序号，填补空缺
@@ -1771,14 +1774,14 @@ async function addJSONProxiesToCollection(collectionId, proxiesToAdd, env) {
 			const newNodeName = `${regionName}${nodeNumberStr}${suffix}`;
 			console.log(`[DEBUG] Assigned number: ${nodeNumber}, final name: ${newNodeName}`);
 
-			// 标准化节点数据 - 使用新生成的名称
+			// 标准化节点数据 - 使用新生成的名称和格式化的server地址
 			const { name: _, ...otherFields } = proxyData; // 排除原始name字段
 			const normalizedProxy = {
 				name: newNodeName,
 				type: proxyData.type.toLowerCase(),
-				server: proxyData.server.trim(),
+				server: formattedServer,
 				port: port,
-				...otherFields // 展开其他字段，不包含原始name
+				...otherFields // 展开其他字段，不包含原始name和server
 			};
 
 			collection.proxies.push(normalizedProxy);
@@ -2242,16 +2245,6 @@ async function addJSONProxies(proxiesToAdd, env) {
 				});
 			}
 
-			// 检查重复节点 - 基于server和port，忽略名称
-			const isDuplicate = proxies.some(p =>
-				p.server === proxyData.server.trim() && p.port === port
-			);
-
-			if (isDuplicate) {
-				duplicateCount++;
-				continue; // 跳过重复节点
-			}
-
 			// 验证端口号
 			const port = parseInt(proxyData.port);
 			if (isNaN(port) || port < 1 || port > 65535) {
@@ -2263,8 +2256,21 @@ async function addJSONProxies(proxiesToAdd, env) {
 				});
 			}
 
+			// 格式化server地址
+			const formattedServer = formatServerAddress(proxyData.server.trim());
+
+			// 检查重复节点 - 基于server和port，忽略名称
+			const isDuplicate = proxies.some(p =>
+				p.server === formattedServer && p.port === port
+			);
+
+			if (isDuplicate) {
+				duplicateCount++;
+				continue; // 跳过重复节点
+			}
+
 			// 自动检测地区
-			const detectedRegion = await detectRegion(proxyData.server.trim());
+			const detectedRegion = await detectRegion(formattedServer);
 
 			// 地区代码映射
 			const regionNames = {
@@ -2275,7 +2281,7 @@ async function addJSONProxies(proxiesToAdd, env) {
 			};
 
 			const regionName = regionNames[detectedRegion] || `${detectedRegion}未知`;
-			const isIPv6 = proxyData.server.includes(':');
+			const isIPv6 = isIPv6Address(formattedServer);
 			const suffix = isIPv6 ? '-IPv6' : '-IPv4';
 
 			// 计算序号
@@ -2307,13 +2313,13 @@ async function addJSONProxies(proxiesToAdd, env) {
 			const nodeNumberStr = String(nodeNumber).padStart(2, '0');
 			const newNodeName = `${regionName}${nodeNumberStr}${suffix}`;
 
-			// 标准化节点数据 - 使用新生成的名称
+			// 标准化节点数据 - 使用新生成的名称和格式化的server地址
 			const normalizedProxy = {
 				name: newNodeName,
 				type: proxyData.type.toLowerCase(),
-				server: proxyData.server.trim(),
+				server: formattedServer,
 				port: port,
-				...proxyData // 保留其他字段，但name会被覆盖
+				...proxyData // 保留其他字段，但name、server会被覆盖
 			};
 
 			proxies.push(normalizedProxy);
@@ -3254,14 +3260,14 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
 				// 内网
 				'RULE-SET,Private,DIRECT',
-				'RULE-SET,LAN,DIRECT',
+				'RULE-SET,LAN,DIRECT,no-resolve',
 				'RULE-SET,Fakeip_Filter,DIRECT',
 				'IP-CIDR,224.0.0.0/24,DIRECT,no-resolve',
 				// 特定服务规则
 				'RULE-SET,ai,AI服务',
 				'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
-				'RULE-SET,github_domain,节点选择',
 				'DOMAIN-SUFFIX,github.com,节点选择',
+				'RULE-SET,github_domain,节点选择',
 				'RULE-SET,youtube_domain,节点选择',
 				'RULE-SET,google_domain,AI服务',
 				'RULE-SET,onedrive_domain,微软服务',
@@ -3277,7 +3283,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				'RULE-SET,gfw_domain,节点选择',
 				'RULE-SET,geolocation-!cn,节点选择',
 				// IP 规则
-				'GEOIP,CN,DIRECT',
+				'GEOIP,CNcidr,DIRECT',
 				'RULE-SET,cn_ip,DIRECT',
 				'RULE-SET,google_ip,节点选择,no-resolve',
 				'RULE-SET,netflix_ip,节点选择,no-resolve',
@@ -4216,14 +4222,14 @@ async function generateSubCollectionConfig(collectionId, env) {
 			'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
 			// 内网
 			'RULE-SET,Private,DIRECT',
-			'RULE-SET,LAN,DIRECT',
+			'RULE-SET,LAN,DIRECT,no-resolve',
 			'RULE-SET,Fakeip_Filter,DIRECT',
-			'IP-CIDR,224.0.0.0/24,DIRECT,no-resolve',
+			'IP-CIDR,224.0.0.0/25,DIRECT,no-resolve',
 			// 特定服务规则
 			'RULE-SET,ai,AI服务',
 			'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
-			'RULE-SET,github_domain,节点选择',
 			'DOMAIN-SUFFIX,github.com,节点选择',
+			'RULE-SET,github_domain,节点选择',
 			'RULE-SET,youtube_domain,节点选择',
 			'RULE-SET,google_domain,AI服务',
 			'RULE-SET,onedrive_domain,微软服务',
@@ -4239,7 +4245,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 			'RULE-SET,gfw_domain,节点选择',
 			'RULE-SET,geolocation-!cn,节点选择',
 			// IP 规则
-			'GEOIP,CN,DIRECT',
+			'GEOIP,CNcidr,DIRECT',
 			'RULE-SET,cn_ip,DIRECT',
 			'RULE-SET,google_ip,节点选择,no-resolve',
 			'RULE-SET,netflix_ip,节点选择,no-resolve',
