@@ -3195,7 +3195,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 					format: 'text',
 					proxy: '节点选择',
 					url: 'https://ruleset.skk.moe/Clash/non_ip/reject-no-drop.txt',
-					path: './rule_set/reject_non_ip_no_drop.txt'
+					path: './ruleset/reject_non_ip_no_drop.txt'
 				},
 				reject_non_ip_drop: {
 					type: 'http',
@@ -3204,7 +3204,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 					format: 'text',
 					proxy: '节点选择',
 					url: 'https://ruleset.skk.moe/Clash/non_ip/reject-drop.txt',
-					path: './rule_set/reject_non_ip_drop.txt'
+					path: './ruleset/reject_non_ip_drop.txt'
 				},
 				reject_non_ip: {
 					type: 'http',
@@ -3213,7 +3213,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 					format: 'text',
 					proxy: '节点选择',
 					url: 'https://ruleset.skk.moe/Clash/non_ip/reject.txt',
-					path: './rule_set/reject_non_ip.txt'
+					path: './ruleset/reject_non_ip.txt'
 				},
 				reject_domainset: {
 					type: 'http',
@@ -3222,7 +3222,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 					format: 'text',
 					proxy: '节点选择',
 					url: 'https://ruleset.skk.moe/Clash/domainset/reject.txt',
-					path: './rule_set/reject_domainset.txt'
+					path: './ruleset/reject_domainset.txt'
 				},
 				reject_extra_domainset: {
 					type: 'http',
@@ -3231,7 +3231,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 					format: 'text',
 					proxy: '节点选择',
 					url: 'https://ruleset.skk.moe/Clash/domainset/reject_extra.txt',
-					path: './rule_set/reject_domainset_extra.txt'
+					path: './ruleset/reject_domainset_extra.txt'
 				},
 				reject_ip: {
 					type: 'http',
@@ -3240,7 +3240,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 					format: 'text',
 					proxy: '节点选择',
 					url: 'https://ruleset.skk.moe/Clash/ip/reject.txt',
-					path: './rule_set/reject_ip.txt'
+					path: './ruleset/reject_ip.txt'
 				},
 			},
 
@@ -3299,12 +3299,12 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				'DST-PORT,6881-6889,REJECT', // BitTorrent 端口
 				// 拦截
 				'RULE-SET,Advertising-ads,REJECT',
-				'RULE-SET,reject_ip,REJECT',
-				'RULE-SET,reject_non_ip,REJECT',
-				'RULE-SET,reject_domainset,REJECT',
-				'RULE-SET,reject_extra_domainset,REJECT',
-				'RULE-SET,reject_non_ip_drop,REJECT-DROP',
-				'RULE-SET,reject_non_ip_no_drop,REJECT',
+				// 'RULE-SET,reject_ip,REJECT',
+				// 'RULE-SET,reject_non_ip,REJECT',
+				// 'RULE-SET,reject_domainset,REJECT',
+				// 'RULE-SET,reject_extra_domainset,REJECT',
+				// 'RULE-SET,reject_non_ip_drop,REJECT-DROP',
+				// 'RULE-SET,reject_non_ip_no_drop,REJECT',
 				// 兜底规则
 				'MATCH,节点选择'
 			]
@@ -4157,7 +4157,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 				format: 'text',
 				proxy: '🚀 默认代理',
 				url: 'https://ruleset.skk.moe/Clash/non_ip/reject-no-drop.txt',
-				path: './rule_set/reject_non_ip_no_drop.txt'
+				path: './ruleset/reject_non_ip_no_drop.txt'
 			},
 			reject_non_ip_drop: {
 				type: 'http',
@@ -4166,7 +4166,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 				format: 'text',
 				proxy: '🚀 默认代理',
 				url: 'https://ruleset.skk.moe/Clash/non_ip/reject-drop.txt',
-				path: './rule_set/reject_non_ip_drop.txt'
+				path: './ruleset/reject_non_ip_drop.txt'
 			},
 			reject_non_ip: {
 				type: 'http',
@@ -4175,7 +4175,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 				format: 'text',
 				proxy: '🚀 默认代理',
 				url: 'https://ruleset.skk.moe/Clash/non_ip/reject.txt',
-				path: './rule_set/reject_non_ip.txt'
+				path: './ruleset/reject_non_ip.txt'
 			},
 			reject_domainset: {
 				type: 'http',
@@ -4184,7 +4184,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 				format: 'text',
 				proxy: '🚀 默认代理',
 				url: 'https://ruleset.skk.moe/Clash/domainset/reject.txt',
-				path: './rule_set/reject_domainset.txt'
+				path: './ruleset/reject_domainset.txt'
 			},
 			reject_extra_domainset: {
 				type: 'http',
@@ -4193,7 +4193,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 				format: 'text',
 				proxy: '🚀 默认代理',
 				url: 'https://ruleset.skk.moe/Clash/domainset/reject_extra.txt',
-				path: './rule_set/reject_domainset_extra.txt'
+				path: './ruleset/reject_domainset_extra.txt'
 			},
 			reject_ip: {
 				type: 'http',
@@ -4202,7 +4202,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 				format: 'text',
 				proxy: '🚀 默认代理',
 				url: 'https://ruleset.skk.moe/Clash/ip/reject.txt',
-				path: './rule_set/reject_ip.txt'
+				path: './ruleset/reject_ip.txt'
 			},
 		};
 
@@ -4261,12 +4261,12 @@ async function generateSubCollectionConfig(collectionId, env) {
 			'DST-PORT,6881-6889,REJECT', // BitTorrent 端口
 			// 拦截
 			'RULE-SET,Advertising-ads,REJECT',
-			'RULE-SET,reject_ip,REJECT',
-			'RULE-SET,reject_non_ip,REJECT',
-			'RULE-SET,reject_domainset,REJECT',
-			'RULE-SET,reject_extra_domainset,REJECT',
-			'RULE-SET,reject_non_ip_drop,REJECT-DROP',
-			'RULE-SET,reject_non_ip_no_drop,REJECT',
+			// 'RULE-SET,reject_ip,REJECT',
+			// 'RULE-SET,reject_non_ip,REJECT',
+			// 'RULE-SET,reject_domainset,REJECT',
+			// 'RULE-SET,reject_extra_domainset,REJECT',
+			// 'RULE-SET,reject_non_ip_drop,REJECT-DROP',
+			// 'RULE-SET,reject_non_ip_no_drop,REJECT',
 			// 兜底规则
 			'MATCH,🚀 默认代理'
 		];
