@@ -4228,38 +4228,38 @@ async function generateSubCollectionConfig(collectionId, env) {
 			// 特定服务规则
 			'RULE-SET,ai,AI服务',
 			'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
-			'DOMAIN-SUFFIX,github.com,节点选择',
-			'RULE-SET,github_domain,节点选择',
-			'RULE-SET,youtube_domain,节点选择',
+			'DOMAIN-SUFFIX,github.com,🚀 默认代理',
+			'RULE-SET,github_domain,🚀 默认代理',
+			'RULE-SET,youtube_domain,🚀 默认代理',
 			'RULE-SET,google_domain,AI服务',
 			'RULE-SET,onedrive_domain,微软服务',
 			'RULE-SET,microsoft_domain,微软服务',
-			'RULE-SET,tiktok_domain,节点选择',
-			'RULE-SET,telegram_domain,节点选择',
-			'RULE-SET,spotify_domain,节点选择',
-			'RULE-SET,netflix_domain,节点选择',
-			'RULE-SET,paypal_domain,节点选择',
+			'RULE-SET,tiktok_domain,🚀 默认代理',
+			'RULE-SET,telegram_domain,🚀 默认代理',
+			'RULE-SET,spotify_domain,🚀 默认代理',
+			'RULE-SET,netflix_domain,🚀 默认代理',
+			'RULE-SET,paypal_domain,🚀 默认代理',
 			'RULE-SET,apple_domain,苹果服务',
-			'RULE-SET,speedtest_domain,节点选择',
+			'RULE-SET,speedtest_domain,🚀 默认代理',
 			// 通用国内/国外流量
-			'RULE-SET,gfw_domain,节点选择',
-			'RULE-SET,geolocation-!cn,节点选择',
+			'RULE-SET,gfw_domain,🚀 默认代理',
+			'RULE-SET,geolocation-!cn,🚀 默认代理',
 			// IP 规则
 			'RULE-SET,CNcidr,DIRECT',
 			'RULE-SET,cn_ip,DIRECT',
-			'RULE-SET,google_ip,节点选择,no-resolve',
-			'RULE-SET,netflix_ip,节点选择,no-resolve',
-			'RULE-SET,telegram_ip,节点选择,no-resolve',
+			'RULE-SET,google_ip,🚀 默认代理,no-resolve',
+			'RULE-SET,netflix_ip,🚀 默认代理,no-resolve',
+			'RULE-SET,telegram_ip,🚀 默认代理,no-resolve',
 			// 国内域名
 			'RULE-SET,cn_domain,DIRECT',
 			'RULE-SET,ChinaMedia,DIRECT',
 			'RULE-SET,China,DIRECT',
 			// 为常用的CDN和规则集提供代理
-			'DOMAIN,cdn.jsdmirror.com,节点选择',
-			'DOMAIN,raw.githubusercontent.com,节点选择',
-			'DOMAIN-SUFFIX,cdn.jsdelivr.net,节点选择',
-			'DOMAIN-SUFFIX,cdnjs.cloudflare.com,节点选择',
-			'DOMAIN-SUFFIX,gstatic.com,节点选择',
+			'DOMAIN,cdn.jsdmirror.com,🚀 默认代理',
+			'DOMAIN,raw.githubusercontent.com,🚀 默认代理',
+			'DOMAIN-SUFFIX,cdn.jsdelivr.net,🚀 默认代理',
+			'DOMAIN-SUFFIX,cdnjs.cloudflare.com,🚀 默认代理',
+			'DOMAIN-SUFFIX,gstatic.com,🚀 默认代理',
 
 			// 特殊协议和端口拦截
 			// 'DST-PORT,3478,REJECT', // STUN 端口
@@ -4274,7 +4274,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 			// 'RULE-SET,reject_non_ip_drop,REJECT-DROP',
 			// 'RULE-SET,reject_non_ip_no_drop,REJECT',
 			// 兜底规则
-			'MATCH,节点选择'
+			'MATCH,🚀 默认代理'
 		];
 
 		const yamlContent = convertToYAML(config);
