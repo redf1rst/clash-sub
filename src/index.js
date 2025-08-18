@@ -3283,7 +3283,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				'RULE-SET,gfw_domain,节点选择',
 				'RULE-SET,geolocation-!cn,节点选择',
 				// IP 规则
-				'GEOIP,CNcidr,DIRECT',
+				'RULE-SET,CNcidr,DIRECT',
 				'RULE-SET,cn_ip,DIRECT',
 				'RULE-SET,google_ip,节点选择,no-resolve',
 				'RULE-SET,netflix_ip,节点选择,no-resolve',
@@ -4245,7 +4245,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 			'RULE-SET,gfw_domain,节点选择',
 			'RULE-SET,geolocation-!cn,节点选择',
 			// IP 规则
-			'GEOIP,CNcidr,DIRECT',
+			'RULE-SET,CNcidr,DIRECT',
 			'RULE-SET,cn_ip,DIRECT',
 			'RULE-SET,google_ip,节点选择,no-resolve',
 			'RULE-SET,netflix_ip,节点选择,no-resolve',
