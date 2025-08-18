@@ -2795,457 +2795,6 @@ async function updateSubscriptionName(index, newName, env) {
 	}
 }
 
-// 生成节点配置
-async function generateProxiesConfig(env) {
-	try {
-		const proxies = JSON.parse(await env.CLASH_KV?.get('proxies') || '[]');
-
-		// 对节点进行排序：优先级地区 + 其他地区按字母顺序
-		proxies.sort((a, b) => {
-			// 提取地区缩写和序号 - 修正正则表达式以匹配实际的节点命名格式
-			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{2})-(IPv4|IPv6)$/;
-			const matchA = a.name.match(regionPatternForSort);
-			const matchB = b.name.match(regionPatternForSort);
-
-			if (matchA && matchB) {
-				const regionA = matchA[1];
-				const regionB = matchB[1];
-				const numberA = parseInt(matchA[2]);
-				const numberB = parseInt(matchB[2]);
-
-				// 定义优先级地区顺序
-				const priorityRegions = ['US', 'JP', 'TW', 'SG', 'KR', 'HK', 'CA', 'AU', 'FR', 'GB', 'DE'];
-				const priorityA = priorityRegions.indexOf(regionA);
-				const priorityB = priorityRegions.indexOf(regionB);
-
-				// 如果两个都是优先级地区
-				if (priorityA !== -1 && priorityB !== -1) {
-					if (priorityA !== priorityB) {
-						return priorityA - priorityB; // 按优先级顺序排序
-					}
-					return numberA - numberB; // 优先级相同时按序号排序
-				}
-
-				// 如果只有一个是优先级地区
-				if (priorityA !== -1 && priorityB === -1) {
-					return -1; // A 是优先级地区，排在前面
-				}
-				if (priorityA === -1 && priorityB !== -1) {
-					return 1; // B 是优先级地区，排在前面
-				}
-
-				// 如果两个都不是优先级地区，按字母顺序排序
-				if (regionA !== regionB) {
-					return regionA.localeCompare(regionB);
-				}
-				// 地区相同时按序号排序
-				return numberA - numberB;
-			}
-
-			// 如果匹配失败，按名称排序
-			return a.name.localeCompare(b.name);
-		});
-
-		const config = {
-			//proxysub
-			port: 7890,
-			'socks-port': 7891,
-			'redir-port': 7892,
-			'mixed-port': 7893,
-			'tproxy-port': 7894,
-			'allow-lan': true,
-			'bind-address': '*',
-			ipv6: false,
-			'unified-delay': true,
-			'tcp-concurrent': true,
-			'log-level': 'info',
-			'find-process-mode': 'off',
-			'global-client-fingerprint': 'chrome',
-			'keep-alive-idle': 600,
-			'keep-alive-interval': 15,
-			'disable-keep-alive': false,
-			profile: {
-				'store-selected': true,
-				'store-fake-ip': true
-			},
-			mode: 'rule',
-			'geodata-mode': false,
-			'geodata-loader': 'standard',
-			'geo-auto-update': true,
-			'geo-update-interval': 24,
-
-			// 节点配置
-			proxies: proxies,
-
-			// 代理组配置 - 参照clash.yaml
-			'proxy-groups': [
-				{
-					name: '节点选择',
-					type: 'select',
-					proxies: [...proxies.map(p => p.name), 'DIRECT'],
-					icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Proxy.png'
-				},
-				{
-					name: 'AI服务',
-					type: 'select',
-					proxies: ['节点选择', 'DIRECT'],
-					icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ChatGPT.png'
-				},
-				{
-					name: 'Linux DO',
-					type: 'select',
-					proxies: ['节点选择', 'DIRECT'],
-					icon: 'https://edit-upload-pic.cdn.bcebos.com/26173e4a31c69a7c7bf843eeec70e1e0.jpeg?authorization=bce-auth-v1%2FALTAKh1mxHnNIyeO93hiasKJqq%2F2025-08-15T08%3A35%3A39Z%2F3600%2Fhost%2Fd6bff9c1010358e2a7ffd2915d3d7da2bf43bd76a9252e591ff085847855daf4'
-				},
-				{
-					name: '微软服务',
-					type: 'select',
-					proxies: ['节点选择', 'DIRECT'],
-					icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Microsoft.png'
-				},
-				{
-					name: '苹果服务',
-					type: 'select',
-					proxies: ['DIRECT', '节点选择'],
-					icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Apple.png'
-				},
-			],
-
-			// 规则提供者配置 - 参照clash.yaml
-			'rule-providers': {
-				'advertising-ads': {
-					type: 'http',
-					interval: 3600,
-					behavior: 'domain',
-					format: 'mrs',
-					proxy: '节点选择',
-					url: 'https://cdn.jsdmirror.com/gh/TG-Twilight/AWAvenue-Ads-Rule@main/Filters/AWAvenue-Ads-Rule-Clash.mrs',
-					path: './rule_set/advertising_ads_Domain.mrs'
-				},
-				reject_non_ip_no_drop: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/reject-no-drop.txt',
-					path: './rule_set/sukkaw_ruleset/reject_non_ip_no_drop.txt'
-				},
-				reject_non_ip_drop: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/reject-drop.txt',
-					path: './rule_set/sukkaw_ruleset/reject_non_ip_drop.txt'
-				},
-				reject_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/reject.txt',
-					path: './rule_set/sukkaw_ruleset/reject_non_ip.txt'
-				},
-				reject_domainset: {
-					type: 'http',
-					behavior: 'domain',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/domainset/reject.txt',
-					path: './rule_set/sukkaw_ruleset/reject_domainset.txt'
-				},
-				reject_extra_domainset: {
-					type: 'http',
-					behavior: 'domain',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/domainset/reject_extra.txt',
-					path: './sukkaw_ruleset/reject_domainset_extra.txt'
-				},
-				reject_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/ip/reject.txt',
-					path: './rule_set/sukkaw_ruleset/reject_ip.txt'
-				},
-				cdn_domainset: {
-					type: 'http',
-					behavior: 'domain',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/domainset/cdn.txt',
-					path: './rule_set/sukkaw_ruleset/cdn_domainset.txt'
-				},
-				cdn_non_ip: {
-					type: 'http',
-					behavior: 'domain',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/cdn.txt',
-					path: './rule_set/sukkaw_ruleset/cdn_non_ip.txt'
-				},
-				stream_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/stream.txt',
-					path: './rule_set/sukkaw_ruleset/stream_non_ip.txt'
-				},
-				stream_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/ip/stream.txt',
-					path: './rule_set/sukkaw_ruleset/stream_ip.txt'
-				},
-				ai_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/ai.txt',
-					path: './rule_set/sukkaw_ruleset/ai_non_ip.txt'
-				},
-				telegram_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/telegram.txt',
-					path: './rule_set/sukkaw_ruleset/telegram_non_ip.txt'
-				},
-				telegram_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/ip/telegram.txt',
-					path: './rule_set/sukkaw_ruleset/telegram_ip.txt'
-				},
-				apple_cdn: {
-					type: 'http',
-					behavior: 'domain',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/domainset/apple_cdn.txt',
-					path: './rule_set/sukkaw_ruleset/apple_cdn.txt'
-				},
-				apple_services: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/apple_services.txt',
-					path: './rule_set/sukkaw_ruleset/apple_services.txt'
-				},
-				apple_cn_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/apple_cn.txt',
-					path: './rule_set/sukkaw_ruleset/apple_cn_non_ip.txt'
-				},
-				microsoft_cdn_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/microsoft_cdn.txt',
-					path: './rule_set/sukkaw_ruleset/microsoft_cdn_non_ip.txt'
-				},
-				microsoft_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/microsoft.txt',
-					path: './rule_set/sukkaw_ruleset/microsoft_non_ip.txt'
-				},
-				download_domainset: {
-					type: 'http',
-					behavior: 'domain',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/domainset/download.txt',
-					path: './rule_set/sukkaw_ruleset/download_domainset.txt'
-				},
-				download_non_ip: {
-					type: 'http',
-					behavior: 'domain',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/download.txt',
-					path: './rule_set/sukkaw_ruleset/download_non_ip.txt'
-				},
-				lan_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/lan.txt',
-					path: './rule_set/sukkaw_ruleset/lan_non_ip.txt'
-				},
-				lan_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/ip/lan.txt',
-					path: './rule_set/sukkaw_ruleset/lan_ip.txt'
-				},
-				domestic_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/domestic.txt',
-					path: './rule_set/sukkaw_ruleset/domestic_non_ip.txt'
-				},
-				direct_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/direct.txt',
-					path: './rule_set/sukkaw_ruleset/direct_non_ip.txt'
-				},
-				global_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/global.txt',
-					path: './rule_set/sukkaw_ruleset/global_non_ip.txt'
-				},
-				domestic_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/ip/domestic.txt',
-					path: './rule_set/sukkaw_ruleset/domestic_ip.txt'
-				},
-				china_ip: {
-					type: 'http',
-					behavior: 'ipcidr',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/ip/china_ip.txt',
-					path: './rule_set/sukkaw_ruleset/china_ip.txt'
-				},
-				github_domain: {
-					type: 'http',
-					interval: 43200,
-					behavior: 'domain',
-					format: 'mrs',
-					proxy: '节点选择',
-					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/github.mrs',
-					path: './ruleset/github_domain.mrs'
-				}
-			},
-
-			// 规则配置 - 参照clash.yaml
-			rules: [
-				'DOMAIN-SUFFIX,linux.do,Linux DO',
-				'DOMAIN-KEYWORD,ad,REJECT',
-				'DOMAIN-KEYWORD,ads,REJECT',
-				'DOMAIN-KEYWORD,analytics,REJECT',
-				'DOMAIN-KEYWORD,doubleclick,REJECT',
-				'DOMAIN-KEYWORD,googlesyndication,REJECT',
-				'DOMAIN-SUFFIX,cursor.sh,节点选择',
-				'DOMAIN-SUFFIX,cursorapi.com,节点选择',
-				'DOMAIN-SUFFIX,bilibili.com,DIRECT',
-				'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
-				'RULE-SET,github_domain,节点选择',
-				'DOMAIN-SUFFIX,github.com,节点选择',
-				'RULE-SET,reject_ip,REJECT',
-				'RULE-SET,reject_non_ip,REJECT',
-				'RULE-SET,reject_domainset,REJECT',
-				'RULE-SET,reject_extra_domainset,REJECT',
-				'RULE-SET,reject_non_ip_drop,REJECT-DROP',
-				'RULE-SET,reject_non_ip_no_drop,REJECT',
-				'RULE-SET,advertising-ads,REJECT',
-				'DOMAIN-SUFFIX,adobe.io,REJECT',
-				'DOMAIN-SUFFIX,adobestats.io,REJECT',
-				'RULE-SET,apple_cdn,苹果服务',
-				'RULE-SET,apple_cn_non_ip,苹果服务',
-				'RULE-SET,apple_services,苹果服务',
-				'RULE-SET,microsoft_cdn_non_ip,微软服务',
-				'RULE-SET,microsoft_non_ip,微软服务',
-				'RULE-SET,download_domainset,节点选择',
-				'RULE-SET,download_non_ip,节点选择',
-				'RULE-SET,cdn_domainset,节点选择',
-				'RULE-SET,cdn_non_ip,节点选择',
-				'RULE-SET,stream_ip,节点选择',
-				'RULE-SET,stream_non_ip,节点选择',
-				'RULE-SET,telegram_ip,节点选择',
-				'RULE-SET,telegram_non_ip,节点选择',
-				'RULE-SET,ai_non_ip,AI服务',
-				'RULE-SET,global_non_ip,节点选择',
-				'RULE-SET,domestic_non_ip,DIRECT',
-				'RULE-SET,direct_non_ip,DIRECT',
-				'RULE-SET,lan_ip,DIRECT',
-				'RULE-SET,lan_non_ip,DIRECT',
-				'RULE-SET,domestic_ip,DIRECT',
-				'RULE-SET,china_ip,DIRECT',
-				'DOMAIN,cdn.jsdmirror.com,节点选择',
-				'DOMAIN,raw.githubusercontent.com,节点选择',
-				'DOMAIN-SUFFIX,cdn.jsdelivr.net,节点选择',
-				'DOMAIN-SUFFIX,cdnjs.cloudflare.com,节点选择',
-				'DOMAIN-SUFFIX,gstatic.com,节点选择',
-				'GEOSITE,CN,DIRECT',
-				'GEOIP,LAN,DIRECT',
-				'GEOIP,CN,DIRECT',
-				'MATCH,节点选择'
-			]
-
-		};
-
-		const yamlContent = convertToYAML(config);
-
-		return new Response(yamlContent, {
-			headers: {
-				'Content-Type': 'text/yaml; charset=utf-8',
-				'Content-Disposition': 'attachment; filename=ProxySub'
-			}
-		});
-	} catch (error) {
-		return new Response('生成配置失败', { status: 500 });
-	}
-}
-
 // 生成特定节点集合的配置
 async function generateProxyCollectionConfig(collectionId, env) {
 	try {
@@ -3339,7 +2888,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 			// 节点配置
 			proxies: proxies,
 
-			// 代理组配置 - 参照clash.yaml
+			// 节点集合代理组
 			'proxy-groups': [
 				{
 					name: '节点选择',
@@ -3350,13 +2899,13 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				{
 					name: 'AI服务',
 					type: 'select',
-					proxies: ['节点选择', 'DIRECT'],
+					proxies: ['节点选择', ...proxies.map(p => p.name), 'DIRECT'],
 					icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ChatGPT.png'
 				},
 				{
 					name: 'Linux DO',
 					type: 'select',
-					proxies: ['节点选择', 'DIRECT'],
+					proxies: ['DIRECT', '节点选择'],
 					icon: 'https://edit-upload-pic.cdn.bcebos.com/26173e4a31c69a7c7bf843eeec70e1e0.jpeg?authorization=bce-auth-v1%2FALTAKh1mxHnNIyeO93hiasKJqq%2F2025-08-15T08%3A35%3A39Z%2F3600%2Fhost%2Fd6bff9c1010358e2a7ffd2915d3d7da2bf43bd76a9252e591ff085847855daf4'
 				},
 				{
@@ -3375,14 +2924,269 @@ async function generateProxyCollectionConfig(collectionId, env) {
 
 			// 规则提供者配置 - 参照clash.yaml
 			'rule-providers': {
-				'advertising-ads': {
+				private_domain: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/private.mrs',
+					path: './ruleset/private_domain.mrs'
+				},
+				ai: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-!cn.mrs',
+					path: './ruleset/ai.mrs'
+				},
+				youtube_domain: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/youtube.mrs',
+					path: './ruleset/youtube_domain.mrs'
+				},
+				google_domain: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/google.mrs',
+					path: './ruleset/google_domain.mrs'
+				},
+				github_domain: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/github.mrs',
+					path: './ruleset/github_domain.mrs'
+				},
+				telegram_domain: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/telegram.mrs',
+					path: './ruleset/telegram_domain.mrs'
+				},
+				netflix_domain: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/netflix.mrs',
+					path: './ruleset/netflix_domain.mrs'
+				},
+				paypal_domain: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/paypal.mrs',
+					path: './ruleset/paypal_domain.mrs'
+				},
+				onedrive_domain: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/onedrive.mrs',
+					path: './ruleset/onedrive_domain.mrs'
+				},
+				microsoft_domain: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft.mrs',
+					path: './ruleset/microsoft_domain.mrs'
+				},
+				apple_domain: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple-cn.mrs',
+					path: './ruleset/apple_domain.mrs'
+				},
+				speedtest_domain: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/ookla-speedtest.mrs',
+					path: './ruleset/speedtest_domain.mrs'
+				},
+				tiktok_domain: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/tiktok.mrs',
+					path: './ruleset/tiktok_domain.mrs'
+				},
+				spotify_domain: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/spotify.mrs',
+					path: './ruleset/spotify_domain.mrs'
+				},
+				gfw_domain: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/gfw.mrs',
+					path: './ruleset/gfw_domain.mrs'
+				},
+				'geolocation-!cn': {
+					type: 'http',
+					interval: 3600,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/geolocation-!cn.mrs',
+					path: './ruleset/geolocation-!cn.mrs'
+				},
+				cn_domain: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/cn.mrs',
+					path: './ruleset/cn_domain.mrs'
+				},
+				// MetaCubeX 提供的通用 IP 规则集
+				cn_ip: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'ipcidr',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/cn.mrs',
+					path: './ruleset/cn_ip.mrs'
+				},
+				google_ip: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'ipcidr',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/google.mrs',
+					path: './ruleset/google_ip.mrs'
+				},
+				telegram_ip: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'ipcidr',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/telegram.mrs',
+					path: './ruleset/telegram_ip.mrs'
+				},
+				netflix_ip: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'ipcidr',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/netflix.mrs',
+					path: './ruleset/netflix_ip.mrs'
+				},
+				// blackmatrix7 提供的补充规则集
+				ChinaMedia: {
+					type: 'http',
+					behavior: 'classical',
+					interval: 3600,
+					format: 'yaml',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/ChinaMedia/ChinaMedia.yaml',
+					path: './ruleset/ChinaMedia.yaml'
+				},
+				LAN: {
+					type: 'http',
+					behavior: 'classical',
+					interval: 3600,
+					format: 'yaml',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Lan/Lan.yaml',
+					path: './ruleset/LAN.yaml'
+				},
+				China: {
+					type: 'http',
+					behavior: 'classical',
+					interval: 3600,
+					format: 'yaml',
+					proxy: '节点选择',
+					url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/ChinaMax/ChinaMax_Classical.yaml',
+					path: './ruleset/China.yaml'
+				},
+				// 其他作者提供的规则集，使用 CDN 加速并指定代理以确保下载
+				Private: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://cdn.jsdmirror.com/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/private.mrs',
+					path: './ruleset/Private.mrs'
+				},
+				Fakeip_Filter: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://cdn.jsdmirror.com/gh/DustinWin/ruleset_geodata@mihomo-ruleset/fakeip-filter.mrs',
+					path: './ruleset/Fakeip_Filter.mrs'
+				},
+				'Advertising-ads': {
 					type: 'http',
 					interval: 3600,
 					behavior: 'domain',
 					format: 'mrs',
 					proxy: '节点选择',
 					url: 'https://cdn.jsdmirror.com/gh/TG-Twilight/AWAvenue-Ads-Rule@main/Filters/AWAvenue-Ads-Rule-Clash.mrs',
-					path: './rule_set/advertising_ads_Domain.mrs'
+					path: './ruleset/Advertising-ads.mrs'
+				},
+				STUN: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'domain',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://cdn.jsdmirror.com/gh/Kwisma/rules@main/rules/mihomo/STUN/STUN_Domain.mrs',
+					path: './ruleset/STUN.mrs'
+				},
+				CNcidr: {
+					type: 'http',
+					interval: 3600,
+					behavior: 'ipcidr',
+					format: 'mrs',
+					proxy: '节点选择',
+					url: 'https://cdn.jsdmirror.com/gh/Kwisma/clash-rules@release/cncidr.mrs',
+					path: './ruleset/CNcidr.mrs'
 				},
 				reject_non_ip_no_drop: {
 					type: 'http',
@@ -3391,7 +3195,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 					format: 'text',
 					proxy: '节点选择',
 					url: 'https://ruleset.skk.moe/Clash/non_ip/reject-no-drop.txt',
-					path: './rule_set/sukkaw_ruleset/reject_non_ip_no_drop.txt'
+					path: './rule_set/reject_non_ip_no_drop.txt'
 				},
 				reject_non_ip_drop: {
 					type: 'http',
@@ -3400,7 +3204,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 					format: 'text',
 					proxy: '节点选择',
 					url: 'https://ruleset.skk.moe/Clash/non_ip/reject-drop.txt',
-					path: './rule_set/sukkaw_ruleset/reject_non_ip_drop.txt'
+					path: './rule_set/reject_non_ip_drop.txt'
 				},
 				reject_non_ip: {
 					type: 'http',
@@ -3409,7 +3213,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 					format: 'text',
 					proxy: '节点选择',
 					url: 'https://ruleset.skk.moe/Clash/non_ip/reject.txt',
-					path: './rule_set/sukkaw_ruleset/reject_non_ip.txt'
+					path: './rule_set/reject_non_ip.txt'
 				},
 				reject_domainset: {
 					type: 'http',
@@ -3418,7 +3222,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 					format: 'text',
 					proxy: '节点选择',
 					url: 'https://ruleset.skk.moe/Clash/domainset/reject.txt',
-					path: './rule_set/sukkaw_ruleset/reject_domainset.txt'
+					path: './rule_set/reject_domainset.txt'
 				},
 				reject_extra_domainset: {
 					type: 'http',
@@ -3427,7 +3231,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 					format: 'text',
 					proxy: '节点选择',
 					url: 'https://ruleset.skk.moe/Clash/domainset/reject_extra.txt',
-					path: './sukkaw_ruleset/reject_domainset_extra.txt'
+					path: './rule_set/reject_domainset_extra.txt'
 				},
 				reject_ip: {
 					type: 'http',
@@ -3436,260 +3240,72 @@ async function generateProxyCollectionConfig(collectionId, env) {
 					format: 'text',
 					proxy: '节点选择',
 					url: 'https://ruleset.skk.moe/Clash/ip/reject.txt',
-					path: './rule_set/sukkaw_ruleset/reject_ip.txt'
+					path: './rule_set/reject_ip.txt'
 				},
-				cdn_domainset: {
-					type: 'http',
-					behavior: 'domain',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/domainset/cdn.txt',
-					path: './rule_set/sukkaw_ruleset/cdn_domainset.txt'
-				},
-				cdn_non_ip: {
-					type: 'http',
-					behavior: 'domain',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/cdn.txt',
-					path: './rule_set/sukkaw_ruleset/cdn_non_ip.txt'
-				},
-				stream_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/stream.txt',
-					path: './rule_set/sukkaw_ruleset/stream_non_ip.txt'
-				},
-				stream_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/ip/stream.txt',
-					path: './rule_set/sukkaw_ruleset/stream_ip.txt'
-				},
-				ai_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/ai.txt',
-					path: './rule_set/sukkaw_ruleset/ai_non_ip.txt'
-				},
-				telegram_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/telegram.txt',
-					path: './rule_set/sukkaw_ruleset/telegram_non_ip.txt'
-				},
-				telegram_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/ip/telegram.txt',
-					path: './rule_set/sukkaw_ruleset/telegram_ip.txt'
-				},
-				apple_cdn: {
-					type: 'http',
-					behavior: 'domain',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/domainset/apple_cdn.txt',
-					path: './rule_set/sukkaw_ruleset/apple_cdn.txt'
-				},
-				apple_services: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/apple_services.txt',
-					path: './rule_set/sukkaw_ruleset/apple_services.txt'
-				},
-				apple_cn_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/apple_cn.txt',
-					path: './rule_set/sukkaw_ruleset/apple_cn_non_ip.txt'
-				},
-				microsoft_cdn_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/microsoft_cdn.txt',
-					path: './rule_set/sukkaw_ruleset/microsoft_cdn_non_ip.txt'
-				},
-				microsoft_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/microsoft.txt',
-					path: './rule_set/sukkaw_ruleset/microsoft_non_ip.txt'
-				},
-				download_domainset: {
-					type: 'http',
-					behavior: 'domain',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/domainset/download.txt',
-					path: './rule_set/sukkaw_ruleset/download_domainset.txt'
-				},
-				download_non_ip: {
-					type: 'http',
-					behavior: 'domain',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/download.txt',
-					path: './rule_set/sukkaw_ruleset/download_non_ip.txt'
-				},
-				lan_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/lan.txt',
-					path: './rule_set/sukkaw_ruleset/lan_non_ip.txt'
-				},
-				lan_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/ip/lan.txt',
-					path: './rule_set/sukkaw_ruleset/lan_ip.txt'
-				},
-				domestic_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/domestic.txt',
-					path: './rule_set/sukkaw_ruleset/domestic_non_ip.txt'
-				},
-				direct_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/direct.txt',
-					path: './rule_set/sukkaw_ruleset/direct_non_ip.txt'
-				},
-				global_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/global.txt',
-					path: './rule_set/sukkaw_ruleset/global_non_ip.txt'
-				},
-				domestic_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/ip/domestic.txt',
-					path: './rule_set/sukkaw_ruleset/domestic_ip.txt'
-				},
-				china_ip: {
-					type: 'http',
-					behavior: 'ipcidr',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/ip/china_ip.txt',
-					path: './rule_set/sukkaw_ruleset/china_ip.txt'
-				},
-				github_domain: {
-					type: 'http',
-					interval: 43200,
-					behavior: 'domain',
-					format: 'mrs',
-					proxy: '节点选择',
-					url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/github.mrs',
-					path: './ruleset/github_domain.mrs'
-				}
 			},
 
-			// 规则配置 - 参照clash.yaml
+			// 规则配置
 			rules: [
+				// 自定义优先规则
 				'DOMAIN-SUFFIX,linux.do,Linux DO',
-				'DOMAIN-KEYWORD,ad,REJECT',
-				'DOMAIN-KEYWORD,ads,REJECT',
-				'DOMAIN-KEYWORD,analytics,REJECT',
-				'DOMAIN-KEYWORD,doubleclick,REJECT',
-				'DOMAIN-KEYWORD,googlesyndication,REJECT',
-				'DOMAIN-SUFFIX,cursor.sh,节点选择',
-				'DOMAIN-SUFFIX,cursorapi.com,节点选择',
+				'DOMAIN-SUFFIX,adobe.io,REJECT',
+				'DOMAIN-SUFFIX,adobestats.io,REJECT',
 				'DOMAIN-SUFFIX,bilibili.com,DIRECT',
 				'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
+				// 国内&局域网
+				'GEOIP,CN,DIRECT',
+				'RULE-SET,cn_ip,DIRECT',
+				'IP-CIDR,224.0.0.0/24,DIRECT,no-resolve',
+				'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve',
+				'RULE-SET,cn_domain,DIRECT',
+				'RULE-SET,ChinaMedia,DIRECT',
+				'RULE-SET,China,DIRECT',
+				// 特定服务规则
+				'RULE-SET,Private,DIRECT',
+				'RULE-SET,LAN,DIRECT',
+				'RULE-SET,Fakeip_Filter,DIRECT',
+				'RULE-SET,ai,AI服务',
+				'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
 				'RULE-SET,github_domain,节点选择',
 				'DOMAIN-SUFFIX,github.com,节点选择',
+				'RULE-SET,youtube_domain,节点选择',
+				'RULE-SET,google_domain,AI服务',
+				'RULE-SET,onedrive_domain,节点选择',
+				'RULE-SET,microsoft_domain,微软服务',
+				'RULE-SET,tiktok_domain,节点选择',
+				'RULE-SET,telegram_domain,节点选择',
+				'RULE-SET,spotify_domain,节点选择',
+				'RULE-SET,netflix_domain,节点选择',
+				'RULE-SET,paypal_domain,节点选择',
+				'RULE-SET,apple_domain,苹果服务',
+				'RULE-SET,speedtest_domain,节点选择',
+				// 通用国内/国外流量
+				'RULE-SET,gfw_domain,节点选择',
+				'RULE-SET,geolocation-!cn,节点选择',
+				// 国外特定 IP 规则
+				'RULE-SET,google_ip,节点选择,no-resolve',
+				'RULE-SET,netflix_ip,节点选择,no-resolve',
+				'RULE-SET,telegram_ip,节点选择,no-resolve',
+				// 为常用的CDN和规则集提供代理
+				'DOMAIN,cdn.jsdmirror.com,节点选择',
+				'DOMAIN,raw.githubusercontent.com,节点选择',
+				'DOMAIN-SUFFIX,cdn.jsdelivr.net,节点选择',
+				'DOMAIN-SUFFIX,cdnjs.cloudflare.com,节点选择',
+				'DOMAIN-SUFFIX,gstatic.com,节点选择',
+
+				// 特殊协议和端口拦截
+				'DST-PORT,3478,REJECT', // STUN 端口
+				'DST-PORT,53,REJECT', // DNS 端口，防止DNS泄漏
+				'DST-PORT,6881-6889,REJECT', // BitTorrent 端口
+				// 拦截
+				'RULE-SET,Advertising-ads,REJECT',
 				'RULE-SET,reject_ip,REJECT',
 				'RULE-SET,reject_non_ip,REJECT',
 				'RULE-SET,reject_domainset,REJECT',
 				'RULE-SET,reject_extra_domainset,REJECT',
 				'RULE-SET,reject_non_ip_drop,REJECT-DROP',
 				'RULE-SET,reject_non_ip_no_drop,REJECT',
-				'RULE-SET,advertising-ads,REJECT',
-				'DOMAIN-SUFFIX,adobe.io,REJECT',
-				'DOMAIN-SUFFIX,adobestats.io,REJECT',
-				'RULE-SET,apple_cdn,苹果服务',
-				'RULE-SET,apple_cn_non_ip,苹果服务',
-				'RULE-SET,apple_services,苹果服务',
-				'RULE-SET,microsoft_cdn_non_ip,微软服务',
-				'RULE-SET,microsoft_non_ip,微软服务',
-				'RULE-SET,download_domainset,节点选择',
-				'RULE-SET,download_non_ip,节点选择',
-				'RULE-SET,cdn_domainset,节点选择',
-				'RULE-SET,cdn_non_ip,节点选择',
-				'RULE-SET,stream_ip,节点选择',
-				'RULE-SET,stream_non_ip,节点选择',
-				'RULE-SET,telegram_ip,节点选择',
-				'RULE-SET,telegram_non_ip,节点选择',
-				'RULE-SET,ai_non_ip,AI服务',
-				'RULE-SET,global_non_ip,节点选择',
-				'RULE-SET,domestic_non_ip,DIRECT',
-				'RULE-SET,direct_non_ip,DIRECT',
-				'RULE-SET,lan_ip,DIRECT',
-				'RULE-SET,lan_non_ip,DIRECT',
-				'RULE-SET,domestic_ip,DIRECT',
-				'RULE-SET,china_ip,DIRECT',
-				'DOMAIN,cdn.jsdmirror.com,节点选择',
-				'DOMAIN,raw.githubusercontent.com,节点选择',
-				'DOMAIN-SUFFIX,cdn.jsdelivr.net,节点选择',
-				'DOMAIN-SUFFIX,cdnjs.cloudflare.com,节点选择',
-				'DOMAIN-SUFFIX,gstatic.com,节点选择',
-				'GEOSITE,CN,DIRECT',
-				'GEOIP,LAN,DIRECT',
-				'GEOIP,CN,DIRECT',
+				// 兜底规则
 				'MATCH,节点选择'
 			]
 
@@ -3755,10 +3371,10 @@ async function generateSubCollectionConfig(collectionId, env) {
 
 		const sortedSubscriptions = subscriptionPairs.map(pair => pair.url);
 
-		// 根据新的 submerge-config.yaml 格式构建配置
+		// 根据 submerge-config.yaml 格式构建配置
 		const config = {};
 
-		// 基础配置
+		// 全局规则
 		config.port = 7890;
 		config['socks-port'] = 7891;
 		config['redir-port'] = 7892;
@@ -3874,847 +3490,58 @@ async function generateSubCollectionConfig(collectionId, env) {
 		// 机场订阅
 		config['proxy-providers'] = {};
 		if (sortedSubscriptions.length > 0) {
-			sortedSubscriptions.forEach((sub, index) => {
-				const providerName = `provider${index + 1}`;
-				config['proxy-providers'][providerName] = {
-					url: sub,
-					type: 'http',
-					interval: 3600,
-					'health-check': {
-						enable: true,
-						url: 'https://www.gstatic.com/generate_204',
-						interval: 300
-					},
-					proxy: 'DIRECT'
-				};
-			});
-		}
+			// 生成简化的订阅名称函数（不包含流量和到期信息）
+			const generateSimpleProviderName = (subName, existingNames) => {
+				let baseName = subName;
 
-		// 出站策略
-		config['proxy-groups'] = [
-			{
-				name: '🚀 默认代理',
-				type: 'select',
-				proxies: [
-					'♻️ 日本自动 🇯🇵',
-					'♻️ 新加坡自动 🇸🇬',
-					'♻️ 美国自动 🇺🇲',
-					'♻️ 台湾自动 🇨🇳',
-					'♻️ 韩国自动 🇰🇷',
-					'♻️ 香港自动 🇭🇰',
-					'♻️ 法国自动 🇫🇷',
-					'♻️ 英国自动 🇬🇧',
-					'♻️ 澳洲自动 🇦🇺',
-					'♻️ 德国自动 🇩🇪',
-					'♻️ 自动选择',
-					'🔯 日本故障转移 🇯🇵',
-					'🔯 新加坡故障转移 🇸🇬',
-					'🔯 美国故障转移 🇺🇸',
-					'🔯 台湾故障转移 🇨🇳',
-					'🔯 韩国故障转移 🇰🇷',
-					'🔯 香港故障转移 🇭🇰',
-					'🔯 英国故障转移 🇬🇧',
-					'🔯 法国故障转移 🇫🇷',
-					'🔯 澳洲故障转移 🇦🇺',
-					'🔯 德国故障转移 🇩🇪',
-					'🌐 全部节点',
-					'🇯🇵 日本节点',
-					'🇨🇳 台湾节点',
-					'🇸🇬 新加坡节点',
-					'🇺🇲 美国节点',
-					'🇰🇷 韩国节点',
-					'🇭🇰 香港节点',
-					'🇬🇧 英国节点',
-					'🇫🇷 法国节点',
-					'🇦🇺 澳洲节点',
-					'🇩🇪 德国节点',
-					'DIRECT'
-				],
-				icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Proxy.png'
-			},
-			{
-				name: 'AI服务',
-				type: 'select',
-				proxies: [
-					'🚀 默认代理',
-					'♻️ 日本自动 🇯🇵',
-					'♻️ 美国自动 🇺🇲',
-					'♻️ 台湾自动 🇨🇳',
-					'♻️ 新加坡自动 🇸🇬',
-					'♻️ 韩国自动 🇰🇷',
-					'♻️ 英国自动 🇬🇧',
-					'♻️ 法国自动 🇫🇷',
-					'♻️ 澳洲自动 🇦🇺',
-					'♻️ 德国自动 🇩🇪',
-					'♻️ 自动选择',
-					'🔯 日本故障转移 🇯🇵',
-					'🔯 新加坡故障转移 🇸🇬',
-					'🔯 美国故障转移 🇺🇸',
-					'🔯 台湾故障转移 🇨🇳',
-					'🔯 韩国故障转移 🇰🇷',
-					'🔯 英国故障转移 🇬🇧',
-					'🔯 法国故障转移 🇫🇷',
-					'🔯 澳洲故障转移 🇦🇺',
-					'🔯 德国故障转移 🇩🇪',
-					'🇯🇵 日本节点',
-					'🇨🇳 台湾节点',
-					'🇸🇬 新加坡节点',
-					'🇺🇲 美国节点',
-					'🇰🇷 韩国节点',
-					'🇬🇧 英国节点',
-					'🇫🇷 法国节点',
-					'🇦🇺 澳洲节点',
-					'🇩🇪 德国节点',
-					'🌐 全部节点',
-					'DIRECT'
-				],
-				icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ChatGPT.png'
-			},
-			{
-				name: 'Linux DO',
-				type: 'select',
-				proxies: [
-					'🚀 默认代理',
-					'DIRECT'
-				],
-				icon: 'https://edit-upload-pic.cdn.bcebos.com/26173e4a31c69a7c7bf843eeec70e1e0.jpeg?authorization=bce-auth-v1%2FALTAKh1mxHnNIyeO93hiasKJqq%2F2025-08-15T08%3A35%3A39Z%2F3600%2Fhost%2Fd6bff9c1010358e2a7ffd2915d3d7da2bf43bd76a9252e591ff085847855daf4'
-			},
-			{
-				name: '微软服务',
-				type: 'select',
-				proxies: ['AI服务', 'DIRECT'],
-				icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Microsoft.png'
-			},
-			{
-				name: '苹果服务',
-				type: 'select',
-				proxies: ['DIRECT', '🚀 默认代理'],
-				icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Apple.png'
-			},
-			{
-				name: '♻️ 台湾自动 🇨🇳',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇹🇼|台湾|台北|新北|高雄|\\\\b(TW|Taiwan|Tai wan)\\\\b)).*$'
-			},
-			{
-				name: '♻️ 日本自动 🇯🇵',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇯🇵|日本|东京|大阪|京都|名古屋|埼玉|\\\\b(JP|Japan)\\\\b)).*$'
-			},
-			{
-				name: '♻️ 新加坡自动 🇸🇬',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇸🇬|新加坡|新加坡|\\\\b(SG|Singapore)\\\\b)).*$'
-			},
-			{
-				name: '♻️ 美国自动 🇺🇲',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|\\\\b(US|United States|America)\\\\b)).*$'
-			},
-			{
-				name: '♻️ 韩国自动 🇰🇷',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇰🇷|韩国|韓國|首尔|釜山|\\\\b(KR|Korea)\\\\b)).*$'
-			},
-			{
-				name: '♻️ 英国自动 🇬🇧',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇬🇧|英国|伦敦|曼彻斯特|\\\\b(UK|United Kingdom|Britain)\\\\b)).*$'
-			},
-			{
-				name: '♻️ 法国自动 🇫🇷',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇫🇷|法国|巴黎|\\\\b(FR|France)\\\\b)).*$'
-			},
-			{
-				name: '♻️ 澳洲自动 🇦🇺',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\\\b(AU|Australia)\\\\b)).*$'
-			},
-			{
-				name: '♻️ 德国自动 🇩🇪',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇩🇪|德国|柏林|法兰克福|\\\\b(DE|Germany)\\\\b)).*$'
-			},
-			{
-				name: '♻️ 香港自动 🇭🇰',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇭🇰|香港|港|HK|Hong Kong)).*$'
-			},
-			{
-				name: '♻️ 自动选择',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300
-			},
-			{
-				name: '🔯 日本故障转移 🇯🇵',
-				type: 'fallback',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇯🇵|日本|东京|大阪|京都|名古屋|埼玉|\\\\b(JP|Japan)\\\\b)).*$'
-			},
-			{
-				name: '🔯 新加坡故障转移 🇸🇬',
-				type: 'fallback',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇸🇬|新加坡|新加坡|\\\\b(SG|Singapore)\\\\b)).*$'
-			},
-			{
-				name: '🔯 美国故障转移 🇺🇸',
-				type: 'fallback',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|\\\\b(US|United States|America)\\\\b)).*$'
-			},
-			{
-				name: '🔯 台湾故障转移 🇨🇳',
-				type: 'fallback',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇹🇼|台湾|台北|新北|高雄|\\\\b(TW|Taiwan|Tai wan)\\\\b)).*$'
-			},
-			{
-				name: '🔯 韩国故障转移 🇰🇷',
-				type: 'fallback',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇰🇷|韩国|韓國|首尔|釜山|\\\\b(KR|Korea)\\\\b)).*$'
-			},
-			{
-				name: '🔯 香港故障转移 🇭🇰',
-				type: 'fallback',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇭🇰|香港|港|HK|Hong Kong)).*$'
-			},
-			{
-				name: '🔯 英国故障转移 🇬🇧',
-				type: 'fallback',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇬🇧|英国|伦敦|曼彻斯特|\\\\b(UK|United Kingdom|Britain)\\\\b)).*$'
-			},
-			{
-				name: '🔯 法国故障转移 🇫🇷',
-				type: 'fallback',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇫🇷|法国|巴黎|\\\\b(FR|France)\\\\b)).*$'
-			},
-			{
-				name: '🔯 澳洲故障转移 🇦🇺',
-				type: 'fallback',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\\\b(AU|Australia)\\\\b)).*$'
-			},
-			{
-				name: '🔯 德国故障转移 🇩🇪',
-				type: 'fallback',
-				'include-all': true,
-				tolerance: 30,
-				interval: 300,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇩🇪|德国|柏林|法兰克福|\\\\b(DE|Germany)\\\\b)).*$'
-			},
-			{
-				name: '🌐 全部节点',
-				type: 'select',
-				'include-all': true
-			},
-			{
-				name: '🇯🇵 日本节点',
-				type: 'select',
-				'include-all': true,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇯🇵|日本|东京|大阪|京都|名古屋|埼玉|\\\\b(JP|Japan)\\\\b)).*$'
-			},
-			{
-				name: '🇨🇳 台湾节点',
-				type: 'select',
-				'include-all': true,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇹🇼|台湾|台北|新北|高雄|\\\\b(TW|Taiwan|Tai wan)\\\\b)).*$'
-			},
-			{
-				name: '🇸🇬 新加坡节点',
-				type: 'select',
-				'include-all': true,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇸🇬|新加坡|新加坡|\\\\b(SG|Singapore)\\\\b)).*$'
-			},
-			{
-				name: '🇺🇲 美国节点',
-				type: 'select',
-				'include-all': true,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|\\\\b(US|United States|America)\\\\b)).*$'
-			},
-			{
-				name: '🇰🇷 韩国节点',
-				type: 'select',
-				'include-all': true,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇰🇷|韩国|韓國|首尔|釜山|\\\\b(KR|Korea)\\\\b)).*$'
-			},
-			{
-				name: '🇭🇰 香港节点',
-				type: 'select',
-				'include-all': true,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇭🇰|香港|港|HK|Hong Kong)).*$'
-			},
-			{
-				name: '🇬🇧 英国节点',
-				type: 'select',
-				'include-all': true,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇬🇧|英国|伦敦|曼彻斯特|\\\\b(UK|United Kingdom|Britain)\\\\b)).*$'
-			},
-			{
-				name: '🇫🇷 法国节点',
-				type: 'select',
-				'include-all': true,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇫🇷|法国|巴黎|\\\\b(FR|France)\\\\b)).*$'
-			},
-			{
-				name: '🇦🇺 澳洲节点',
-				type: 'select',
-				'include-all': true,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\\\b(AU|Australia)\\\\b)).*$'
-			},
-			{
-				name: '🇩🇪 德国节点',
-				type: 'select',
-				'include-all': true,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇩🇪|德国|柏林|法兰克福|\\\\b(DE|Germany)\\\\b)).*$'
-			}
-		];
+				// 如果没有获取到名称，使用默认命名
+				if (!baseName) {
+					// 查找可用的最小序号，填补空缺
+					const usedNumbers = new Set();
+					existingNames.forEach(name => {
+						const match = name.match(/^订阅(\d{2})$/);
+						if (match) {
+							usedNumbers.add(parseInt(match[1]));
+						}
+					});
 
-		// 规则提供者配置
-		config['rule-providers'] = {
-			'private_domain': {
-				type: 'http',
-				behavior: 'domain',
-				interval: 43200,
-				format: 'mrs',
-				proxy: '🚀 默认代理',
-				url: 'https://cdn.jsdmirror.com/gh/MetaCubeX/meta-rules-dat@release/geo/geosite/private.mrs',
-				path: './rule_set/private_domain.mrs'
-			},
-			'cn_domain': {
-				type: 'http',
-				behavior: 'domain',
-				interval: 43200,
-				format: 'mrs',
-				proxy: '🚀 默认代理',
-				url: 'https://cdn.jsdmirror.com/gh/MetaCubeX/meta-rules-dat@release/geo/geosite/cn.mrs',
-				path: './rule_set/cn_domain.mrs'
-			},
-			'advertising-ads': {
-				type: 'http',
-				interval: 3600,
-				behavior: 'domain',
-				format: 'mrs',
-				proxy: '🚀 默认代理',
-				url: 'https://cdn.jsdmirror.com/gh/TG-Twilight/AWAvenue-Ads-Rule@main/Filters/AWAvenue-Ads-Rule-Clash.mrs',
-				path: './rule_set/advertising_ads_Domain.mrs'
-			},
-			reject_non_ip_no_drop: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/non_ip/reject-no-drop.txt',
-				path: './rule_set/sukkaw_ruleset/reject_non_ip_no_drop.txt'
-			},
-			reject_non_ip_drop: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/non_ip/reject-drop.txt',
-				path: './rule_set/sukkaw_ruleset/reject_non_ip_drop.txt'
-			},
-			reject_non_ip: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/non_ip/reject.txt',
-				path: './rule_set/sukkaw_ruleset/reject_non_ip.txt'
-			},
-			reject_domainset: {
-				type: 'http',
-				behavior: 'domain',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/domainset/reject.txt',
-				path: './rule_set/sukkaw_ruleset/reject_domainset.txt'
-			},
-			reject_extra_domainset: {
-				type: 'http',
-				behavior: 'domain',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/domainset/reject_extra.txt',
-				path: './sukkaw_ruleset/reject_domainset_extra.txt'
-			},
-			reject_ip: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/ip/reject.txt',
-				path: './rule_set/sukkaw_ruleset/reject_ip.txt'
-			},
-			cdn_domainset: {
-				type: 'http',
-				behavior: 'domain',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/domainset/cdn.txt',
-				path: './rule_set/sukkaw_ruleset/cdn_domainset.txt'
-			},
-			cdn_non_ip: {
-				type: 'http',
-				behavior: 'domain',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/non_ip/cdn.txt',
-				path: './rule_set/sukkaw_ruleset/cdn_non_ip.txt'
-			},
-			stream_non_ip: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/non_ip/stream.txt',
-				path: './rule_set/sukkaw_ruleset/stream_non_ip.txt'
-			},
-			stream_ip: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/ip/stream.txt',
-				path: './rule_set/sukkaw_ruleset/stream_ip.txt'
-			},
-			ai_non_ip: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/non_ip/ai.txt',
-				path: './rule_set/sukkaw_ruleset/ai_non_ip.txt'
-			},
-			telegram_non_ip: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/non_ip/telegram.txt',
-				path: './rule_set/sukkaw_ruleset/telegram_non_ip.txt'
-			},
-			telegram_ip: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/ip/telegram.txt',
-				path: './rule_set/sukkaw_ruleset/telegram_ip.txt'
-			},
-			apple_cdn: {
-				type: 'http',
-				behavior: 'domain',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/domainset/apple_cdn.txt',
-				path: './rule_set/sukkaw_ruleset/apple_cdn.txt'
-			},
-			apple_services: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/non_ip/apple_services.txt',
-				path: './rule_set/sukkaw_ruleset/apple_services.txt'
-			},
-			apple_cn_non_ip: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/non_ip/apple_cn.txt',
-				path: './rule_set/sukkaw_ruleset/apple_cn_non_ip.txt'
-			},
-			microsoft_cdn_non_ip: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/non_ip/microsoft_cdn.txt',
-				path: './rule_set/sukkaw_ruleset/microsoft_cdn_non_ip.txt'
-			},
-			microsoft_non_ip: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/non_ip/microsoft.txt',
-				path: './rule_set/sukkaw_ruleset/microsoft_non_ip.txt'
-			},
-			download_domainset: {
-				type: 'http',
-				behavior: 'domain',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/domainset/download.txt',
-				path: './rule_set/sukkaw_ruleset/download_domainset.txt'
-			},
-			download_non_ip: {
-				type: 'http',
-				behavior: 'domain',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/non_ip/download.txt',
-				path: './rule_set/sukkaw_ruleset/download_non_ip.txt'
-			},
-			lan_non_ip: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/non_ip/lan.txt',
-				path: './rule_set/sukkaw_ruleset/lan_non_ip.txt'
-			},
-			lan_ip: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/ip/lan.txt',
-				path: './rule_set/sukkaw_ruleset/lan_ip.txt'
-			},
-			domestic_non_ip: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/non_ip/domestic.txt',
-				path: './rule_set/sukkaw_ruleset/domestic_non_ip.txt'
-			},
-			direct_non_ip: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/non_ip/direct.txt',
-				path: './rule_set/sukkaw_ruleset/direct_non_ip.txt'
-			},
-			global_non_ip: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/non_ip/global.txt',
-				path: './rule_set/sukkaw_ruleset/global_non_ip.txt'
-			},
-			domestic_ip: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/ip/domestic.txt',
-				path: './rule_set/sukkaw_ruleset/domestic_ip.txt'
-			},
-			china_ip: {
-				type: 'http',
-				behavior: 'ipcidr',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/ip/china_ip.txt',
-				path: './rule_set/sukkaw_ruleset/china_ip.txt'
-			}
-		};
+					// 找到最小的可用序号
+					let counter = 1;
+					while (usedNumbers.has(counter)) {
+						counter++;
+					}
+					baseName = `订阅${String(counter).padStart(2, '0')}`;
+				}
 
-		// 规则配置
-		config.rules = [
-			'DOMAIN-SUFFIX,linux.do,Linux DO',
-			'RULE-SET,reject_ip,REJECT',
-			'RULE-SET,reject_non_ip,REJECT',
-			'RULE-SET,reject_domainset,REJECT',
-			'RULE-SET,reject_extra_domainset,REJECT',
-			'RULE-SET,reject_non_ip_drop,REJECT-DROP',
-			'RULE-SET,reject_non_ip_no_drop,REJECT',
-			'RULE-SET,advertising-ads,REJECT',
-			'DOMAIN-SUFFIX,adobe.io,REJECT',
-			'DOMAIN-SUFFIX,adobestats.io,REJECT',
-			'RULE-SET,apple_cdn,苹果服务',
-			'RULE-SET,apple_cn_non_ip,苹果服务',
-			'RULE-SET,apple_services,苹果服务',
-			'RULE-SET,microsoft_cdn_non_ip,微软服务',
-			'RULE-SET,microsoft_non_ip,微软服务',
-			'RULE-SET,download_domainset,🚀 默认代理',
-			'RULE-SET,download_non_ip,🚀 默认代理',
-			'RULE-SET,cdn_domainset,🚀 默认代理',
-			'RULE-SET,cdn_non_ip,🚀 默认代理',
-			'RULE-SET,stream_ip,🚀 默认代理',
-			'RULE-SET,stream_non_ip,🚀 默认代理',
-			'RULE-SET,telegram_ip,🚀 默认代理',
-			'RULE-SET,telegram_non_ip,🚀 默认代理',
-			'RULE-SET,ai_non_ip,AI服务',
-			'RULE-SET,global_non_ip,🚀 默认代理',
-			'RULE-SET,domestic_non_ip,DIRECT',
-			'RULE-SET,direct_non_ip,DIRECT',
-			'RULE-SET,lan_ip,DIRECT',
-			'RULE-SET,lan_non_ip,DIRECT',
-			'RULE-SET,domestic_ip,DIRECT',
-			'RULE-SET,china_ip,DIRECT',
-			'DOMAIN,cdn.jsdmirror.com,🚀 默认代理',
-			'DOMAIN,raw.githubusercontent.com,🚀 默认代理',
-			'DOMAIN-SUFFIX,cdn.jsdelivr.net,🚀 默认代理',
-			'DOMAIN-SUFFIX,cdnjs.cloudflare.com,🚀 默认代理',
-			'DOMAIN-SUFFIX,gstatic.com,🚀 默认代理',
-			'DOMAIN-SUFFIX,cursor.sh,🚀 默认代理',
-			'DOMAIN-SUFFIX,cursorapi.com,🚀 默认代理',
-			'GEOSITE,CN,DIRECT',
-			'GEOIP,LAN,DIRECT',
-			'GEOIP,CN,DIRECT',
-			'MATCH,🚀 默认代理'
-		];
+				// 处理重复名称
+				let finalName = baseName;
+				let counter = 2;
+				while (existingNames.includes(finalName)) {
+					finalName = `${baseName}-${String(counter).padStart(2, '0')}`;
+					counter++;
+				}
 
-		const yamlContent = convertToYAML(config);
-
-		return new Response(yamlContent, {
-			headers: {
-				'Content-Type': 'text/yaml; charset=utf-8',
-				'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(collection.name)}`
-			}
-		});
-	} catch (error) {
-		return new Response('生成配置失败', { status: 500 });
-	}
-}
-
-// 生成订阅整合配置 - 使用新的 submerge-config.yaml 格式
-async function generateSubMergeConfig(env) {
-	try {
-		const subscriptions = JSON.parse(await env.CLASH_KV?.get('subscriptions') || '[]');
-		const subscriptionNames = JSON.parse(await env.CLASH_KV?.get('subscription_names') || '[]');
-
-		// 对订阅进行排序
-		const subscriptionPairs = subscriptions.map((url, index) => ({
-			url: url,
-			name: subscriptionNames[index] || `provider${index + 1}`,
-			index: index
-		}));
-
-		subscriptionPairs.sort((a, b) => {
-			const extractBaseName = (fullName) => {
-				const baseNameMatch = fullName.match(/^([^[\(]+?)(?:\s*\[.*?\])?(?:\s*\(.*?\))?$/);
-				return baseNameMatch ? baseNameMatch[1].trim() : fullName;
+				return finalName;
 			};
 
-			const baseNameA = extractBaseName(a.name);
-			const baseNameB = extractBaseName(b.name);
-
-			const matchA = baseNameA.match(/^订阅(\d{2})$/);
-			const matchB = baseNameB.match(/^订阅(\d{2})$/);
-
-			if (matchA && matchB) {
-				const numberA = parseInt(matchA[1]);
-				const numberB = parseInt(matchB[1]);
-				return numberA - numberB;
-			}
-
-			return baseNameA.localeCompare(baseNameB);
-		});
-
-		const sortedSubscriptions = subscriptionPairs.map(pair => pair.url);
-
-		// 根据新的 submerge-config.yaml 格式构建配置
-		const config = {};
-
-		// 基础配置
-		config.port = 7890;
-		config['socks-port'] = 7891;
-		config['redir-port'] = 7892;
-		config['mixed-port'] = 7893;
-		config['tproxy-port'] = 7894;
-		config['allow-lan'] = true;
-		config['bind-address'] = '*';
-		config.ipv6 = false;
-		config['unified-delay'] = true;
-		config['tcp-concurrent'] = true;
-		config['log-level'] = 'info';
-		config['find-process-mode'] = 'off';
-		config['global-client-fingerprint'] = 'chrome';
-		config['keep-alive-idle'] = 600;
-		config['keep-alive-interval'] = 15;
-		config['disable-keep-alive'] = false;
-		config.profile = {
-			'store-selected': true,
-			'store-fake-ip': true
-		};
-		config.mode = 'rule';
-		config['geodata-mode'] = false;
-		config['geodata-loader'] = 'standard';
-		config['geo-auto-update'] = true;
-		config['geo-update-interval'] = 24;
-
-		// 嗅探配置
-		config.sniffer = {
-			enable: true,
-			'force-dns-mapping': true,
-			'parse-pure-ip': true,
-			'override-destination': true,
-			sniff: {
-				HTTP: {
-					ports: [80, '8080-8880'],
-					'override-destination': true
-				},
-				TLS: {
-					ports: [443, 8443]
-				},
-				QUIC: {
-					ports: [443, 8443]
-				}
-			},
-			'force-domain': ['+.v2ex.com'],
-			'skip-domain': ['+.baidu.com', 'Mijia.Cloud.com'],
-			'skip-src-address': ['192.168.0.3/32'],
-			'skip-dst-address': ['192.168.0.3/32']
-		};
-
-		// 入站配置
-		config.tun = {
-			enable: true,
-			stack: 'mixed',
-			'dns-hijack': ['any:53', 'tcp://any:53'],
-			'auto-route': true,
-			'auto-redirect': true,
-			'auto-detect-interface': true,
-			device: 'utun0',
-			mtu: 1500,
-			'strict-route': true,
-			gso: true,
-			'gso-max-size': 65536,
-			'udp-timeout': 300,
-			'endpoint-independent-nat': false
-		};
-
-		// DNS模块
-		config.dns = {
-			enable: true,
-			listen: '0.0.0.0:1053',
-			ipv6: false,
-			'respect-rules': true,
-			'enhanced-mode': 'fake-ip',
-			'fake-ip-range': '28.0.0.1/8',
-			'fake-ip-filter-mode': 'blacklist',
-			'fake-ip-filter': [
-				'rule-set:private_domain,cn_domain',
-				'+.msftconnecttest.com',
-				'+.msftncsi.com',
-				'time.*.com',
-				'+.market.xiaomi.com',
-				'dns.alidns.com',
-				'cloudflare-dns.com',
-				'dns.google',
-				'dns.adguard-dns.com',
-				'dns.nextdns.io',
-				'public.dns.iij.jp',
-				'dns0.eu',
-				'dns.18bit.cn',
-				'2025.dns1.top',
-				'dns.ipv4dns.com'
-			],
-			'default-nameserver': [
-				'223.5.5.5',
-				'223.6.6.6'
-			],
-			'proxy-server-nameserver': [
-				'https://223.5.5.5/dns-query',
-				'https://223.6.6.6/dns-query'
-			],
-			nameserver: [
-				'223.5.5.5',
-				'119.29.29.29'
-			],
-			'nameserver-policy': {
-				'+.jp': ['https://public.dns.iij.jp/dns-query#h3=true'],
-				'+.hk': ['quic://dns.nextdns.io'],
-				'+.eu': ['quic://dns0.eu']
-			}
-		};
-
-		// 机场订阅
-		config['proxy-providers'] = {};
-		if (sortedSubscriptions.length > 0) {
+			const usedProviderNames = [];
 			sortedSubscriptions.forEach((sub, index) => {
-				const providerName = `provider${index + 1}`;
+				// 获取对应的订阅名称
+				const subscriptionName = subscriptionNames[index] || null;
+
+				// 提取基础名称（去除流量和到期信息）
+				let baseName = subscriptionName;
+				if (baseName) {
+					// 移除流量信息 [xxx/xxx]
+					baseName = baseName.replace(/\s*\[.*?\]/g, '');
+					// 移除到期信息 (xxxx-xx-xx到期)
+					baseName = baseName.replace(/\s*\(.*?到期\)/g, '');
+					baseName = baseName.trim();
+				}
+
+				const providerName = generateSimpleProviderName(baseName, usedProviderNames);
+				usedProviderNames.push(providerName);
+
 				config['proxy-providers'][providerName] = {
 					url: sub,
 					type: 'http',
@@ -4813,8 +3640,8 @@ async function generateSubMergeConfig(env) {
 				name: 'Linux DO',
 				type: 'select',
 				proxies: [
-					'🚀 默认代理',
-					'DIRECT'
+					'DIRECT',
+					'🚀 默认代理'
 				],
 				icon: 'https://edit-upload-pic.cdn.bcebos.com/26173e4a31c69a7c7bf843eeec70e1e0.jpeg?authorization=bce-auth-v1%2FALTAKh1mxHnNIyeO93hiasKJqq%2F2025-08-15T08%3A35%3A39Z%2F3600%2Fhost%2Fd6bff9c1010358e2a7ffd2915d3d7da2bf43bd76a9252e591ff085847855daf4'
 			},
@@ -5296,15 +4123,6 @@ async function generateSubMergeConfig(env) {
 				url: 'https://cdn.jsdmirror.com/gh/DustinWin/ruleset_geodata@mihomo-ruleset/fakeip-filter.mrs',
 				path: './ruleset/Fakeip_Filter.mrs'
 			},
-			'Advertising-ads': {
-				type: 'http',
-				interval: 3600,
-				behavior: 'domain',
-				format: 'mrs',
-				proxy: '🚀 默认代理',
-				url: 'https://cdn.jsdmirror.com/gh/TG-Twilight/AWAvenue-Ads-Rule@main/Filters/AWAvenue-Ads-Rule-Clash.mrs',
-				path: './ruleset/Advertising-ads.mrs'
-			},
 			STUN: {
 				type: 'http',
 				interval: 3600,
@@ -5322,21 +4140,94 @@ async function generateSubMergeConfig(env) {
 				proxy: '🚀 默认代理',
 				url: 'https://cdn.jsdmirror.com/gh/Kwisma/clash-rules@release/cncidr.mrs',
 				path: './ruleset/CNcidr.mrs'
-			}
+			},
+			'Advertising-ads': {
+				type: 'http',
+				interval: 3600,
+				behavior: 'domain',
+				format: 'mrs',
+				proxy: '🚀 默认代理',
+				url: 'https://cdn.jsdmirror.com/gh/TG-Twilight/AWAvenue-Ads-Rule@main/Filters/AWAvenue-Ads-Rule-Clash.mrs',
+				path: './ruleset/Advertising-ads.mrs'
+			},
+			reject_non_ip_no_drop: {
+				type: 'http',
+				behavior: 'classical',
+				interval: 43200,
+				format: 'text',
+				proxy: '🚀 默认代理',
+				url: 'https://ruleset.skk.moe/Clash/non_ip/reject-no-drop.txt',
+				path: './rule_set/reject_non_ip_no_drop.txt'
+			},
+			reject_non_ip_drop: {
+				type: 'http',
+				behavior: 'classical',
+				interval: 43200,
+				format: 'text',
+				proxy: '🚀 默认代理',
+				url: 'https://ruleset.skk.moe/Clash/non_ip/reject-drop.txt',
+				path: './rule_set/reject_non_ip_drop.txt'
+			},
+			reject_non_ip: {
+				type: 'http',
+				behavior: 'classical',
+				interval: 43200,
+				format: 'text',
+				proxy: '🚀 默认代理',
+				url: 'https://ruleset.skk.moe/Clash/non_ip/reject.txt',
+				path: './rule_set/reject_non_ip.txt'
+			},
+			reject_domainset: {
+				type: 'http',
+				behavior: 'domain',
+				interval: 43200,
+				format: 'text',
+				proxy: '🚀 默认代理',
+				url: 'https://ruleset.skk.moe/Clash/domainset/reject.txt',
+				path: './rule_set/reject_domainset.txt'
+			},
+			reject_extra_domainset: {
+				type: 'http',
+				behavior: 'domain',
+				interval: 43200,
+				format: 'text',
+				proxy: '🚀 默认代理',
+				url: 'https://ruleset.skk.moe/Clash/domainset/reject_extra.txt',
+				path: './rule_set/reject_domainset_extra.txt'
+			},
+			reject_ip: {
+				type: 'http',
+				behavior: 'classical',
+				interval: 43200,
+				format: 'text',
+				proxy: '🚀 默认代理',
+				url: 'https://ruleset.skk.moe/Clash/ip/reject.txt',
+				path: './rule_set/reject_ip.txt'
+			},
 		};
 
-		// 规则匹配
+		// submerge规则匹配
 		config.rules = [
-			'RULE-SET,Private,DIRECT',
-			'RULE-SET,LAN,DIRECT',
+			// 自定义优先规则
 			'DOMAIN-SUFFIX,linux.do,Linux DO',
-			'RULE-SET,Fakeip_Filter,DIRECT',
-			'DOMAIN-SUFFIX,adobe.io,REJECT',
-			'DOMAIN-SUFFIX,adobestats.io,REJECT',
 			'DOMAIN-SUFFIX,bilibili.com,DIRECT',
 			'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
 			'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
+			// 国内&局域网
+			'GEOIP,CN,DIRECT',
+			'RULE-SET,cn_ip,DIRECT',
+			'IP-CIDR,224.0.0.0/24,DIRECT,no-resolve',
+			'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve',
+			'RULE-SET,cn_domain,DIRECT',
+			'RULE-SET,ChinaMedia,DIRECT',
+			'RULE-SET,China,DIRECT',
+			// 阻止Adobe弹窗
+			'DOMAIN-SUFFIX,adobe.io,REJECT',
+			'DOMAIN-SUFFIX,adobestats.io,REJECT',
 			// 特定服务规则
+			'RULE-SET,Private,DIRECT',
+			'RULE-SET,LAN,DIRECT',
+			'RULE-SET,Fakeip_Filter,DIRECT',
 			'RULE-SET,ai,AI服务',
 			'RULE-SET,github_domain,🚀 默认代理',
 			'DOMAIN-SUFFIX,github.com,🚀 默认代理',
@@ -5351,61 +4242,48 @@ async function generateSubMergeConfig(env) {
 			'RULE-SET,paypal_domain,🚀 默认代理',
 			'RULE-SET,apple_domain,苹果服务',
 			'RULE-SET,speedtest_domain,🚀 默认代理',
-			// 通用国内/国外流量
+			// 通用国外流量
 			'RULE-SET,gfw_domain,🚀 默认代理',
 			'RULE-SET,geolocation-!cn,🚀 默认代理',
-			// IP 规则
-			'GEOIP,CNcidr,DIRECT',
-			'RULE-SET,cn_ip,DIRECT',
+			// 国外特定 IP 规则
 			'RULE-SET,google_ip,🚀 默认代理,no-resolve',
 			'RULE-SET,netflix_ip,🚀 默认代理,no-resolve',
 			'RULE-SET,telegram_ip,🚀 默认代理,no-resolve',
-			// 国内域名规则
-			'RULE-SET,cn_domain,DIRECT',
-			'RULE-SET,ChinaMedia,DIRECT',
-			'RULE-SET,China,DIRECT',
+			// 为常用的CDN和规则集提供代理
+			'DOMAIN,cdn.jsdmirror.com,🚀 默认代理',
+			'DOMAIN,raw.githubusercontent.com,🚀 默认代理',
+			'DOMAIN-SUFFIX,cdn.jsdelivr.net,🚀 默认代理',
+			'DOMAIN-SUFFIX,cdnjs.cloudflare.com,🚀 默认代理',
+			'DOMAIN-SUFFIX,gstatic.com,🚀 默认代理',
+			// 特殊协议和端口拦截
+			'DST-PORT,3478,REJECT', // STUN 端口
+			'DST-PORT,53,REJECT', // DNS 端口，防止DNS泄漏
+			'DST-PORT,6881-6889,REJECT', // BitTorrent 端口
+			// 拦截
+			'RULE-SET,Advertising-ads,REJECT',
+			'RULE-SET,reject_ip,REJECT',
+			'RULE-SET,reject_non_ip,REJECT',
+			'RULE-SET,reject_domainset,REJECT',
+			'RULE-SET,reject_extra_domainset,REJECT',
+			'RULE-SET,reject_non_ip_drop,REJECT-DROP',
+			'RULE-SET,reject_non_ip_no_drop,REJECT',
 			// 兜底规则
 			'MATCH,🚀 默认代理'
 		];
-
-		// 子规则
-		config['sub-rules'] = {
-			'SUB-REJECT': [
-				// 广告和恶意域名拦截
-				'RULE-SET,Advertising-ads,REJECT',
-				'DOMAIN-KEYWORD,ad,REJECT',
-				'DOMAIN-KEYWORD,ads,REJECT',
-				'DOMAIN-KEYWORD,analytics,REJECT',
-				'DOMAIN-KEYWORD,doubleclick,REJECT',
-				'DOMAIN-KEYWORD,googlesyndication,REJECT',
-				'RULE-SET,STUN,REJECT',
-				'DOMAIN-KEYWORD,stun,REJECT',
-				'DOMAIN-KEYWORD,dnsleaktest,REJECT',
-				// 特殊协议和端口拦截
-				'DST-PORT,3478,REJECT', // STUN 端口
-				'DST-PORT,53,REJECT', // DNS 端口，防止DNS泄漏
-				'DST-PORT,6881-6889,REJECT', // BitTorrent 端口
-				// 为常用的CDN和规则集提供代理
-				'DOMAIN,cdn.jsdmirror.com,🚀 默认代理',
-				'DOMAIN,raw.githubusercontent.com,🚀 默认代理',
-				'DOMAIN-SUFFIX,cdn.jsdelivr.net,🚀 默认代理',
-				'DOMAIN-SUFFIX,cdnjs.cloudflare.com,🚀 默认代理',
-				'DOMAIN-SUFFIX,gstatic.com,🚀 默认代理'
-			]
-		};
 
 		const yamlContent = convertToYAML(config);
 
 		return new Response(yamlContent, {
 			headers: {
 				'Content-Type': 'text/yaml; charset=utf-8',
-				'Content-Disposition': 'attachment; filename=SubMerge'
+				'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(collection.name)}`
 			}
 		});
 	} catch (error) {
 		return new Response('生成配置失败', { status: 500 });
 	}
 }
+
 
 // 解析代理URL
 function parseProxyUrl(url, region = null) {
