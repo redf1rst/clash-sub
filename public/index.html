@@ -340,6 +340,11 @@
 		.item-details {
 			color: #7f8c8d;
 			font-size: 0.9em;
+			/* 限制宽度避免挤占编辑按钮位置，支持多行显示 */
+			max-width: calc(100% - 120px);
+			word-wrap: break-word;
+			word-break: break-all;
+			line-height: 1.4;
 		}
 
 		.subscription-links {
@@ -441,6 +446,8 @@
 		}
 
 		@media (max-width: 768px) {
+
+			/* 容器优化 */
 			.container {
 				margin: 10px;
 				border-radius: 8px;
@@ -455,20 +462,109 @@
 			}
 
 			.content {
-				padding: 20px;
+				padding: 15px;
+				/* 减少内边距 */
 			}
 
-			.tabs {
-				flex-direction: column;
+			/* 标签页优化 - 保持水平布局但调整字体 */
+			.tab {
+				padding: 15px 10px;
+				font-size: 0.9em;
 			}
 
+			/* 列表项布局优化 */
 			.list-item {
 				flex-direction: column;
 				align-items: flex-start;
+				padding: 12px;
+				/* 减少内边距 */
 			}
 
-			.list-item .btn {
-				margin-top: 10px;
+			/* 按钮区域：两行两列布局 */
+			.item-actions {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				/* 两列 */
+				gap: 8px;
+				width: 100%;
+				margin-top: 12px;
+			}
+
+			/* 移动端按钮样式优化 */
+			.item-actions .btn {
+				padding: 8px 12px;
+				/* 减小按钮尺寸 */
+				font-size: 0.85em;
+				/* 减小字体 */
+				margin: 0;
+				/* 移除默认边距 */
+				text-align: center;
+				white-space: nowrap;
+				/* 防止文字换行 */
+				min-height: 36px;
+				/* 确保按钮高度一致 */
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+
+			/* 操作栏优化 */
+			.action-bar {
+				flex-direction: column;
+				gap: 10px;
+			}
+
+			.action-buttons {
+				gap: 8px;
+			}
+
+			.action-buttons .btn {
+				padding: 10px 16px;
+				font-size: 0.9em;
+			}
+
+			/* 模态框优化 */
+			.modal-content {
+				width: 95%;
+				margin: 2% auto;
+			}
+
+			.modal-body {
+				padding: 15px;
+			}
+
+			/* 输入框优化 */
+			.input-group {
+				margin-bottom: 20px;
+			}
+
+			.input-group input,
+			.input-group textarea,
+			.input-group select {
+				font-size: 16px;
+				/* 防止iOS缩放 */
+			}
+		}
+
+		/* 超小屏幕优化（小于480px） */
+		@media (max-width: 480px) {
+			.header h1 {
+				font-size: 1.8em;
+			}
+
+			.content {
+				padding: 12px;
+			}
+
+			.item-actions .btn {
+				padding: 6px 8px;
+				font-size: 0.8em;
+				min-height: 32px;
+			}
+
+			.tab {
+				padding: 12px 8px;
+				font-size: 0.85em;
 			}
 		}
 
@@ -636,6 +732,47 @@
 			.copy-link-single .link-item {
 				max-width: none;
 			}
+
+			/* 移动端适配：信息区域可以使用全宽，因为按钮在下方 */
+			.item-details {
+				max-width: 100%;
+			}
+
+			/* 移动端复选框布局优化 */
+			.list-item .item-name {
+				display: flex;
+				align-items: flex-start;
+				gap: 8px;
+			}
+
+			.list-item .item-name .checkbox-wrapper {
+				flex-shrink: 0;
+				width: 20px;
+				padding-top: 2px;
+			}
+
+			.list-item .item-name .name-text {
+				flex: 1;
+				min-width: 0;
+				text-align: left;
+			}
+
+			/* 移动端信息区域左对齐 */
+			.item-info {
+				text-align: left;
+				width: 100%;
+			}
+
+			.item-details {
+				text-align: left;
+				margin-left: 28px;
+			}
+
+			/* 隐藏原来位置的复选框 */
+			.list-item>.collection-proxy-checkbox,
+			.list-item>.collection-subscription-checkbox {
+				display: none;
+			}
 		}
 
 		/* 选择功能样式 */
@@ -647,6 +784,31 @@
 			transform: scale(1.2);
 			cursor: pointer;
 			accent-color: #3498db;
+		}
+
+		/* 桌面端隐藏移动端复选框 */
+		.mobile-checkbox {
+			display: none;
+		}
+
+		/* 移动端复选框样式 */
+		@media (max-width: 768px) {
+
+			/* 显示移动端复选框，隐藏原位置复选框 */
+			.mobile-checkbox {
+				display: block;
+				margin: 0;
+				transform: scale(1.1);
+				position: relative;
+				top: 0;
+				left: 0;
+			}
+
+			/* 隐藏原来位置的复选框 */
+			.list-item>.collection-proxy-checkbox,
+			.list-item>.collection-subscription-checkbox {
+				display: none;
+			}
 		}
 
 		.list-item {
@@ -1843,7 +2005,12 @@
 				html += '<div class="list-item" data-index="' + i + '">';
 				html += '<input type="checkbox" class="collection-proxy-checkbox" data-index="' + i + '" onchange="updateCollectionProxySelectionUI()">';
 				html += '<div class="item-info">';
-				html += '<div class="item-name">' + proxy.name + '</div>';
+				html += '<div class="item-name">';
+				html += '<div class="checkbox-wrapper">';
+				html += '<input type="checkbox" class="collection-proxy-checkbox mobile-checkbox" data-index="' + i + '" onchange="updateCollectionProxySelectionUI()">';
+				html += '</div>';
+				html += '<span class="name-text">' + proxy.name + '</span>';
+				html += '</div>';
 				html += '<div class="item-details">' + proxy.type + ' | ' + proxy.server + ':' + proxy.port + '</div>';
 				html += '</div>';
 				html += '</div>';
@@ -1910,8 +2077,21 @@
 
 		// 更新集合节点选择UI状态
 		function updateCollectionProxySelectionUI() {
-			const checkboxes = document.querySelectorAll('.collection-proxy-checkbox');
-			const selectedCheckboxes = document.querySelectorAll('.collection-proxy-checkbox:checked');
+			// 同步桌面端和移动端复选框状态
+			document.querySelectorAll('#collectionProxyList .list-item').forEach((item, index) => {
+				const desktopCheckbox = item.querySelector('.collection-proxy-checkbox:not(.mobile-checkbox)');
+				const mobileCheckbox = item.querySelector('.collection-proxy-checkbox.mobile-checkbox');
+
+				if (desktopCheckbox && mobileCheckbox) {
+					// 如果其中一个被选中，同步到另一个
+					if (desktopCheckbox.checked !== mobileCheckbox.checked) {
+						mobileCheckbox.checked = desktopCheckbox.checked;
+					}
+				}
+			});
+
+			const checkboxes = document.querySelectorAll('.collection-proxy-checkbox:not(.mobile-checkbox)');
+			const selectedCheckboxes = document.querySelectorAll('.collection-proxy-checkbox:not(.mobile-checkbox):checked');
 			const selectedCount = selectedCheckboxes.length;
 			const totalCount = checkboxes.length;
 
@@ -1941,7 +2121,7 @@
 
 			// 更新列表项的选中样式
 			document.querySelectorAll('#collectionProxyList .list-item').forEach((item, index) => {
-				const checkbox = item.querySelector('.collection-proxy-checkbox');
+				const checkbox = item.querySelector('.collection-proxy-checkbox:not(.mobile-checkbox)');
 				if (checkbox && checkbox.checked) {
 					item.classList.add('selected');
 				} else {
@@ -1952,10 +2132,11 @@
 
 		// 全选/取消全选集合节点
 		function selectAllCollectionProxies() {
-			const checkboxes = document.querySelectorAll('.collection-proxy-checkbox');
+			const checkboxes = document.querySelectorAll('.collection-proxy-checkbox:not(.mobile-checkbox)');
 			const allChecked = Array.from(checkboxes).every(cb => cb.checked);
 
-			checkboxes.forEach(cb => {
+			// 同时更新桌面端和移动端复选框
+			document.querySelectorAll('.collection-proxy-checkbox').forEach(cb => {
 				cb.checked = !allChecked;
 			});
 
@@ -1964,7 +2145,7 @@
 
 		// 获取选中的集合节点索引
 		function getSelectedCollectionProxyIndexes() {
-			const selectedCheckboxes = document.querySelectorAll('.collection-proxy-checkbox:checked');
+			const selectedCheckboxes = document.querySelectorAll('.collection-proxy-checkbox:not(.mobile-checkbox):checked');
 			return Array.from(selectedCheckboxes).map(cb => parseInt(cb.dataset.index));
 		}
 
@@ -2436,7 +2617,12 @@
 				html += '<div class="list-item' + highlightClass + '" data-index="' + i + '">';
 				html += '<input type="checkbox" class="collection-subscription-checkbox" data-index="' + i + '" onchange="updateCollectionSubscriptionSelectionUI()">';
 				html += '<div class="item-info">';
-				html += '<div class="item-name" id="collectionSubName-' + i + '">' + name + '</div>';
+				html += '<div class="item-name" id="collectionSubName-' + i + '">';
+				html += '<div class="checkbox-wrapper">';
+				html += '<input type="checkbox" class="collection-subscription-checkbox mobile-checkbox" data-index="' + i + '" onchange="updateCollectionSubscriptionSelectionUI()">';
+				html += '</div>';
+				html += '<span class="name-text">' + name + '</span>';
+				html += '</div>';
 				html += '<div class="item-details">' + sub + '</div>';
 				html += '</div>';
 				html += '<div class="item-actions">';
@@ -2470,8 +2656,21 @@
 
 		// 更新集合订阅选择UI状态
 		function updateCollectionSubscriptionSelectionUI() {
-			const checkboxes = document.querySelectorAll('.collection-subscription-checkbox');
-			const selectedCheckboxes = document.querySelectorAll('.collection-subscription-checkbox:checked');
+			// 同步桌面端和移动端复选框状态
+			document.querySelectorAll('#collectionSubList .list-item').forEach((item, index) => {
+				const desktopCheckbox = item.querySelector('.collection-subscription-checkbox:not(.mobile-checkbox)');
+				const mobileCheckbox = item.querySelector('.collection-subscription-checkbox.mobile-checkbox');
+
+				if (desktopCheckbox && mobileCheckbox) {
+					// 如果其中一个被选中，同步到另一个
+					if (desktopCheckbox.checked !== mobileCheckbox.checked) {
+						mobileCheckbox.checked = desktopCheckbox.checked;
+					}
+				}
+			});
+
+			const checkboxes = document.querySelectorAll('.collection-subscription-checkbox:not(.mobile-checkbox)');
+			const selectedCheckboxes = document.querySelectorAll('.collection-subscription-checkbox:not(.mobile-checkbox):checked');
 			const selectedCount = selectedCheckboxes.length;
 			const totalCount = checkboxes.length;
 
@@ -2501,7 +2700,7 @@
 
 			// 更新列表项的选中样式
 			document.querySelectorAll('#collectionSubList .list-item').forEach((item, index) => {
-				const checkbox = item.querySelector('.collection-subscription-checkbox');
+				const checkbox = item.querySelector('.collection-subscription-checkbox:not(.mobile-checkbox)');
 				if (checkbox && checkbox.checked) {
 					item.classList.add('selected');
 				} else {
@@ -2512,10 +2711,11 @@
 
 		// 全选/取消全选集合订阅
 		function selectAllCollectionSubscriptions() {
-			const checkboxes = document.querySelectorAll('.collection-subscription-checkbox');
+			const checkboxes = document.querySelectorAll('.collection-subscription-checkbox:not(.mobile-checkbox)');
 			const allChecked = Array.from(checkboxes).every(cb => cb.checked);
 
-			checkboxes.forEach(cb => {
+			// 同时更新桌面端和移动端复选框
+			document.querySelectorAll('.collection-subscription-checkbox').forEach(cb => {
 				cb.checked = !allChecked;
 			});
 
@@ -2524,7 +2724,7 @@
 
 		// 获取选中的集合订阅索引
 		function getSelectedCollectionSubscriptionIndexes() {
-			const selectedCheckboxes = document.querySelectorAll('.collection-subscription-checkbox:checked');
+			const selectedCheckboxes = document.querySelectorAll('.collection-subscription-checkbox:not(.mobile-checkbox):checked');
 			return Array.from(selectedCheckboxes).map(cb => parseInt(cb.dataset.index));
 		}
 

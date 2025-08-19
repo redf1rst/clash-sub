@@ -712,6 +712,14 @@ async function activeDetectionForCollection(collectionId, results, env) {
 			// 提取基础名称
 			let baseName = result.name;
 
+			// 从现有名称中提取基础名称（去除流量和到期信息）
+			if (baseName) {
+				const baseNameMatch = baseName.match(/^([^[\(]+?)(?:\s*\[.*?\])?(?:\s*\(.*?\))?$/);
+				if (baseNameMatch) {
+					baseName = baseNameMatch[1].trim();
+				}
+			}
+
 			// 如果没有基础名称，使用订阅编号
 			if (!baseName) {
 				const usedNumbers = new Set();
@@ -3267,6 +3275,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 
 				// 特定服务规则
 				'RULE-SET,ai,AI服务',
+				'DOMAIN-SUFFIX,cloudflare.com,节点选择',
 				'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
 				'DOMAIN-SUFFIX,github.com,节点选择',
 				'RULE-SET,github_domain,节点选择',
@@ -4230,6 +4239,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 
 			// 特定服务规则
 			'RULE-SET,ai,AI服务',
+			'DOMAIN-SUFFIX,cloudflare.com,🚀 默认代理',
 			'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
 			'DOMAIN-SUFFIX,github.com,🚀 默认代理',
 			'RULE-SET,github_domain,🚀 默认代理',
