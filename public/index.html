@@ -1560,6 +1560,7 @@
 		let newlyAddedProxies = new Set(); // 跟踪新添加的节点
 		let newlyAddedSubscriptions = new Set(); // 跟踪新添加的订阅
 		let newlyAddedCollectionSubscriptions = new Set(); // 跟踪订阅集合中新添加的订阅
+		let newlyAddedCollectionProxies = new Set(); // 跟踪集合中新添加的节点
 
 		// 当前管理的集合
 		let currentManagingCollection = null;
@@ -2016,9 +2017,19 @@
 			}
 
 			let html = '';
+			let firstNewlyAddedIndex = -1;
+
 			for (let i = 0; i < proxies.length; i++) {
 				const proxy = proxies[i];
-				html += '<div class="list-item" data-index="' + i + '">';
+				const isNewlyAdded = newlyAddedCollectionProxies.has(proxy.name);
+				const highlightClass = isNewlyAdded ? ' newly-added' : '';
+
+				// 记录第一个新添加节点的位置
+				if (isNewlyAdded && firstNewlyAddedIndex === -1) {
+					firstNewlyAddedIndex = i;
+				}
+
+				html += '<div class="list-item' + highlightClass + '" data-index="' + i + '">';
 				html += '<input type="checkbox" class="collection-proxy-checkbox" data-index="' + i + '" onchange="updateCollectionProxySelectionUI()">';
 				html += '<div class="item-info">';
 				html += '<div class="item-name">';
@@ -2033,6 +2044,25 @@
 			}
 			listEl.innerHTML = html;
 			updateCollectionProxySelectionUI();
+
+			// 如果有新添加的节点，滚动到第一个新节点
+			if (firstNewlyAddedIndex !== -1) {
+				setTimeout(() => {
+					const listItems = document.querySelectorAll('#collectionProxyList .list-item');
+					if (listItems[firstNewlyAddedIndex]) {
+						listItems[firstNewlyAddedIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+					}
+				}, 100);
+			}
+
+			// 15秒后移除高亮
+			if (newlyAddedCollectionProxies.size > 0) {
+				setTimeout(() => {
+					newlyAddedCollectionProxies.clear();
+					// 重新渲染以移除高亮样式
+					renderCollectionProxies();
+				}, 15000);
+			}
 		}
 
 		// ========== 输出框管理功能 ==========
@@ -2066,41 +2096,7 @@
 
 
 
-		// 滚动到第一个新节点
-		function scrollToFirstNewNode(newlyAddedNames) {
-			setTimeout(() => {
-				const listItems = document.querySelectorAll('#collectionProxyList .list-item');
-				let firstNewItem = null;
-				let highlightedCount = 0;
 
-				// 遍历所有节点，为新添加的节点添加高亮
-				for (let item of listItems) {
-					const nameElement = item.querySelector('.item-name');
-					if (nameElement && newlyAddedNames.has(nameElement.textContent)) {
-						item.classList.add('newly-added');
-						highlightedCount++;
-
-						// 记录第一个新添加的节点用于滚动
-						if (!firstNewItem) {
-							firstNewItem = item;
-						}
-					}
-				}
-
-				// 滚动到第一个新添加的节点
-				if (firstNewItem) {
-					firstNewItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-					addCollectionOutput(`已高亮显示 ${highlightedCount} 个新添加的节点`, 'info');
-				}
-
-				// 15秒后移除高亮
-				setTimeout(() => {
-					document.querySelectorAll('#collectionProxyList .newly-added').forEach(item => {
-						item.classList.remove('newly-added');
-					});
-				}, 15000);
-			}, 100);
-		}
 
 		// ========== 集合节点选择功能 ==========
 
@@ -2340,11 +2336,11 @@
 					// 清空输入框
 					document.getElementById('collectionProxyUrl').value = '';
 
-					// 记录新添加的节点名称用于高亮和滚动
-					const newlyAddedNames = new Set();
+					// 清空之前的高亮记录并记录新添加的节点
+					newlyAddedCollectionProxies.clear();
 					if (result.addedProxies && result.addedProxies.length > 0) {
 						result.addedProxies.forEach(proxy => {
-							newlyAddedNames.add(proxy.name);
+							newlyAddedCollectionProxies.add(proxy.name);
 						});
 					}
 
@@ -2353,9 +2349,9 @@
 					currentManagingCollection = proxyCollections.find(c => c.id === currentManagingCollection.id);
 					renderCollectionProxies();
 
-					// 如果有新添加的节点，自动滚动到第一个新节点
-					if (newlyAddedNames.size > 0) {
-						scrollToFirstNewNode(newlyAddedNames);
+					// 显示添加成功的信息
+					if (newlyAddedCollectionProxies.size > 0) {
+						addCollectionOutput(`已高亮显示 ${newlyAddedCollectionProxies.size} 个新添加的节点`, 'info');
 					}
 				}
 			} catch (error) {
