@@ -1764,7 +1764,7 @@
 				const lineNumber = i + 1;
 
 				// 检查是否是代理链接
-				if (line.match(/^(vmess|vless|ss|ssr|hysteria|hysteria2|hy2|trojan|tuic):\/\//)) {
+				if (line.match(/^(vmess|vless|ss|ssr|hysteria|hysteria2|hy2|trojan|tuic|socks5|https?):\/\//)) {
 					urlLines.push(line);
 				}
 				// 检查是否是完整的单行JSON对象
@@ -2363,7 +2363,7 @@
 				const lineNumber = i + 1;
 
 				// 检查是否是代理链接
-				if (line.match(/^(vmess|vless|ss|ssr|hysteria|hysteria2|hy2|trojan|tuic):\/\//)) {
+				if (line.match(/^(vmess|vless|ss|ssr|hysteria|hysteria2|hy2|trojan|tuic|socks5|https?):\/\//)) {
 					urlLines.push(line);
 				}
 				// 检查是否是完整的单行JSON对象

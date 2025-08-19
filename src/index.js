@@ -1782,15 +1782,8 @@ async function addJSONProxiesToCollection(collectionId, proxiesToAdd, env) {
 			const newNodeName = `${regionName}${nodeNumberStr}${suffix}`;
 			console.log(`[DEBUG] Assigned number: ${nodeNumber}, final name: ${newNodeName}`);
 
-			// 标准化节点数据 - 使用新生成的名称和格式化的server地址
-			const { name: _, ...otherFields } = proxyData; // 排除原始name字段
-			const normalizedProxy = {
-				name: newNodeName,
-				type: proxyData.type.toLowerCase(),
-				server: formattedServer,
-				port: port,
-				...otherFields // 展开其他字段，不包含原始name和server
-			};
+			// 标准化节点数据 - 使用协议特定的解析函数
+			const normalizedProxy = normalizeJSONProxy(proxyData, newNodeName, formattedServer, port);
 
 			collection.proxies.push(normalizedProxy);
 			addedProxies.push(normalizedProxy);
@@ -2321,14 +2314,8 @@ async function addJSONProxies(proxiesToAdd, env) {
 			const nodeNumberStr = String(nodeNumber).padStart(2, '0');
 			const newNodeName = `${regionName}${nodeNumberStr}${suffix}`;
 
-			// 标准化节点数据 - 使用新生成的名称和格式化的server地址
-			const normalizedProxy = {
-				name: newNodeName,
-				type: proxyData.type.toLowerCase(),
-				server: formattedServer,
-				port: port,
-				...proxyData // 保留其他字段，但name、server会被覆盖
-			};
+			// 标准化节点数据 - 使用协议特定的解析函数
+			const normalizedProxy = normalizeJSONProxy(proxyData, newNodeName, formattedServer, port);
 
 			proxies.push(normalizedProxy);
 			addedProxies.push(normalizedProxy);
@@ -3262,6 +3249,9 @@ async function generateProxyCollectionConfig(collectionId, env) {
 			rules: [
 				// 自定义优先规则
 				'DOMAIN-SUFFIX,linux.do,Linux DO',
+				'DOMAIN-SUFFIX,cloudflare.com,节点选择',
+				'DOMAIN-SUFFIX,github.com,节点选择',
+				'RULE-SET,github_domain,节点选择',
 				'DOMAIN-SUFFIX,adobe.io,REJECT',
 				'DOMAIN-SUFFIX,adobestats.io,REJECT',
 				'DOMAIN-SUFFIX,bilibili.com,DIRECT',
@@ -3275,10 +3265,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 
 				// 特定服务规则
 				'RULE-SET,ai,AI服务',
-				'DOMAIN-SUFFIX,cloudflare.com,节点选择',
 				'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
-				'DOMAIN-SUFFIX,github.com,节点选择',
-				'RULE-SET,github_domain,节点选择',
 				'RULE-SET,youtube_domain,节点选择',
 				'RULE-SET,google_domain,AI服务',
 				'RULE-SET,onedrive_domain,微软服务',
@@ -4226,6 +4213,9 @@ async function generateSubCollectionConfig(collectionId, env) {
 		config.rules = [
 			// 自定义优先规则
 			'DOMAIN-SUFFIX,linux.do,Linux DO',
+			'DOMAIN-SUFFIX,cloudflare.com,🚀 默认代理',
+			'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
+			'DOMAIN-SUFFIX,github.com,🚀 默认代理',
 			'DOMAIN-SUFFIX,adobe.io,REJECT',
 			'DOMAIN-SUFFIX,adobestats.io,REJECT',
 			'DOMAIN-SUFFIX,bilibili.com,DIRECT',
@@ -4239,9 +4229,6 @@ async function generateSubCollectionConfig(collectionId, env) {
 
 			// 特定服务规则
 			'RULE-SET,ai,AI服务',
-			'DOMAIN-SUFFIX,cloudflare.com,🚀 默认代理',
-			'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
-			'DOMAIN-SUFFIX,github.com,🚀 默认代理',
 			'RULE-SET,github_domain,🚀 默认代理',
 			'RULE-SET,youtube_domain,🚀 默认代理',
 			'RULE-SET,google_domain,AI服务',
@@ -4306,7 +4293,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 // 解析代理URL
 function parseProxyUrl(url, region = null) {
 	try {
-		// 支持vmess, vless, ss, ssr, hysteria, hysteria2, trojan, tuic等协议
+		// 支持vmess, vless, ss, ssr, hysteria, hysteria2, trojan, tuic, socks5, http等协议
 		if (url.startsWith('vmess://')) {
 			return parseVmess(url);
 		} else if (url.startsWith('vless://')) {
@@ -4323,6 +4310,10 @@ function parseProxyUrl(url, region = null) {
 			return parseTrojan(url);
 		} else if (url.startsWith('tuic://')) {
 			return parseTuic(url);
+		} else if (url.startsWith('socks5://')) {
+			return parseSocks5(url);
+		} else if (url.startsWith('http://') || url.startsWith('https://')) {
+			return parseHttp(url);
 		}
 		return null;
 	} catch (error) {
@@ -4340,7 +4331,7 @@ function parseVmess(url) {
 		port: parseInt(data.port),
 		uuid: data.id,
 		alterId: parseInt(data.aid) || 0,
-		cipher: 'auto',
+		cipher: data.scy || 'auto',
 		network: data.net || 'tcp',
 		tls: data.tls === 'tls'
 	};
@@ -4452,17 +4443,6 @@ function parseVmess(url) {
 		config['grpc-opts'] = {};
 		if (data.path) {
 			config['grpc-opts']['grpc-service-name'] = data.path;
-		}
-	}
-
-	// 添加 HTTP/2 配置
-	if (data.net === 'h2') {
-		config['h2-opts'] = {};
-		if (data.host) {
-			config['h2-opts'].host = data.host.split(',');
-		}
-		if (data.path) {
-			config['h2-opts'].path = data.path;
 		}
 	}
 
@@ -4780,6 +4760,42 @@ function parseShadowsocks(url) {
 			}
 			if (params.get('shadow-tls-alpn')) {
 				config['plugin-opts'].alpn = params.get('shadow-tls-alpn').split(',');
+			}
+			// 添加客户端指纹支持
+			if (params.get('client-fingerprint')) {
+				config['client-fingerprint'] = params.get('client-fingerprint');
+			}
+		}
+
+		// gost-plugin 配置
+		if (params.get('plugin') === 'gost-plugin') {
+			if (params.get('gost-mode')) {
+				config['plugin-opts'].mode = params.get('gost-mode');
+			}
+			if (params.get('gost-tls')) {
+				config['plugin-opts'].tls = params.get('gost-tls') === 'true';
+			}
+			if (params.get('gost-host')) {
+				config['plugin-opts'].host = params.get('gost-host');
+			}
+			if (params.get('gost-path')) {
+				config['plugin-opts'].path = params.get('gost-path');
+			}
+			if (params.get('gost-mux')) {
+				config['plugin-opts'].mux = params.get('gost-mux') === 'true';
+			}
+			if (params.get('gost-fingerprint')) {
+				config['plugin-opts'].fingerprint = params.get('gost-fingerprint');
+			}
+			if (params.get('gost-skip-cert-verify')) {
+				config['plugin-opts']['skip-cert-verify'] = params.get('gost-skip-cert-verify') === 'true';
+			}
+			if (params.get('gost-headers')) {
+				try {
+					config['plugin-opts'].headers = JSON.parse(params.get('gost-headers'));
+				} catch (e) {
+					// 如果解析失败，忽略headers配置
+				}
 			}
 		}
 
@@ -5375,6 +5391,387 @@ function parseTuic(url) {
 	if (params.get('reduce_rtt') === '1') {
 		config['reduce-rtt'] = true;
 	}
+
+	return config;
+}
+
+// 解析SOCKS5
+function parseSocks5(url) {
+	const parsed = new URL(url);
+	const params = parsed.searchParams;
+
+	const config = {
+		name: decodeURIComponent(parsed.hash.substring(1)) || 'SOCKS5',
+		type: 'socks5',
+		server: formatServerAddress(parsed.hostname),
+		port: parseInt(parsed.port)
+	};
+
+	// 添加用户名和密码
+	if (parsed.username) {
+		config.username = decodeURIComponent(parsed.username);
+	}
+	if (parsed.password) {
+		config.password = decodeURIComponent(parsed.password);
+	}
+
+	// 添加 TLS 支持
+	if (params.get('tls') === 'true') {
+		config.tls = true;
+	}
+
+	// 添加指纹
+	if (params.get('fingerprint')) {
+		config.fingerprint = params.get('fingerprint');
+	}
+
+	// 添加跳过证书验证
+	if (params.get('skip-cert-verify') === 'true') {
+		config['skip-cert-verify'] = true;
+	}
+
+	// 添加 UDP 支持
+	if (params.get('udp') === 'true') {
+		config.udp = true;
+	}
+
+	// 添加 IP 版本偏好
+	if (params.get('ip-version')) {
+		config['ip-version'] = params.get('ip-version');
+	}
+
+	return config;
+}
+
+// 解析HTTP代理
+function parseHttp(url) {
+	const parsed = new URL(url);
+	const params = parsed.searchParams;
+
+	const config = {
+		name: decodeURIComponent(parsed.hash.substring(1)) || 'HTTP',
+		type: 'http',
+		server: formatServerAddress(parsed.hostname),
+		port: parseInt(parsed.port)
+	};
+
+	// 添加用户名和密码
+	if (parsed.username) {
+		config.username = decodeURIComponent(parsed.username);
+	}
+	if (parsed.password) {
+		config.password = decodeURIComponent(parsed.password);
+	}
+
+	// 添加 TLS 支持 (HTTPS)
+	if (url.startsWith('https://') || params.get('tls') === 'true') {
+		config.tls = true;
+	}
+
+	// 添加跳过证书验证
+	if (params.get('skip-cert-verify') === 'true') {
+		config['skip-cert-verify'] = true;
+	}
+
+	// 添加 SNI
+	if (params.get('sni')) {
+		config.sni = params.get('sni');
+	}
+
+	// 添加指纹
+	if (params.get('fingerprint')) {
+		config.fingerprint = params.get('fingerprint');
+	}
+
+	// 添加 IP 版本偏好
+	if (params.get('ip-version')) {
+		config['ip-version'] = params.get('ip-version');
+	}
+
+	return config;
+}
+
+// 标准化JSON格式节点数据
+function normalizeJSONProxy(proxyData, name, server, port) {
+	const type = proxyData.type.toLowerCase();
+
+	// 基础配置
+	const config = {
+		name: name,
+		type: type,
+		server: server,
+		port: port
+	};
+
+	// 根据协议类型进行特定字段处理
+	switch (type) {
+		case 'vmess':
+			return normalizeVmessJSON(proxyData, config);
+		case 'vless':
+			return normalizeVlessJSON(proxyData, config);
+		case 'ss':
+			return normalizeShadowsocksJSON(proxyData, config);
+		case 'ssr':
+			return normalizeShadowsocksRJSON(proxyData, config);
+		case 'trojan':
+			return normalizeTrojanJSON(proxyData, config);
+		case 'hysteria':
+			return normalizeHysteriaJSON(proxyData, config);
+		case 'hysteria2':
+			return normalizeHysteria2JSON(proxyData, config);
+		case 'tuic':
+			return normalizeTuicJSON(proxyData, config);
+		case 'socks5':
+			return normalizeSocks5JSON(proxyData, config);
+		case 'http':
+			return normalizeHttpJSON(proxyData, config);
+		default:
+			// 对于未知协议，保留所有字段但覆盖基础字段
+			return { ...proxyData, ...config };
+	}
+}
+
+// VMess JSON标准化
+function normalizeVmessJSON(data, config) {
+	// 必需字段
+	if (data.uuid) config.uuid = data.uuid;
+	if (data.alterId !== undefined) config.alterId = parseInt(data.alterId) || 0;
+
+	// 可选字段
+	if (data.cipher) config.cipher = data.cipher;
+	else config.cipher = 'auto';
+
+	if (data.network) config.network = data.network;
+	if (data.tls !== undefined) config.tls = data.tls === true || data.tls === 'true';
+	if (data.udp !== undefined) config.udp = data.udp === true || data.udp === 'true';
+	if (data['ip-version']) config['ip-version'] = data['ip-version'];
+	if (data.fingerprint) config.fingerprint = data.fingerprint;
+	if (data['client-fingerprint']) config['client-fingerprint'] = data['client-fingerprint'];
+	if (data['skip-cert-verify'] !== undefined) config['skip-cert-verify'] = data['skip-cert-verify'] === true || data['skip-cert-verify'] === 'true';
+	if (data.servername) config.servername = data.servername;
+
+	// 传输层配置
+	if (data['ws-opts']) config['ws-opts'] = data['ws-opts'];
+	if (data['h2-opts']) config['h2-opts'] = data['h2-opts'];
+	if (data['http-opts']) config['http-opts'] = data['http-opts'];
+	if (data['grpc-opts']) config['grpc-opts'] = data['grpc-opts'];
+	if (data['ech-opts']) config['ech-opts'] = data['ech-opts'];
+	if (data['reality-opts']) config['reality-opts'] = data['reality-opts'];
+
+	return config;
+}
+
+// VLess JSON标准化
+function normalizeVlessJSON(data, config) {
+	// 必需字段
+	if (data.uuid) config.uuid = data.uuid;
+
+	// 可选字段
+	if (data.network) config.network = data.network;
+	if (data.tls !== undefined) config.tls = data.tls === true || data.tls === 'true';
+	if (data.udp !== undefined) config.udp = data.udp === true || data.udp === 'true';
+	if (data['ip-version']) config['ip-version'] = data['ip-version'];
+	if (data.flow) config.flow = data.flow;
+	if (data.fingerprint) config.fingerprint = data.fingerprint;
+	if (data['client-fingerprint']) config['client-fingerprint'] = data['client-fingerprint'];
+	if (data['skip-cert-verify'] !== undefined) config['skip-cert-verify'] = data['skip-cert-verify'] === true || data['skip-cert-verify'] === 'true';
+	if (data.servername) config.servername = data.servername;
+	if (data.alpn) config.alpn = Array.isArray(data.alpn) ? data.alpn : [data.alpn];
+
+	// 传输层配置
+	if (data['ws-opts']) config['ws-opts'] = data['ws-opts'];
+	if (data['h2-opts']) config['h2-opts'] = data['h2-opts'];
+	if (data['grpc-opts']) config['grpc-opts'] = data['grpc-opts'];
+	if (data['tcp-opts']) config['tcp-opts'] = data['tcp-opts'];
+	if (data['ech-opts']) config['ech-opts'] = data['ech-opts'];
+	if (data['reality-opts']) config['reality-opts'] = data['reality-opts'];
+
+	return config;
+}
+
+// Shadowsocks JSON标准化
+function normalizeShadowsocksJSON(data, config) {
+	// 必需字段
+	if (data.cipher) config.cipher = data.cipher;
+	if (data.password) config.password = data.password;
+
+	// 可选字段
+	if (data.udp !== undefined) config.udp = data.udp === true || data.udp === 'true';
+	if (data['udp-over-tcp'] !== undefined) config['udp-over-tcp'] = data['udp-over-tcp'] === true || data['udp-over-tcp'] === 'true';
+	if (data['ip-version']) config['ip-version'] = data['ip-version'];
+	if (data['client-fingerprint']) config['client-fingerprint'] = data['client-fingerprint'];
+
+	// SMUX 配置
+	if (data.smux) config.smux = data.smux;
+
+	// 插件配置
+	if (data.plugin) {
+		config.plugin = data.plugin;
+		if (data['plugin-opts']) config['plugin-opts'] = data['plugin-opts'];
+	}
+
+	return config;
+}
+
+// ShadowsocksR JSON标准化
+function normalizeShadowsocksRJSON(data, config) {
+	// 必需字段
+	if (data.cipher) config.cipher = data.cipher;
+	if (data.password) config.password = data.password;
+	if (data.protocol) config.protocol = data.protocol;
+	if (data.obfs) config.obfs = data.obfs;
+
+	// 可选字段
+	if (data['obfs-param']) config['obfs-param'] = data['obfs-param'];
+	if (data['protocol-param']) config['protocol-param'] = data['protocol-param'];
+	if (data.udp !== undefined) config.udp = data.udp === true || data.udp === 'true';
+
+	return config;
+}
+
+// Trojan JSON标准化
+function normalizeTrojanJSON(data, config) {
+	// 必需字段
+	if (data.password) config.password = data.password;
+
+	// 可选字段
+	if (data.udp !== undefined) config.udp = data.udp === true || data.udp === 'true';
+	else config.udp = true; // Trojan默认开启UDP
+
+	if (data['client-fingerprint']) config['client-fingerprint'] = data['client-fingerprint'];
+	if (data.fingerprint) config.fingerprint = data.fingerprint;
+	if (data.sni) config.sni = data.sni;
+	if (data.alpn) config.alpn = Array.isArray(data.alpn) ? data.alpn : [data.alpn];
+	if (data['skip-cert-verify'] !== undefined) config['skip-cert-verify'] = data['skip-cert-verify'] === true || data['skip-cert-verify'] === 'true';
+	if (data.flow) config.flow = data.flow;
+	if (data['flow-show'] !== undefined) config['flow-show'] = data['flow-show'] === true || data['flow-show'] === 'true';
+	if (data.network) config.network = data.network;
+
+	// 传输层配置
+	if (data['ws-opts']) config['ws-opts'] = data['ws-opts'];
+	if (data['grpc-opts']) config['grpc-opts'] = data['grpc-opts'];
+	if (data['ss-opts']) config['ss-opts'] = data['ss-opts'];
+	if (data['ech-opts']) config['ech-opts'] = data['ech-opts'];
+	if (data['reality-opts']) config['reality-opts'] = data['reality-opts'];
+
+	return config;
+}
+
+// Hysteria JSON标准化
+function normalizeHysteriaJSON(data, config) {
+	// 可选字段
+	if (data['auth-str']) config['auth-str'] = data['auth-str'];
+	if (data.ports) config.ports = data.ports;
+	if (data.obfs) config.obfs = data.obfs;
+	if (data.alpn) config.alpn = Array.isArray(data.alpn) ? data.alpn : [data.alpn];
+	if (data.protocol) config.protocol = data.protocol;
+	if (data.up) config.up = data.up;
+	if (data.down) config.down = data.down;
+	if (data.sni) config.sni = data.sni;
+	if (data['skip-cert-verify'] !== undefined) config['skip-cert-verify'] = data['skip-cert-verify'] === true || data['skip-cert-verify'] === 'true';
+	if (data['recv-window-conn']) config['recv-window-conn'] = parseInt(data['recv-window-conn']);
+	if (data['recv-window']) config['recv-window'] = parseInt(data['recv-window']);
+	if (data.ca) config.ca = data.ca;
+	if (data['ca-str']) config['ca-str'] = data['ca-str'];
+	if (data['disable-mtu-discovery'] !== undefined) config['disable-mtu-discovery'] = data['disable-mtu-discovery'] === true || data['disable-mtu-discovery'] === 'true';
+	if (data.fingerprint) config.fingerprint = data.fingerprint;
+	if (data['fast-open'] !== undefined) config['fast-open'] = data['fast-open'] === true || data['fast-open'] === 'true';
+	if (data['ech-opts']) config['ech-opts'] = data['ech-opts'];
+
+	return config;
+}
+
+// Hysteria2 JSON标准化
+function normalizeHysteria2JSON(data, config) {
+	// 必需字段
+	if (data.password) config.password = data.password;
+
+	// 可选字段
+	if (data.ports) config.ports = data.ports;
+	if (data['hop-interval']) config['hop-interval'] = parseInt(data['hop-interval']);
+	if (data.up) config.up = data.up;
+	if (data.down) config.down = data.down;
+	if (data.obfs) config.obfs = data.obfs;
+	if (data['obfs-password']) config['obfs-password'] = data['obfs-password'];
+	if (data.sni) config.sni = data.sni;
+	if (data['skip-cert-verify'] !== undefined) config['skip-cert-verify'] = data['skip-cert-verify'] === true || data['skip-cert-verify'] === 'true';
+	if (data.fingerprint) config.fingerprint = data.fingerprint;
+	if (data.alpn) config.alpn = Array.isArray(data.alpn) ? data.alpn : [data.alpn];
+	if (data.ca) config.ca = data.ca;
+	if (data['ca-str']) config['ca-str'] = data['ca-str'];
+	if (data['ech-opts']) config['ech-opts'] = data['ech-opts'];
+
+	// QUIC 特殊配置
+	if (data['initial-stream-receive-window']) config['initial-stream-receive-window'] = parseInt(data['initial-stream-receive-window']);
+	if (data['max-stream-receive-window']) config['max-stream-receive-window'] = parseInt(data['max-stream-receive-window']);
+	if (data['initial-connection-receive-window']) config['initial-connection-receive-window'] = parseInt(data['initial-connection-receive-window']);
+	if (data['max-connection-receive-window']) config['max-connection-receive-window'] = parseInt(data['max-connection-receive-window']);
+
+	return config;
+}
+
+// TUIC JSON标准化
+function normalizeTuicJSON(data, config) {
+	// TUIC v4 使用 token，v5 使用 uuid + password
+	if (data.token) {
+		config.token = data.token;
+	} else {
+		if (data.uuid) config.uuid = data.uuid;
+		if (data.password) config.password = data.password;
+	}
+
+	// 可选字段
+	if (data.ip) config.ip = data.ip;
+	if (data['heartbeat-interval']) config['heartbeat-interval'] = parseInt(data['heartbeat-interval']);
+	if (data.alpn) config.alpn = Array.isArray(data.alpn) ? data.alpn : [data.alpn];
+	else config.alpn = ['h3']; // TUIC 默认使用 h3
+
+	if (data['disable-sni'] !== undefined) config['disable-sni'] = data['disable-sni'] === true || data['disable-sni'] === 'true';
+	if (data['reduce-rtt'] !== undefined) config['reduce-rtt'] = data['reduce-rtt'] === true || data['reduce-rtt'] === 'true';
+	if (data['request-timeout']) config['request-timeout'] = parseInt(data['request-timeout']);
+	if (data['udp-relay-mode']) config['udp-relay-mode'] = data['udp-relay-mode'];
+	else config['udp-relay-mode'] = 'native';
+
+	if (data['congestion-controller']) config['congestion-controller'] = data['congestion-controller'];
+	else config['congestion-controller'] = 'bbr';
+
+	if (data.cwnd) config.cwnd = parseInt(data.cwnd);
+	if (data['max-udp-relay-packet-size']) config['max-udp-relay-packet-size'] = parseInt(data['max-udp-relay-packet-size']);
+	if (data['fast-open'] !== undefined) config['fast-open'] = data['fast-open'] === true || data['fast-open'] === 'true';
+	if (data['skip-cert-verify'] !== undefined) config['skip-cert-verify'] = data['skip-cert-verify'] === true || data['skip-cert-verify'] === 'true';
+	if (data['max-open-streams']) config['max-open-streams'] = parseInt(data['max-open-streams']);
+	if (data.sni) config.sni = data.sni;
+	if (data['ech-opts']) config['ech-opts'] = data['ech-opts'];
+	if (data['udp-over-stream'] !== undefined) config['udp-over-stream'] = data['udp-over-stream'] === true || data['udp-over-stream'] === 'true';
+	if (data['udp-over-stream-version']) config['udp-over-stream-version'] = parseInt(data['udp-over-stream-version']);
+
+	return config;
+}
+
+// SOCKS5 JSON标准化
+function normalizeSocks5JSON(data, config) {
+	// 可选字段
+	if (data.username) config.username = data.username;
+	if (data.password) config.password = data.password;
+	if (data.tls !== undefined) config.tls = data.tls === true || data.tls === 'true';
+	if (data.fingerprint) config.fingerprint = data.fingerprint;
+	if (data['skip-cert-verify'] !== undefined) config['skip-cert-verify'] = data['skip-cert-verify'] === true || data['skip-cert-verify'] === 'true';
+	if (data.udp !== undefined) config.udp = data.udp === true || data.udp === 'true';
+	if (data['ip-version']) config['ip-version'] = data['ip-version'];
+
+	return config;
+}
+
+// HTTP JSON标准化
+function normalizeHttpJSON(data, config) {
+	// 可选字段
+	if (data.username) config.username = data.username;
+	if (data.password) config.password = data.password;
+	if (data.tls !== undefined) config.tls = data.tls === true || data.tls === 'true';
+	if (data['skip-cert-verify'] !== undefined) config['skip-cert-verify'] = data['skip-cert-verify'] === true || data['skip-cert-verify'] === 'true';
+	if (data.sni) config.sni = data.sni;
+	if (data.fingerprint) config.fingerprint = data.fingerprint;
+	if (data['ip-version']) config['ip-version'] = data['ip-version'];
 
 	return config;
 }
