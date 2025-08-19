@@ -3283,6 +3283,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				'DOMAIN-SUFFIX,linux.do,Linux DO',
 				'DOMAIN-SUFFIX,cloudflare.com,节点选择',
 				'DOMAIN-SUFFIX,github.com,节点选择',
+				'DOMAIN-SUFFIX,githubusercontent.com,节点选择',
 				'RULE-SET,github_domain,节点选择',
 				'DOMAIN-SUFFIX,adobe.io,REJECT',
 				'DOMAIN-SUFFIX,adobestats.io,REJECT',
@@ -4165,8 +4166,8 @@ async function generateSubCollectionConfig(collectionId, env) {
 			// 自定义优先规则
 			'DOMAIN-SUFFIX,linux.do,Linux DO',
 			'DOMAIN-SUFFIX,cloudflare.com,🚀 默认代理',
-			'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
 			'DOMAIN-SUFFIX,github.com,🚀 默认代理',
+			'DOMAIN-SUFFIX,githubusercontent.com,🚀 默认代理',
 			'DOMAIN-SUFFIX,adobe.io,REJECT',
 			'DOMAIN-SUFFIX,adobestats.io,REJECT',
 			'DOMAIN-SUFFIX,bilibili.com,DIRECT',
@@ -4181,6 +4182,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 			// 特定服务规则
 			'RULE-SET,ai,AI服务',
 			'RULE-SET,github_domain,🚀 默认代理',
+			'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
 			'RULE-SET,youtube_domain,🚀 默认代理',
 			'RULE-SET,google_domain,AI服务',
 			'RULE-SET,onedrive_domain,微软服务',
