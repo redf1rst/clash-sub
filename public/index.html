@@ -1803,7 +1803,7 @@
 			}
 			// 如果只有JSON对象
 			else if (jsonObjects.length > 0) {
-				return { action: 'addJSON', proxies: jsonObjects };
+				return { action: 'addJSON', proxies: jsonObjects, data: { region } };
 			}
 			// 如果只有链接格式
 			else if (urlLines.length > 0) {
@@ -2413,7 +2413,8 @@
 				return {
 					action: 'addJSONProxy',
 					collectionId: currentManagingCollection.id,
-					proxies: jsonObjects
+					proxies: jsonObjects,
+					data: { region }
 				};
 			}
 			// 如果只有链接格式

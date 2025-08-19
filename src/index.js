@@ -81,7 +81,7 @@ async function handleProxiesAPI(request, env) {
 			case 'batchDelete':
 				return await batchDeleteProxies(indexes, env);
 			case 'addJSON':
-				return await addJSONProxies(proxies, env);
+				return await addJSONProxies(proxies, data?.region || 'auto', env);
 			case 'addMixed':
 				return await addMixedProxies(data, env);
 			default:
@@ -818,7 +818,7 @@ async function handleProxyCollectionsAPI(request, env) {
 			case 'batchDeleteProxy':
 				return await batchDeleteProxiesFromCollection(collectionId, indexes, env);
 			case 'addJSONProxy':
-				return await addJSONProxiesToCollection(collectionId, proxies, env);
+				return await addJSONProxiesToCollection(collectionId, proxies, data?.region || 'auto', env);
 			case 'addMixedProxy':
 				return await addMixedProxiesToCollection(collectionId, data, env);
 			default:
@@ -1500,7 +1500,7 @@ async function addMixedProxiesToCollection(collectionId, data, env) {
 }
 
 // 添加JSON格式节点到集合
-async function addJSONProxiesToCollection(collectionId, proxiesToAdd, env) {
+async function addJSONProxiesToCollection(collectionId, proxiesToAdd, region, env) {
 	try {
 		const collections = await getProxyCollections(env);
 		const collection = collections.find(c => c.id === collectionId);
@@ -1560,8 +1560,13 @@ async function addJSONProxiesToCollection(collectionId, proxiesToAdd, env) {
 				continue; // 跳过重复节点
 			}
 
-			// 自动检测地区 - 与addProxyToCollection相同的逻辑
-			const detectedRegion = await detectRegion(formattedServer);
+			// 地区检测：手动选择优先，否则自动检测
+			let detectedRegion;
+			if (region === 'auto') {
+				detectedRegion = await detectRegion(formattedServer);
+			} else {
+				detectedRegion = region;
+			}
 
 			// 地区代码映射为英文缩写+中文格式
 			const regionNames = {
@@ -2235,7 +2240,7 @@ async function batchDeleteProxies(indexes, env) {
 }
 
 // 添加JSON格式节点
-async function addJSONProxies(proxiesToAdd, env) {
+async function addJSONProxies(proxiesToAdd, region, env) {
 	try {
 		const proxies = JSON.parse(await env.CLASH_KV?.get('proxies') || '[]');
 		const addedProxies = [];
@@ -2292,8 +2297,13 @@ async function addJSONProxies(proxiesToAdd, env) {
 				continue; // 跳过重复节点
 			}
 
-			// 自动检测地区
-			const detectedRegion = await detectRegion(formattedServer);
+			// 地区检测：手动选择优先，否则自动检测
+			let detectedRegion;
+			if (region === 'auto') {
+				detectedRegion = await detectRegion(formattedServer);
+			} else {
+				detectedRegion = region;
+			}
 
 			// 地区代码映射
 			const regionNames = {
