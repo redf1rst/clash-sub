@@ -3260,10 +3260,11 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
 				'RULE-SET,Advertising-ads,REJECT',
 				// 内网
-				'RULE-SET,Private,DIRECT',
-				'RULE-SET,LAN,DIRECT,no-resolve',
-				'RULE-SET,Fakeip_Filter,DIRECT',
 				'IP-CIDR,224.0.0.0/24,DIRECT,no-resolve',
+				'RULE-SET,Private,DIRECT',
+				'RULE-SET,LAN,DIRECT',
+				'RULE-SET,Fakeip_Filter,DIRECT',
+
 				// 特定服务规则
 				'RULE-SET,ai,AI服务',
 				'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
@@ -4222,10 +4223,11 @@ async function generateSubCollectionConfig(collectionId, env) {
 			'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
 			'RULE-SET,Advertising-ads,REJECT',
 			// 内网
+			'IP-CIDR,224.0.0.0/24,DIRECT,no-resolve',
 			'RULE-SET,Private,DIRECT',
-			'RULE-SET,LAN,DIRECT,no-resolve',
+			'RULE-SET,LAN,DIRECT',
 			'RULE-SET,Fakeip_Filter,DIRECT',
-			'IP-CIDR,224.0.0.0/25,DIRECT,no-resolve',
+
 			// 特定服务规则
 			'RULE-SET,ai,AI服务',
 			'DOMAIN-SUFFIX,codebuddy.ai,AI服务',
