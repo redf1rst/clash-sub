@@ -1173,7 +1173,7 @@
 				<div class="input-group">
 					<label for="proxyUrl">添加节点（支持链接和JSON格式，支持批量添加）</label>
 					<textarea id="proxyUrl"
-						placeholder="支持以下格式：&#10;1. 节点链接：vmess://, vless://, ss://, hysteria2://, hy2://, trojan:// 等，每行一个&#10;2. 标准JSON格式：{&quot;name&quot;: &quot;节点名&quot;, &quot;type&quot;: &quot;vless&quot;, ...}&#10;3. 宽松JSON格式：{name: 节点名, type: vless, uuid: abc-def-123, server: 1.2.3.4, ports: 10710-10733, ...}&#10;4. 带前缀JSON：	- {name: 节点名, type: vless, ...} （支持制表符、横杠、空格前缀）&#10;5. 混合格式：链接和JSON可以混合输入，每行一个&#10;注意：宽松格式支持UUID、域名、端口范围等复杂值，会自动处理空值语法错误"></textarea>
+						placeholder="支持以下格式：&#10;1. 节点链接：vmess://, vless://, ss://, hysteria2://, trojan://, tuic://, snell://, wg://, mieru://, anytls://, ssh:// 等，每行一个&#10;2. 标准JSON格式：{&quot;name&quot;: &quot;节点名&quot;, &quot;type&quot;: &quot;vless&quot;, ...}&#10;3. 宽松JSON格式：{name: 节点名, type: vless, uuid: abc-def-123, server: 1.2.3.4, ports: 10710-10733, ...}&#10;4. 带前缀JSON：	- {name: 节点名, type: vless, ...} （支持制表符、横杠、空格前缀）&#10;5. 混合格式：链接和JSON可以混合输入，每行一个&#10;注意：宽松格式支持UUID、域名、端口范围等复杂值，会自动处理空值语法错误"></textarea>
 				</div>
 
 				<div class="input-group">
@@ -1375,7 +1375,7 @@
 				<div class="input-group">
 					<label for="collectionProxyUrl">添加节点（支持链接和JSON格式，支持批量添加）</label>
 					<textarea id="collectionProxyUrl"
-						placeholder="支持以下格式：&#10;1. 节点链接：vmess://, vless://, ss://, hysteria2://, hy2://, trojan:// 等，每行一个&#10;2. 标准JSON格式：{&quot;name&quot;: &quot;节点名&quot;, &quot;type&quot;: &quot;vless&quot;, ...}&#10;3. 宽松JSON格式：{name: 节点名, type: vless, uuid: abc-def-123, server: 1.2.3.4, ports: 10710-10733, ...}&#10;4. 带前缀JSON：	- {name: 节点名, type: vless, ...} （支持制表符、横杠、空格前缀）&#10;5. 混合格式：链接和JSON可以混合输入，每行一个&#10;注意：宽松格式支持UUID、域名、端口范围等复杂值，会自动处理空值语法错误"></textarea>
+						placeholder="支持以下格式：&#10;1. 节点链接：vmess://, vless://, ss://, hysteria2://, trojan://, tuic://, snell://, wg://, mieru://, anytls://, ssh:// 等，每行一个&#10;2. 标准JSON格式：{&quot;name&quot;: &quot;节点名&quot;, &quot;type&quot;: &quot;vless&quot;, ...}&#10;3. 宽松JSON格式：{name: 节点名, type: vless, uuid: abc-def-123, server: 1.2.3.4, ports: 10710-10733, ...}&#10;4. 带前缀JSON：	- {name: 节点名, type: vless, ...} （支持制表符、横杠、空格前缀）&#10;5. 混合格式：链接和JSON可以混合输入，每行一个&#10;注意：宽松格式支持UUID、域名、端口范围等复杂值，会自动处理空值语法错误"></textarea>
 				</div>
 
 				<div class="input-group">
@@ -1765,7 +1765,7 @@
 				const lineNumber = i + 1;
 
 				// 检查是否是代理链接
-				if (line.match(/^(vmess|vless|ss|ssr|hysteria|hysteria2|hy2|trojan|tuic|socks5|https?):\/\//)) {
+				if (line.match(/^(vmess|vless|ss|ssr|hysteria|hysteria2|hy2|trojan|tuic|socks5|snell|wg|wireguard|mieru|anytls|ssh|https?):\/\//)) {
 					urlLines.push(line);
 				}
 				// 检查是否是完整的单行JSON对象（支持前缀字符）
@@ -2370,7 +2370,7 @@
 				const lineNumber = i + 1;
 
 				// 检查是否是代理链接
-				if (line.match(/^(vmess|vless|ss|ssr|hysteria|hysteria2|hy2|trojan|tuic|socks5|https?):\/\//)) {
+				if (line.match(/^(vmess|vless|ss|ssr|hysteria|hysteria2|hy2|trojan|tuic|socks5|snell|wg|wireguard|mieru|anytls|ssh|https?):\/\//)) {
 					urlLines.push(line);
 				}
 				// 检查是否是完整的单行JSON对象（支持前缀字符）
