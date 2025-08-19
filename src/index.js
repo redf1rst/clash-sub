@@ -449,18 +449,24 @@ async function addSubscriptionToCollection(collectionId, subscriptionUrls, env) 
 		const failedSubscriptions = [];
 
 		for (const subUrl of urls) {
+			console.log(`[COLLECTION DEBUG] 处理订阅URL: ${subUrl}`);
+
 			// 检查重复订阅
 			if (collection.subscriptions.includes(subUrl)) {
+				console.log(`[COLLECTION SKIP] 重复订阅: ${subUrl}`);
 				duplicateCount++;
 				continue;
 			}
 
 			// 获取订阅信息
+			console.log(`[COLLECTION DEBUG] 获取订阅信息: ${subUrl}`);
 			const subInfo = await getSubscriptionInfo(subUrl);
 
 			// 智能连通性判断
+			console.log(`[COLLECTION DEBUG] 开始连通性检查: ${subUrl}`);
 			const shouldReject = await shouldRejectSubscription(subUrl, subInfo);
 			if (shouldReject.reject) {
+				console.log(`[COLLECTION FAILED] 订阅被拒绝: ${subUrl}, 原因: ${shouldReject.reason}`);
 				failedCount++;
 				failedSubscriptions.push({
 					url: subUrl,
@@ -471,12 +477,14 @@ async function addSubscriptionToCollection(collectionId, subscriptionUrls, env) 
 			}
 
 			// 生成订阅名称
+			console.log(`[COLLECTION SUCCESS] 订阅通过检查，生成名称: ${subUrl}`);
 			const subName = generateSubscriptionName(subInfo, collection.subscriptionNames);
 
 			collection.subscriptions.push(subUrl);
 			collection.subscriptionNames.push(subName);
 			addedSubscriptions.push({ url: subUrl, name: subName });
 			successCount++;
+			console.log(`[COLLECTION ADDED] 订阅添加成功: ${subUrl} -> ${subName}`);
 		}
 
 		await env.CLASH_KV?.put('sub_collections', JSON.stringify(collections));
@@ -2388,18 +2396,24 @@ async function addSubscription(data, env) {
 		const failedSubscriptions = [];
 
 		for (const subUrl of urls) {
+			console.log(`[DEBUG] 处理订阅URL: ${subUrl}`);
+
 			// 检查重复订阅
 			if (subscriptions.includes(subUrl)) {
+				console.log(`[SKIP] 重复订阅: ${subUrl}`);
 				duplicateCount++;
 				continue; // 跳过重复的订阅
 			}
 
 			// 获取订阅信息（包括名称、流量、到期时间）
+			console.log(`[DEBUG] 获取订阅信息: ${subUrl}`);
 			const subInfo = await getSubscriptionInfo(subUrl);
 
 			// 智能连通性判断
+			console.log(`[DEBUG] 开始连通性检查: ${subUrl}`);
 			const shouldReject = await shouldRejectSubscription(subUrl, subInfo);
 			if (shouldReject.reject) {
+				console.log(`[FAILED] 订阅被拒绝: ${subUrl}, 原因: ${shouldReject.reason}`);
 				failedCount++;
 				failedSubscriptions.push({
 					url: subUrl,
@@ -2410,12 +2424,14 @@ async function addSubscription(data, env) {
 			}
 
 			// 生成订阅名称
+			console.log(`[SUCCESS] 订阅通过检查，生成名称: ${subUrl}`);
 			const subName = generateSubscriptionName(subInfo, subscriptionNames);
 
 			subscriptions.push(subUrl);
 			subscriptionNames.push(subName);
 			addedSubscriptions.push({ url: subUrl, name: subName });
 			successCount++;
+			console.log(`[ADDED] 订阅添加成功: ${subUrl} -> ${subName}`);
 		}
 
 		// 对订阅进行排序：按序号由小到大排序
@@ -2466,25 +2482,9 @@ async function addSubscription(data, env) {
 	}
 }
 
-// 检查URL是否使用IP地址
-function isIpAddress(url) {
-	try {
-		const urlObj = new URL(url);
-		const hostname = urlObj.hostname;
 
-		// IPv4 地址正则表达式
-		const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
 
-		// IPv6 地址正则表达式（简化版）
-		const ipv6Regex = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$/;
-
-		return ipv4Regex.test(hostname) || ipv6Regex.test(hostname);
-	} catch (error) {
-		return false;
-	}
-}
-
-// 定义三种标准 Clash 客户端请求头
+// 定义多种 Clash 客户端请求头
 const CLASH_USER_AGENTS = [
 	{
 		name: 'Clash.Meta',
@@ -2510,12 +2510,45 @@ const CLASH_USER_AGENTS = [
 			'Accept': '*/*',
 			'Accept-Encoding': 'gzip'
 		}
+	},
+	{
+		name: 'Clash Meta',
+		headers: {
+			'User-Agent': 'Clash Meta',
+			'Accept': '*/*',
+			'Accept-Encoding': 'gzip'
+		}
+	},
+	{
+		name: 'clash verge',
+		headers: {
+			'User-Agent': 'clash verge',
+			'Accept': '*/*',
+			'Accept-Encoding': 'gzip'
+		}
+	},
+	{
+		name: 'clash meta',
+		headers: {
+			'User-Agent': 'clash meta',
+			'Accept': '*/*',
+			'Accept-Encoding': 'gzip'
+		}
+	},
+	{
+		name: 'Clash Verge',
+		headers: {
+			'User-Agent': 'Clash Verge',
+			'Accept': '*/*',
+			'Accept-Encoding': 'gzip'
+		}
 	}
 ];
 
 // 使用多种请求头轮询获取订阅
 async function fetchWithUserAgentRotation(url, timeout = 5000) {
 	let lastError = null;
+	let lastResponse = null;
 
 	for (const userAgent of CLASH_USER_AGENTS) {
 		try {
@@ -2525,91 +2558,107 @@ async function fetchWithUserAgentRotation(url, timeout = 5000) {
 				signal: AbortSignal.timeout(timeout)
 			});
 
-			// 如果请求成功，返回响应和使用的 User-Agent 信息
-			return {
-				response,
-				userAgent: userAgent.name,
-				success: true
-			};
+			// 记录最后一个响应（即使是错误状态码）
+			lastResponse = response;
+
+			// 如果是成功的HTTP状态码，返回响应
+			if (response.ok) {
+				return {
+					response,
+					userAgent: userAgent.name,
+					success: true
+				};
+			} else {
+				// HTTP错误状态码，记录但继续尝试下一个User-Agent
+				console.log(`${userAgent.name} 返回HTTP错误状态码: ${response.status}`);
+				lastError = new Error(`HTTP ${response.status}`);
+			}
 		} catch (error) {
 			lastError = error;
-			console.log(`${userAgent.name} 请求失败: ${error.message}`);
+			console.log(`${userAgent.name} 网络请求失败: ${error.message}`);
 			// 继续尝试下一个 User-Agent
 		}
 	}
 
-	// 所有 User-Agent 都失败了
+	// 如果有HTTP错误响应，返回最后一个响应（用于获取准确的状态码）
+	if (lastResponse && !lastResponse.ok) {
+		return {
+			response: lastResponse,
+			userAgent: 'multiple-attempts',
+			success: false
+		};
+	}
+
+	// 所有 User-Agent 都失败了（网络错误）
 	throw lastError || new Error('所有请求头都失败');
 }
 
 // 智能判断是否应该拒绝订阅
 async function shouldRejectSubscription(subUrl, subInfo) {
-	// 0. 对于使用IP地址的URL，跳过连通性检测，直接接受
-	if (isIpAddress(subUrl)) {
-		console.log(`跳过IP地址连通性检测: ${subUrl}`);
-		return { reject: false, reason: '跳过IP地址检测' };
-	}
+	console.log(`[DEBUG] 检查订阅: ${subUrl}, success: ${subInfo.success}, statusCode: ${subInfo.statusCode}`);
 
 	// 1. 网络连接失败，直接拒绝
 	if (!subInfo.success && (subInfo.statusCode === 0 || subInfo.statusCode === 408)) {
+		console.log(`[REJECT] 网络连接失败: ${subUrl}, statusCode: ${subInfo.statusCode}`);
 		return {
 			reject: true,
 			reason: subInfo.statusCode === 408 ? '请求超时' : '网络连接失败'
 		};
 	}
 
-	// 2. 对于HTTP错误状态码，需要进一步检查内容
-	const criticalErrorCodes = [400, 401, 403, 404, 405, 429, 500, 502, 503, 504];
-	if (criticalErrorCodes.includes(subInfo.statusCode)) {
-		// 使用轮询方式尝试获取响应内容来判断是否真的无效
-		try {
-			const result = await fetchWithUserAgentRotation(subUrl, 5000);
+	// 2. 对于HTTP错误状态码，直接拒绝
+	if (!subInfo.success && subInfo.statusCode > 0) {
+		console.log(`[REJECT] 检测到HTTP错误状态码: ${subInfo.statusCode}，直接拒绝订阅: ${subUrl}`);
 
-			if (result.response.ok) {
-				// 如果这次请求成功了，说明之前的错误可能是临时的
-				console.log(`使用 ${result.userAgent} 重试成功`);
-				return { reject: false };
-			}
-
-			// 检查响应内容类型和内容
-			const contentType = result.response.headers.get('content-type') || '';
-			const content = await result.response.text();
-
-			// 如果返回的是HTML错误页面，则拒绝
-			// 注意：只有当内容真的包含HTML标签时才认为是错误页面
-			// 因为有些订阅服务会错误地设置 Content-Type 为 text/html，但实际返回的是配置文件
-			if (contentType.includes('text/html') &&
-				(content.includes('<html') || content.includes('<HTML') ||
-					content.includes('<!DOCTYPE') || content.includes('<!doctype'))) {
-				return {
-					reject: true,
-					reason: getErrorMessage(result.response.status, true)
-				};
-			}
-
-			// 如果内容看起来像配置文件，则接受
-			if (isValidConfigContent(content)) {
-				return { reject: false };
-			}
-
-			// 其他情况，根据状态码决定
-			if ([403, 404, 502, 503].includes(result.response.status)) {
-				return {
-					reject: true,
-					reason: getErrorMessage(result.response.status, true)
-				};
-			}
-
-		} catch (error) {
-			// 二次请求也失败，拒绝
+		// 定义关键错误状态码，遇到就直接拒绝
+		const criticalErrorCodes = [400, 401, 403, 404, 405, 429, 500, 502, 503, 504];
+		if (criticalErrorCodes.includes(subInfo.statusCode)) {
+			const errorMessage = getErrorMessage(subInfo.statusCode, true);
+			console.log(`[REJECT] 关键错误状态码 ${subInfo.statusCode}: ${errorMessage}`);
 			return {
 				reject: true,
-				reason: getErrorMessage(subInfo.statusCode, subInfo.success)
+				reason: errorMessage
 			};
 		}
 	}
 
-	// 3. 其他情况，接受订阅
+	// 3. 对于成功的请求，检查内容有效性
+	if (subInfo.success) {
+		console.log(`检查订阅内容有效性: ${subUrl}`);
+
+		try {
+			// 获取订阅内容
+			const result = await fetchWithUserAgentRotation(subUrl, 8000);
+			const content = await result.response.text();
+
+			// 检查是否包含proxies字段
+			if (!isValidConfigContent(content)) {
+				return {
+					reject: true,
+					reason: '订阅内容不包含有效的proxies配置'
+				};
+			}
+
+			// 进一步检查proxies块是否包含有效节点
+			if (!hasValidProxiesInContent(content)) {
+				return {
+					reject: true,
+					reason: 'proxies块中没有有效的节点配置'
+				};
+			}
+
+			console.log(`订阅内容验证通过: ${subUrl}`);
+
+		} catch (error) {
+			console.log(`获取订阅内容失败: ${subUrl}, 错误: ${error.message}`);
+			return {
+				reject: true,
+				reason: '无法获取订阅内容进行验证'
+			};
+		}
+	}
+
+	// 4. 其他情况，接受订阅
 	return { reject: false };
 }
 
@@ -2653,6 +2702,82 @@ function isValidConfigContent(content) {
 	];
 
 	return nodeFormats.some(format => lowerContent.includes(format.toLowerCase()));
+}
+
+// 检查proxies块是否包含有效节点
+function hasValidProxiesInContent(content) {
+	if (!content || content.length < 50) {
+		return false;
+	}
+
+	const lowerContent = content.toLowerCase();
+
+	// 首先确保包含proxies字段
+	if (!lowerContent.includes('proxies:')) {
+		return false;
+	}
+
+	// 检查是否有具体的节点配置
+	const validNodeIndicators = [
+		// 节点链接格式
+		'vmess://', 'vless://', 'trojan://', 'ss://', 'ssr://',
+		'hysteria://', 'hysteria2://', 'hy2://', 'tuic://', 'snell://',
+		'wg://', 'wireguard://', 'mieru://', 'anytls://', 'ssh://',
+		'socks5://', 'http://', 'https://',
+
+		// YAML格式节点特征 - 更严格的检查
+		'- name:', '- type:', '- server:', '- port:',
+
+		// JSON格式节点特征
+		'"name":', '"type":', '"server":', '"port":',
+
+		// 具体的节点类型配置
+		'type: vmess', 'type: vless', 'type: trojan', 'type: ss', 'type: ssr',
+		'type: hysteria', 'type: hysteria2', 'type: tuic', 'type: snell',
+		'type: wireguard', 'type: mieru', 'type: anytls', 'type: ssh',
+		'type: socks5', 'type: http',
+
+		'"type": "vmess"', '"type": "vless"', '"type": "trojan"', '"type": "ss"', '"type": "ssr"',
+		'"type": "hysteria"', '"type": "hysteria2"', '"type": "tuic"', '"type": "snell"',
+		'"type": "wireguard"', '"type": "mieru"', '"type": "anytls"', '"type": "ssh"',
+		'"type": "socks5"', '"type": "http"'
+	];
+
+	// 检查是否包含任何有效的节点配置
+	const hasValidNodes = validNodeIndicators.some(indicator =>
+		lowerContent.includes(indicator.toLowerCase())
+	);
+
+	if (!hasValidNodes) {
+		return false;
+	}
+
+	// 额外检查：确保不是空的proxies块
+	// 查找proxies:后的内容
+	const proxiesIndex = lowerContent.indexOf('proxies:');
+	if (proxiesIndex !== -1) {
+		const afterProxies = content.substring(proxiesIndex + 8).trim();
+
+		// 检查是否为空数组或空块
+		if (afterProxies.startsWith('[]') ||
+			afterProxies.startsWith('{}') ||
+			afterProxies.match(/^\s*$/)) {
+			return false;
+		}
+
+		// 检查是否只包含注释或空行
+		const lines = afterProxies.split('\n').slice(0, 10); // 检查前10行
+		const hasContent = lines.some(line => {
+			const trimmed = line.trim();
+			return trimmed && !trimmed.startsWith('#') && !trimmed.startsWith('//');
+		});
+
+		if (!hasContent) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 // 获取错误信息
@@ -6677,15 +6802,6 @@ async function getSubscriptionInfo(subUrl) {
 		statusCode: 0
 	};
 
-	// 对于IP地址的URL，由于Cloudflare Workers限制，直接返回默认成功状态
-	if (isIpAddress(subUrl)) {
-		console.log(`跳过IP地址信息获取: ${subUrl}`);
-		subInfo.success = true;
-		subInfo.statusCode = 200; // 假设成功
-		subInfo.name = ''; // 无法获取名称，将使用默认命名
-		return subInfo;
-	}
-
 	try {
 		// 使用轮询方式尝试不同的 User-Agent，设置较短的超时时间用于活跃检测
 		const result = await fetchWithUserAgentRotation(subUrl, 8000);
@@ -6694,7 +6810,7 @@ async function getSubscriptionInfo(subUrl) {
 		subInfo.statusCode = response.status;
 		subInfo.success = response.ok; // 200-299 范围内的状态码被认为是成功的
 
-		console.log(`订阅 ${subUrl} 使用 ${result.userAgent} 请求成功`);
+		console.log(`订阅 ${subUrl} 使用 ${result.userAgent} 请求，状态码: ${response.status}`);
 
 		// 获取响应头（大小写不敏感）
 		// 尝试多种可能的大小写组合
