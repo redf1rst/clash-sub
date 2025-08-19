@@ -1173,7 +1173,7 @@
 				<div class="input-group">
 					<label for="proxyUrl">添加节点（支持链接和JSON格式，支持批量添加）</label>
 					<textarea id="proxyUrl"
-						placeholder="支持以下格式：&#10;1. 节点链接：vmess://, vless://, ss://, hysteria2://, hy2://, trojan:// 等，每行一个&#10;2. JSON格式：单行JSON对象，每行一个，无需外层[]&#10;3. 混合格式：链接和JSON可以混合输入，每行一个"></textarea>
+						placeholder="支持以下格式：&#10;1. 节点链接：vmess://, vless://, ss://, hysteria2://, hy2://, trojan:// 等，每行一个&#10;2. 标准JSON格式：{&quot;name&quot;: &quot;节点名&quot;, &quot;type&quot;: &quot;vless&quot;, ...}&#10;3. 宽松JSON格式：{name: 节点名, type: vless, uuid: abc-def-123, server: 1.2.3.4, ports: 10710-10733, ...}&#10;4. 带前缀JSON：	- {name: 节点名, type: vless, ...} （支持制表符、横杠、空格前缀）&#10;5. 混合格式：链接和JSON可以混合输入，每行一个&#10;注意：宽松格式支持UUID、域名、端口范围等复杂值，会自动处理空值语法错误"></textarea>
 				</div>
 
 				<div class="input-group">
@@ -1375,7 +1375,7 @@
 				<div class="input-group">
 					<label for="collectionProxyUrl">添加节点（支持链接和JSON格式，支持批量添加）</label>
 					<textarea id="collectionProxyUrl"
-						placeholder="支持以下格式：&#10;1. 节点链接：vmess://, vless://, ss://, hysteria2://, hy2://, trojan:// 等，每行一个&#10;2. JSON格式：单行JSON对象，每行一个，无需外层[]&#10;3. 混合格式：链接和JSON可以混合输入，每行一个"></textarea>
+						placeholder="支持以下格式：&#10;1. 节点链接：vmess://, vless://, ss://, hysteria2://, hy2://, trojan:// 等，每行一个&#10;2. 标准JSON格式：{&quot;name&quot;: &quot;节点名&quot;, &quot;type&quot;: &quot;vless&quot;, ...}&#10;3. 宽松JSON格式：{name: 节点名, type: vless, uuid: abc-def-123, server: 1.2.3.4, ports: 10710-10733, ...}&#10;4. 带前缀JSON：	- {name: 节点名, type: vless, ...} （支持制表符、横杠、空格前缀）&#10;5. 混合格式：链接和JSON可以混合输入，每行一个&#10;注意：宽松格式支持UUID、域名、端口范围等复杂值，会自动处理空值语法错误"></textarea>
 				</div>
 
 				<div class="input-group">
@@ -1767,29 +1767,27 @@
 				if (line.match(/^(vmess|vless|ss|ssr|hysteria|hysteria2|hy2|trojan|tuic|socks5|https?):\/\//)) {
 					urlLines.push(line);
 				}
-				// 检查是否是完整的单行JSON对象
-				else if (line.startsWith('{') && line.endsWith('}')) {
-					try {
-						const parsed = JSON.parse(line);
-						jsonObjects.push(parsed);
-					} catch (e) {
-						throw new Error(`第${lineNumber}行JSON格式错误: ${e.message}`);
-					}
-				}
+				// 检查是否是完整的单行JSON对象（支持前缀字符）
 				else {
-					throw new Error(`第${lineNumber}行格式无法识别: ${line.substring(0, 50)}${line.length > 50 ? '...' : ''}`);
+					// 去除行首的制表符、横杠、空格等前缀字符
+					const trimmedLine = line.replace(/^[\s\-]*/, '').trim();
+
+					if (trimmedLine.startsWith('{') && trimmedLine.endsWith('}')) {
+						try {
+							const parsed = JSON.parse(trimmedLine);
+							jsonObjects.push(parsed);
+						} catch (e) {
+							// JSON解析错误时，将原始字符串作为无效JSON传递给后端
+							jsonObjects.push({ _invalid: true, _originalLine: trimmedLine, _error: e.message });
+						}
+					}
+					else {
+						throw new Error(`第${lineNumber}行格式无法识别: ${line.substring(0, 50)}${line.length > 50 ? '...' : ''}`);
+					}
 				}
 			}
 
-			// 验证JSON对象格式
-			if (jsonObjects.length > 0) {
-				for (let i = 0; i < jsonObjects.length; i++) {
-					const obj = jsonObjects[i];
-					if (!obj.name || !obj.server || !obj.port || !obj.type) {
-						throw new Error(`第${i + 1}个JSON节点数据格式不完整，必须包含 name、server、port、type 字段`);
-					}
-				}
-			}
+			// 移除前端JSON字段验证，交给后端处理
 
 			// 如果同时有JSON和链接，使用混合处理
 			if (jsonObjects.length > 0 && urlLines.length > 0) {
@@ -2072,14 +2070,27 @@
 		function scrollToFirstNewNode(newlyAddedNames) {
 			setTimeout(() => {
 				const listItems = document.querySelectorAll('#collectionProxyList .list-item');
+				let firstNewItem = null;
+				let highlightedCount = 0;
+
+				// 遍历所有节点，为新添加的节点添加高亮
 				for (let item of listItems) {
 					const nameElement = item.querySelector('.item-name');
 					if (nameElement && newlyAddedNames.has(nameElement.textContent)) {
-						item.scrollIntoView({ behavior: 'smooth', block: 'center' });
 						item.classList.add('newly-added');
-						addCollectionOutput(`已定位到新添加的节点: ${nameElement.textContent}`, 'info');
-						break;
+						highlightedCount++;
+
+						// 记录第一个新添加的节点用于滚动
+						if (!firstNewItem) {
+							firstNewItem = item;
+						}
 					}
+				}
+
+				// 滚动到第一个新添加的节点
+				if (firstNewItem) {
+					firstNewItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+					addCollectionOutput(`已高亮显示 ${highlightedCount} 个新添加的节点`, 'info');
 				}
 
 				// 15秒后移除高亮
@@ -2366,19 +2377,24 @@
 				if (line.match(/^(vmess|vless|ss|ssr|hysteria|hysteria2|hy2|trojan|tuic|socks5|https?):\/\//)) {
 					urlLines.push(line);
 				}
-				// 检查是否是完整的单行JSON对象
-				else if (line.startsWith('{') && line.endsWith('}')) {
-					try {
-						const parsed = JSON.parse(line);
-						// 不在前端验证JSON字段完整性，交给后端处理
-						jsonObjects.push(parsed);
-					} catch (e) {
-						// JSON解析错误时，将原始字符串作为无效JSON传递给后端
-						jsonObjects.push({ _invalid: true, _originalLine: line, _error: e.message });
-					}
-				}
+				// 检查是否是完整的单行JSON对象（支持前缀字符）
 				else {
-					throw new Error(`第${lineNumber}行格式无法识别: ${line.substring(0, 50)}${line.length > 50 ? '...' : ''}`);
+					// 去除行首的制表符、横杠、空格等前缀字符
+					const trimmedLine = line.replace(/^[\s\-]*/, '').trim();
+
+					if (trimmedLine.startsWith('{') && trimmedLine.endsWith('}')) {
+						try {
+							const parsed = JSON.parse(trimmedLine);
+							// 不在前端验证JSON字段完整性，交给后端处理
+							jsonObjects.push(parsed);
+						} catch (e) {
+							// JSON解析错误时，将原始字符串作为无效JSON传递给后端
+							jsonObjects.push({ _invalid: true, _originalLine: trimmedLine, _error: e.message });
+						}
+					}
+					else {
+						throw new Error(`第${lineNumber}行格式无法识别: ${line.substring(0, 50)}${line.length > 50 ? '...' : ''}`);
+					}
 				}
 			}
 

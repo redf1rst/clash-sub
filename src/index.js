@@ -1521,11 +1521,17 @@ async function addJSONProxiesToCollection(collectionId, proxiesToAdd, env) {
 		const regionUsedNumbers = new Map();
 
 		// 验证和处理每个节点
-		for (const proxyData of proxiesToAdd) {
-			// 检查是否是前端标记的无效JSON
-			if (proxyData._invalid) {
-				errorCount++;
-				continue; // 跳过前端标记的无效JSON
+		for (const jsonData of proxiesToAdd) {
+			let proxyData = jsonData;
+
+			// 如果是无效JSON，尝试宽松解析
+			if (jsonData._invalid) {
+				try {
+					proxyData = parseLooseJSON(jsonData._originalLine);
+				} catch (parseError) {
+					errorCount++;
+					continue; // 跳过解析失败的JSON
+				}
 			}
 
 			// 基本字段验证
@@ -2235,7 +2241,23 @@ async function addJSONProxies(proxiesToAdd, env) {
 		const addedProxies = [];
 
 		// 验证和处理每个节点
-		for (const proxyData of proxiesToAdd) {
+		for (const jsonData of proxiesToAdd) {
+			let proxyData = jsonData;
+
+			// 如果是无效JSON，尝试宽松解析
+			if (jsonData._invalid) {
+				try {
+					proxyData = parseLooseJSON(jsonData._originalLine);
+				} catch (parseError) {
+					return new Response(JSON.stringify({
+						error: `JSON解析失败: ${parseError.message}`
+					}), {
+						status: 400,
+						headers: { 'Content-Type': 'application/json' }
+					});
+				}
+			}
+
 			// 基本字段验证
 			if (!proxyData.name || !proxyData.server || !proxyData.port || !proxyData.type) {
 				return new Response(JSON.stringify({
@@ -4446,6 +4468,30 @@ function parseVmess(url) {
 		}
 	}
 
+	// 添加 VMess 特有字段
+	if (data['packet-encoding']) {
+		config['packet-encoding'] = data['packet-encoding'];
+	}
+	if (data['global-padding'] !== undefined) {
+		config['global-padding'] = data['global-padding'] === true || data['global-padding'] === 'true';
+	}
+	if (data['authenticated-length'] !== undefined) {
+		config['authenticated-length'] = data['authenticated-length'] === true || data['authenticated-length'] === 'true';
+	}
+	if (data.alpn) {
+		config.alpn = Array.isArray(data.alpn) ? data.alpn : [data.alpn];
+	}
+
+	// 添加 SMUX 配置
+	if (data.smux) {
+		config.smux = data.smux;
+	}
+
+	// 添加 Brutal 配置
+	if (data['brutal-opts']) {
+		config['brutal-opts'] = data['brutal-opts'];
+	}
+
 	return config;
 }
 
@@ -4590,6 +4636,23 @@ function parseVless(url) {
 		config.alpn = decodeURIComponent(params.get('alpn')).split(',');
 	}
 
+	// 添加 Reality 配置增强
+	if (config['reality-opts'] && params.get('support-x25519mlkem768')) {
+		config['reality-opts']['support-x25519mlkem768'] = params.get('support-x25519mlkem768') === 'true';
+	}
+
+	// 添加 SMUX 配置
+	const smuxConfig = parseSmuxConfig(params);
+	if (smuxConfig) {
+		config.smux = smuxConfig;
+	}
+
+	// 添加 Brutal 配置
+	const brutalConfig = parseBrutalConfig(params);
+	if (brutalConfig) {
+		config['brutal-opts'] = brutalConfig;
+	}
+
 	return config;
 }
 
@@ -4669,6 +4732,11 @@ function parseShadowsocks(url) {
 	// 添加 UDP over TCP
 	if (params.get('udp-over-tcp')) {
 		config['udp-over-tcp'] = params.get('udp-over-tcp') === 'true' || params.get('udp-over-tcp') === '1';
+	}
+
+	// 添加 UDP over TCP 版本
+	if (params.get('udp-over-tcp-version')) {
+		config['udp-over-tcp-version'] = parseInt(params.get('udp-over-tcp-version'));
 	}
 
 	// 添加 IP 版本偏好
@@ -4814,6 +4882,12 @@ function parseShadowsocks(url) {
 				config['plugin-opts']['restls-script'] = params.get('restls-script');
 			}
 		}
+	}
+
+	// 添加 SMUX 配置
+	const smuxConfig = parseSmuxConfig(params);
+	if (smuxConfig) {
+		config.smux = smuxConfig;
 	}
 
 	return config;
@@ -5225,6 +5299,12 @@ function parseTrojan(url) {
 		}
 	}
 
+	// 添加 SMUX 配置
+	const smuxConfig = parseSmuxConfig(params);
+	if (smuxConfig) {
+		config.smux = smuxConfig;
+	}
+
 	return config;
 }
 
@@ -5491,6 +5571,163 @@ function parseHttp(url) {
 	return config;
 }
 
+// 处理SMUX配置的通用函数
+function parseSmuxConfig(params, prefix = 'smux') {
+	if (params.get(`${prefix}-enabled`) === 'true') {
+		const smux = {
+			enabled: true,
+			protocol: params.get(`${prefix}-protocol`) || 'smux'
+		};
+
+		if (params.get(`${prefix}-max-connections`)) {
+			smux['max-connections'] = parseInt(params.get(`${prefix}-max-connections`));
+		}
+		if (params.get(`${prefix}-min-streams`)) {
+			smux['min-streams'] = parseInt(params.get(`${prefix}-min-streams`));
+		}
+		if (params.get(`${prefix}-max-streams`)) {
+			smux['max-streams'] = parseInt(params.get(`${prefix}-max-streams`));
+		}
+		if (params.get(`${prefix}-padding`)) {
+			smux.padding = params.get(`${prefix}-padding`) === 'true';
+		}
+		if (params.get(`${prefix}-statistic`)) {
+			smux.statistic = params.get(`${prefix}-statistic`) === 'true';
+		}
+		if (params.get(`${prefix}-only-tcp`)) {
+			smux['only-tcp'] = params.get(`${prefix}-only-tcp`) === 'true';
+		}
+
+		return smux;
+	}
+	return null;
+}
+
+// 处理Brutal配置的通用函数
+function parseBrutalConfig(params, prefix = 'brutal') {
+	if (params.get(`${prefix}-enabled`) === 'true') {
+		const brutal = {
+			enabled: true
+		};
+
+		if (params.get(`${prefix}-up`)) {
+			brutal.up = params.get(`${prefix}-up`);
+		}
+		if (params.get(`${prefix}-down`)) {
+			brutal.down = params.get(`${prefix}-down`);
+		}
+
+		return brutal;
+	}
+	return null;
+}
+
+// 解析宽松格式的JSON（支持无引号的键和值）
+function parseLooseJSON(jsonStr) {
+	try {
+		// 首先尝试标准JSON解析
+		return JSON.parse(jsonStr);
+	} catch (e) {
+		// 如果标准解析失败，尝试宽松解析
+		try {
+			let processed = jsonStr.trim();
+
+			// 确保是对象格式
+			if (!processed.startsWith('{') || !processed.endsWith('}')) {
+				throw new Error('Invalid JSON format');
+			}
+
+			// 步骤1: 处理空值语法错误（如 flow:, 变为 flow: null,）
+			processed = processed.replace(/:(\s*),/g, ': null,');
+			processed = processed.replace(/:(\s*)}$/g, ': null}');
+
+			// 步骤2: 处理单引号字符串
+			processed = processed.replace(/'([^']*)'/g, '"$1"');
+
+			// 步骤3: 为无引号的键添加引号（支持连字符）
+			processed = processed.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$-]*)\s*:/g, '$1"$2":');
+
+			// 步骤4: 处理嵌套对象中的键（多次处理确保深层嵌套）
+			for (let i = 0; i < 5; i++) {
+				processed = processed.replace(/({[^{}]*?)([a-zA-Z_$][a-zA-Z0-9_$-]*)\s*:/g, '$1"$2":');
+			}
+
+			// 步骤5: 为复杂的无引号字符串值添加引号
+			// 处理包含连字符、点号、数字的复杂字符串值
+			processed = processed.replace(/:(\s*)([a-zA-Z0-9][a-zA-Z0-9._-]*[a-zA-Z0-9])\s*([,}])/g, function (match, space, value, ending) {
+				const trimmedValue = value.trim();
+				// 排除布尔值、null、纯数字、对象、数组
+				if (trimmedValue === 'true' || trimmedValue === 'false' || trimmedValue === 'null' ||
+					/^\d+(\.\d+)?$/.test(trimmedValue) || trimmedValue.startsWith('{') || trimmedValue.startsWith('[')) {
+					return ':' + space + trimmedValue + ending;
+				}
+				// 为复杂字符串值添加引号
+				return ':' + space + '"' + trimmedValue + '"' + ending;
+			});
+
+			// 步骤6: 处理端口范围等特殊格式（如 10710-10733）
+			processed = processed.replace(/:(\s*)(\d+-\d+)\s*([,}])/g, ':"$2"$3');
+
+			// 步骤7: 处理单个字符的字符串值
+			processed = processed.replace(/:(\s*)([a-zA-Z])\s*([,}])/g, function (match, space, value, ending) {
+				if (value === 'true' || value === 'false' || value === 'null') {
+					return ':' + space + value + ending;
+				}
+				return ':' + space + '"' + value + '"' + ending;
+			});
+
+			// 步骤8: 处理IP地址
+			processed = processed.replace(/:(\s*)(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s*([,}])/g, ':"$2"$3');
+
+			// 尝试解析处理后的JSON
+			return JSON.parse(processed);
+		} catch (e2) {
+			// 如果还是失败，尝试更激进的方法
+			try {
+				let jsCode = jsonStr.trim();
+
+				// 确保是对象格式
+				if (!jsCode.startsWith('{') || !jsCode.endsWith('}')) {
+					throw new Error('Invalid format');
+				}
+
+				// 预处理：修复常见的语法错误
+				// 1. 处理空值语法错误
+				jsCode = jsCode.replace(/:(\s*),/g, ': null,');
+				jsCode = jsCode.replace(/:(\s*)}$/g, ': null}');
+
+				// 2. 处理单引号
+				jsCode = jsCode.replace(/'/g, '"');
+
+				// 3. 为所有可能的键添加引号
+				jsCode = jsCode.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$-]*)\s*:/g, '$1"$2":');
+
+				// 4. 为所有可能的字符串值添加引号（更宽松的匹配）
+				jsCode = jsCode.replace(/:(\s*)([a-zA-Z0-9][a-zA-Z0-9._\s-]*)\s*([,}])/g, function (match, space, value, ending) {
+					const trimmedValue = value.trim();
+					// 如果已经有引号或是特殊值，不处理
+					if (trimmedValue.startsWith('"') || trimmedValue === 'true' || trimmedValue === 'false' ||
+						trimmedValue === 'null' || /^\d+(\.\d+)?$/.test(trimmedValue) ||
+						trimmedValue.startsWith('{') || trimmedValue.startsWith('[')) {
+						return match;
+					}
+					return ':' + space + '"' + trimmedValue + '"' + ending;
+				});
+
+				// 5. 特殊处理：端口范围
+				jsCode = jsCode.replace(/:(\s*)(\d+-\d+)\s*([,}])/g, ':"$2"$3');
+
+				// 6. 特殊处理：IP地址
+				jsCode = jsCode.replace(/:(\s*)(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s*([,}])/g, ':"$2"$3');
+
+				return JSON.parse(jsCode);
+			} catch (e3) {
+				throw new Error(`Failed to parse loose JSON: ${e3.message}`);
+			}
+		}
+	}
+}
+
 // 标准化JSON格式节点数据
 function normalizeJSONProxy(proxyData, name, server, port) {
 	const type = proxyData.type.toLowerCase();
@@ -5550,6 +5787,12 @@ function normalizeVmessJSON(data, config) {
 	if (data['skip-cert-verify'] !== undefined) config['skip-cert-verify'] = data['skip-cert-verify'] === true || data['skip-cert-verify'] === 'true';
 	if (data.servername) config.servername = data.servername;
 
+	// VMess 特有字段
+	if (data['packet-encoding']) config['packet-encoding'] = data['packet-encoding'];
+	if (data['global-padding'] !== undefined) config['global-padding'] = data['global-padding'] === true || data['global-padding'] === 'true';
+	if (data['authenticated-length'] !== undefined) config['authenticated-length'] = data['authenticated-length'] === true || data['authenticated-length'] === 'true';
+	if (data.alpn) config.alpn = Array.isArray(data.alpn) ? data.alpn : [data.alpn];
+
 	// 传输层配置
 	if (data['ws-opts']) config['ws-opts'] = data['ws-opts'];
 	if (data['h2-opts']) config['h2-opts'] = data['h2-opts'];
@@ -5557,6 +5800,12 @@ function normalizeVmessJSON(data, config) {
 	if (data['grpc-opts']) config['grpc-opts'] = data['grpc-opts'];
 	if (data['ech-opts']) config['ech-opts'] = data['ech-opts'];
 	if (data['reality-opts']) config['reality-opts'] = data['reality-opts'];
+
+	// SMUX配置
+	if (data.smux) config.smux = data.smux;
+
+	// Brutal配置
+	if (data['brutal-opts']) config['brutal-opts'] = data['brutal-opts'];
 
 	return config;
 }
@@ -5571,7 +5820,12 @@ function normalizeVlessJSON(data, config) {
 	if (data.tls !== undefined) config.tls = data.tls === true || data.tls === 'true';
 	if (data.udp !== undefined) config.udp = data.udp === true || data.udp === 'true';
 	if (data['ip-version']) config['ip-version'] = data['ip-version'];
-	if (data.flow) config.flow = data.flow;
+
+	// 处理flow字段，忽略null或空值
+	if (data.flow && data.flow !== null && data.flow !== '') {
+		config.flow = data.flow;
+	}
+
 	if (data.fingerprint) config.fingerprint = data.fingerprint;
 	if (data['client-fingerprint']) config['client-fingerprint'] = data['client-fingerprint'];
 	if (data['skip-cert-verify'] !== undefined) config['skip-cert-verify'] = data['skip-cert-verify'] === true || data['skip-cert-verify'] === 'true';
@@ -5584,7 +5838,19 @@ function normalizeVlessJSON(data, config) {
 	if (data['grpc-opts']) config['grpc-opts'] = data['grpc-opts'];
 	if (data['tcp-opts']) config['tcp-opts'] = data['tcp-opts'];
 	if (data['ech-opts']) config['ech-opts'] = data['ech-opts'];
-	if (data['reality-opts']) config['reality-opts'] = data['reality-opts'];
+	if (data['reality-opts']) {
+		config['reality-opts'] = data['reality-opts'];
+		// 确保support-x25519mlkem768字段被正确处理
+		if (data['reality-opts']['support-x25519mlkem768'] !== undefined) {
+			config['reality-opts']['support-x25519mlkem768'] = data['reality-opts']['support-x25519mlkem768'] === true || data['reality-opts']['support-x25519mlkem768'] === 'true';
+		}
+	}
+
+	// SMUX配置
+	if (data.smux) config.smux = data.smux;
+
+	// Brutal配置
+	if (data['brutal-opts']) config['brutal-opts'] = data['brutal-opts'];
 
 	return config;
 }
@@ -5598,6 +5864,7 @@ function normalizeShadowsocksJSON(data, config) {
 	// 可选字段
 	if (data.udp !== undefined) config.udp = data.udp === true || data.udp === 'true';
 	if (data['udp-over-tcp'] !== undefined) config['udp-over-tcp'] = data['udp-over-tcp'] === true || data['udp-over-tcp'] === 'true';
+	if (data['udp-over-tcp-version']) config['udp-over-tcp-version'] = parseInt(data['udp-over-tcp-version']);
 	if (data['ip-version']) config['ip-version'] = data['ip-version'];
 	if (data['client-fingerprint']) config['client-fingerprint'] = data['client-fingerprint'];
 
@@ -5654,6 +5921,9 @@ function normalizeTrojanJSON(data, config) {
 	if (data['ech-opts']) config['ech-opts'] = data['ech-opts'];
 	if (data['reality-opts']) config['reality-opts'] = data['reality-opts'];
 
+	// SMUX配置
+	if (data.smux) config.smux = data.smux;
+
 	return config;
 }
 
@@ -5688,7 +5958,12 @@ function normalizeHysteria2JSON(data, config) {
 
 	// 可选字段
 	if (data.ports) config.ports = data.ports;
+
+	// 处理hop-interval字段的多种写法
 	if (data['hop-interval']) config['hop-interval'] = parseInt(data['hop-interval']);
+	else if (data.HopInterval) config['hop-interval'] = parseInt(data.HopInterval);
+	else if (data.hopInterval) config['hop-interval'] = parseInt(data.hopInterval);
+
 	if (data.up) config.up = data.up;
 	if (data.down) config.down = data.down;
 	if (data.obfs) config.obfs = data.obfs;
