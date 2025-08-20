@@ -3343,15 +3343,6 @@ async function generateProxyCollectionConfig(collectionId, env) {
 					url: 'https://cdn.jsdmirror.com/gh/DustinWin/ruleset_geodata@mihomo-ruleset/fakeip-filter.mrs',
 					path: './ruleset/Fakeip_Filter.mrs'
 				},
-				'Advertising-ads': {
-					type: 'http',
-					interval: 3600,
-					behavior: 'domain',
-					format: 'mrs',
-					proxy: '节点选择',
-					url: 'https://cdn.jsdmirror.com/gh/TG-Twilight/AWAvenue-Ads-Rule@main/Filters/AWAvenue-Ads-Rule-Clash.mrs',
-					path: './ruleset/Advertising-ads.mrs'
-				},
 				STUN: {
 					type: 'http',
 					interval: 3600,
@@ -3370,60 +3361,69 @@ async function generateProxyCollectionConfig(collectionId, env) {
 					url: 'https://cdn.jsdmirror.com/gh/Kwisma/clash-rules@release/cncidr.mrs',
 					path: './ruleset/CNcidr.mrs'
 				},
-				reject_non_ip_no_drop: {
+				// reject_non_ip_no_drop: {
+				// 	type: 'http',
+				// 	behavior: 'classical',
+				// 	interval: 43200,
+				// 	format: 'text',
+				// 	proxy: '节点选择',
+				// 	url: 'https://ruleset.skk.moe/Clash/non_ip/reject-no-drop.txt',
+				// 	path: './ruleset/reject_non_ip_no_drop.txt'
+				// },
+				// reject_non_ip_drop: {
+				// 	type: 'http',
+				// 	behavior: 'classical',
+				// 	interval: 43200,
+				// 	format: 'text',
+				// 	proxy: '节点选择',
+				// 	url: 'https://ruleset.skk.moe/Clash/non_ip/reject-drop.txt',
+				// 	path: './ruleset/reject_non_ip_drop.txt'
+				// },
+				// reject_non_ip: {
+				// 	type: 'http',
+				// 	behavior: 'classical',
+				// 	interval: 43200,
+				// 	format: 'text',
+				// 	proxy: '节点选择',
+				// 	url: 'https://ruleset.skk.moe/Clash/non_ip/reject.txt',
+				// 	path: './ruleset/reject_non_ip.txt'
+				// },
+				// reject_domainset: {
+				// 	type: 'http',
+				// 	behavior: 'domain',
+				// 	interval: 43200,
+				// 	format: 'text',
+				// 	proxy: '节点选择',
+				// 	url: 'https://ruleset.skk.moe/Clash/domainset/reject.txt',
+				// 	path: './ruleset/reject_domainset.txt'
+				// },
+				// reject_extra_domainset: {
+				// 	type: 'http',
+				// 	behavior: 'domain',
+				// 	interval: 43200,
+				// 	format: 'text',
+				// 	proxy: '节点选择',
+				// 	url: 'https://ruleset.skk.moe/Clash/domainset/reject_extra.txt',
+				// 	path: './ruleset/reject_domainset_extra.txt'
+				// },
+				// reject_ip: {
+				// 	type: 'http',
+				// 	behavior: 'classical',
+				// 	interval: 43200,
+				// 	format: 'text',
+				// 	proxy: '节点选择',
+				// 	url: 'https://ruleset.skk.moe/Clash/ip/reject.txt',
+				// 	path: './ruleset/reject_ip.txt'
+				// },
+				'Advertising-ads': {
 					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/reject-no-drop.txt',
-					path: './ruleset/reject_non_ip_no_drop.txt'
-				},
-				reject_non_ip_drop: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/reject-drop.txt',
-					path: './ruleset/reject_non_ip_drop.txt'
-				},
-				reject_non_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/non_ip/reject.txt',
-					path: './ruleset/reject_non_ip.txt'
-				},
-				reject_domainset: {
-					type: 'http',
+					interval: 3600,
 					behavior: 'domain',
-					interval: 43200,
-					format: 'text',
+					format: 'mrs',
 					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/domainset/reject.txt',
-					path: './ruleset/reject_domainset.txt'
-				},
-				reject_extra_domainset: {
-					type: 'http',
-					behavior: 'domain',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/domainset/reject_extra.txt',
-					path: './ruleset/reject_domainset_extra.txt'
-				},
-				reject_ip: {
-					type: 'http',
-					behavior: 'classical',
-					interval: 43200,
-					format: 'text',
-					proxy: '节点选择',
-					url: 'https://ruleset.skk.moe/Clash/ip/reject.txt',
-					path: './ruleset/reject_ip.txt'
-				},
+					url: 'https://cdn.jsdmirror.com/gh/TG-Twilight/AWAvenue-Ads-Rule@main/Filters/AWAvenue-Ads-Rule-Clash.mrs',
+					path: './ruleset/Advertising-ads.mrs'
+				}
 			},
 
 			// 规则配置
@@ -4245,6 +4245,60 @@ async function generateSubCollectionConfig(collectionId, env) {
 				url: 'https://cdn.jsdmirror.com/gh/Kwisma/clash-rules@release/cncidr.mrs',
 				path: './ruleset/CNcidr.mrs'
 			},
+			// reject_non_ip_no_drop: {
+			// 	type: 'http',
+			// 	behavior: 'classical',
+			// 	interval: 43200,
+			// 	format: 'text',
+			// 	proxy: '🚀 默认代理',
+			// 	url: 'https://ruleset.skk.moe/Clash/non_ip/reject-no-drop.txt',
+			// 	path: './ruleset/reject_non_ip_no_drop.txt'
+			// },
+			// reject_non_ip_drop: {
+			// 	type: 'http',
+			// 	behavior: 'classical',
+			// 	interval: 43200,
+			// 	format: 'text',
+			// 	proxy: '🚀 默认代理',
+			// 	url: 'https://ruleset.skk.moe/Clash/non_ip/reject-drop.txt',
+			// 	path: './ruleset/reject_non_ip_drop.txt'
+			// },
+			// reject_non_ip: {
+			// 	type: 'http',
+			// 	behavior: 'classical',
+			// 	interval: 43200,
+			// 	format: 'text',
+			// 	proxy: '🚀 默认代理',
+			// 	url: 'https://ruleset.skk.moe/Clash/non_ip/reject.txt',
+			// 	path: './ruleset/reject_non_ip.txt'
+			// },
+			// reject_domainset: {
+			// 	type: 'http',
+			// 	behavior: 'domain',
+			// 	interval: 43200,
+			// 	format: 'text',
+			// 	proxy: '🚀 默认代理',
+			// 	url: 'https://ruleset.skk.moe/Clash/domainset/reject.txt',
+			// 	path: './ruleset/reject_domainset.txt'
+			// },
+			// reject_extra_domainset: {
+			// 	type: 'http',
+			// 	behavior: 'domain',
+			// 	interval: 43200,
+			// 	format: 'text',
+			// 	proxy: '🚀 默认代理',
+			// 	url: 'https://ruleset.skk.moe/Clash/domainset/reject_extra.txt',
+			// 	path: './ruleset/reject_domainset_extra.txt'
+			// },
+			// reject_ip: {
+			// 	type: 'http',
+			// 	behavior: 'classical',
+			// 	interval: 43200,
+			// 	format: 'text',
+			// 	proxy: '🚀 默认代理',
+			// 	url: 'https://ruleset.skk.moe/Clash/ip/reject.txt',
+			// 	path: './ruleset/reject_ip.txt'
+			// },
 			'Advertising-ads': {
 				type: 'http',
 				interval: 3600,
@@ -4253,61 +4307,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 				proxy: '🚀 默认代理',
 				url: 'https://cdn.jsdmirror.com/gh/TG-Twilight/AWAvenue-Ads-Rule@main/Filters/AWAvenue-Ads-Rule-Clash.mrs',
 				path: './ruleset/Advertising-ads.mrs'
-			},
-			reject_non_ip_no_drop: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/non_ip/reject-no-drop.txt',
-				path: './ruleset/reject_non_ip_no_drop.txt'
-			},
-			reject_non_ip_drop: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/non_ip/reject-drop.txt',
-				path: './ruleset/reject_non_ip_drop.txt'
-			},
-			reject_non_ip: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/non_ip/reject.txt',
-				path: './ruleset/reject_non_ip.txt'
-			},
-			reject_domainset: {
-				type: 'http',
-				behavior: 'domain',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/domainset/reject.txt',
-				path: './ruleset/reject_domainset.txt'
-			},
-			reject_extra_domainset: {
-				type: 'http',
-				behavior: 'domain',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/domainset/reject_extra.txt',
-				path: './ruleset/reject_domainset_extra.txt'
-			},
-			reject_ip: {
-				type: 'http',
-				behavior: 'classical',
-				interval: 43200,
-				format: 'text',
-				proxy: '🚀 默认代理',
-				url: 'https://ruleset.skk.moe/Clash/ip/reject.txt',
-				path: './ruleset/reject_ip.txt'
-			},
+			}
 		};
 
 		// submerge规则匹配
