@@ -3501,7 +3501,8 @@ async function generateProxyCollectionConfig(collectionId, env) {
 		return new Response(yamlContent, {
 			headers: {
 				'Content-Type': 'text/yaml; charset=utf-8',
-				'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(collection.name)}`
+				'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(collection.name)}`,
+				'profile-update-interval': '12'
 			}
 		});
 	} catch (error) {
@@ -4383,7 +4384,8 @@ async function generateSubCollectionConfig(collectionId, env) {
 		return new Response(yamlContent, {
 			headers: {
 				'Content-Type': 'text/yaml; charset=utf-8',
-				'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(collection.name)}`
+				'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(collection.name)}`,
+				'profile-update-interval': '12'
 			}
 		});
 	} catch (error) {

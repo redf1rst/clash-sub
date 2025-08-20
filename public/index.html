@@ -480,29 +480,50 @@
 				/* 减少内边距 */
 			}
 
-			/* 按钮区域：两行两列布局 */
+			/* 按钮区域：两行布局 */
 			.item-actions {
-				display: grid;
-				grid-template-columns: 1fr 1fr;
-				/* 两列 */
+				display: flex;
+				flex-direction: column;
 				gap: 8px;
 				width: 100%;
 				margin-top: 12px;
 			}
 
-			/* 移动端按钮样式优化 */
-			.item-actions .btn {
+			/* 第一行：导入Clash和复制链接 */
+			.item-actions-row-1 {
+				display: flex;
+				gap: 8px;
+			}
+
+			/* 第二行：管理、重命名、删除 */
+			.item-actions-row-2 {
+				display: flex;
+				gap: 6px;
+			}
+
+			/* 第一行按钮样式 */
+			.item-actions-row-1 .btn {
+				flex: 1;
 				padding: 8px 12px;
-				/* 减小按钮尺寸 */
 				font-size: 0.85em;
-				/* 减小字体 */
 				margin: 0;
-				/* 移除默认边距 */
 				text-align: center;
 				white-space: nowrap;
-				/* 防止文字换行 */
 				min-height: 36px;
-				/* 确保按钮高度一致 */
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+
+			/* 第二行按钮样式（更紧凑） */
+			.item-actions-row-2 .btn {
+				flex: 1;
+				padding: 6px 8px;
+				font-size: 0.8em;
+				margin: 0;
+				text-align: center;
+				white-space: nowrap;
+				min-height: 32px;
 				display: flex;
 				align-items: center;
 				justify-content: center;
@@ -869,6 +890,39 @@
 		.btn:disabled:hover {
 			transform: none !important;
 			box-shadow: none !important;
+		}
+
+		/* 导入Clash按钮特殊样式 */
+		.btn.clash-import {
+			background: #9b59b6;
+			color: white;
+		}
+
+		.btn.clash-import:hover {
+			background: #8e44ad;
+		}
+
+		/* 桌面端按钮布局 */
+		@media (min-width: 769px) {
+			.item-actions {
+				display: flex;
+				flex-direction: row;
+				gap: 10px;
+				align-items: center;
+			}
+
+			.item-actions-row-1,
+			.item-actions-row-2 {
+				display: contents;
+			}
+
+			.item-actions .btn {
+				padding: 8px 16px;
+				font-size: 0.9em;
+				white-space: nowrap;
+				margin: 0;
+				min-height: auto;
+			}
 		}
 
 		/* 新节点高亮样式 - 统一使用绿色 */
@@ -1875,10 +1929,15 @@
 				html += '<div class="item-details">节点数量: ' + proxyCount + ' | 订阅链接: ' + collectionUrl + '</div>';
 				html += '</div>';
 				html += '<div class="item-actions">';
+				html += '<div class="item-actions-row-1">';
+				html += '<button class="btn clash-import" onclick="importToClash(\'' + collection.id + '\')">导入Clash</button>';
 				html += '<button class="btn" onclick="copyCollectionLink(\'' + collection.id + '\')">复制链接</button>';
+				html += '</div>';
+				html += '<div class="item-actions-row-2">';
 				html += '<button class="btn" onclick="manageCollection(\'' + collection.id + '\')">管理节点</button>';
 				html += '<button class="btn" onclick="renameCollection(\'' + collection.id + '\')">重命名</button>';
 				html += '<button class="btn danger" onclick="deleteCollection(\'' + collection.id + '\')">删除</button>';
+				html += '</div>';
 				html += '</div>';
 				html += '</div>';
 			}
@@ -1908,6 +1967,23 @@
 			} catch (error) {
 				showMessage('collectionMessage', '创建节点集合失败', 'error');
 			}
+		}
+
+		// 生成Clash URL Scheme链接
+		function generateClashScheme(subscriptionUrl) {
+			const encodedUrl = encodeURIComponent(subscriptionUrl);
+			// 检测是否为移动端，移动端使用clashmeta://，桌面端使用clash://
+			const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+			const scheme = isMobile ? 'clashmeta' : 'clash';
+			return `${scheme}://install-config?url=${encodedUrl}`;
+		}
+
+		// 导入到Clash（节点集合）
+		function importToClash(collectionId) {
+			const origin = window.location.origin;
+			const subscriptionUrl = `${origin}/clash/proxies/${collectionId}`;
+			const clashScheme = generateClashScheme(subscriptionUrl);
+			window.location.href = clashScheme;
 		}
 
 		// 复制集合订阅链接
@@ -2489,10 +2565,15 @@
 				html += '<div class="item-details">订阅数量: ' + subCount + ' | 订阅链接: ' + collectionUrl + '</div>';
 				html += '</div>';
 				html += '<div class="item-actions">';
+				html += '<div class="item-actions-row-1">';
+				html += '<button class="btn clash-import" onclick="importSubCollectionToClash(\'' + collection.id + '\')">导入Clash</button>';
 				html += '<button class="btn" onclick="copySubCollectionLink(\'' + collection.id + '\')">复制链接</button>';
+				html += '</div>';
+				html += '<div class="item-actions-row-2">';
 				html += '<button class="btn" onclick="manageSubCollection(\'' + collection.id + '\')">管理订阅</button>';
 				html += '<button class="btn" onclick="renameSubCollection(\'' + collection.id + '\')">重命名</button>';
 				html += '<button class="btn danger" onclick="deleteSubCollection(\'' + collection.id + '\')">删除</button>';
+				html += '</div>';
 				html += '</div>';
 				html += '</div>';
 			}
@@ -2522,6 +2603,14 @@
 			} catch (error) {
 				showMessage('subCollectionMessage', '创建订阅集合失败', 'error');
 			}
+		}
+
+		// 导入到Clash（订阅集合）
+		function importSubCollectionToClash(collectionId) {
+			const origin = window.location.origin;
+			const subscriptionUrl = `${origin}/clash/submerge/${collectionId}`;
+			const clashScheme = generateClashScheme(subscriptionUrl);
+			window.location.href = clashScheme;
 		}
 
 		// 复制集合订阅链接
