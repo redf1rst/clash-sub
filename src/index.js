@@ -3213,7 +3213,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 					name: 'Linux DO',
 					type: 'select',
 					proxies: ['DIRECT', '节点选择'],
-					icon: 'https://edit-upload-pic.cdn.bcebos.com/26173e4a31c69a7c7bf843eeec70e1e0.jpeg?authorization=bce-auth-v1%2FALTAKh1mxHnNIyeO93hiasKJqq%2F2025-08-15T08%3A35%3A39Z%2F3600%2Fhost%2Fd6bff9c1010358e2a7ffd2915d3d7da2bf43bd76a9252e591ff085847855daf4'
+					icon: 'https://r2.xxmail.dpdns.org/attachments/986ea830017bdfc2c11a01f79d22eaee7f7a6b42634546ed4641798a65696cd4.png'
 				},
 				{
 					name: '微软服务',
@@ -3950,7 +3950,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 					'DIRECT',
 					'🚀 默认代理'
 				],
-				icon: 'https://edit-upload-pic.cdn.bcebos.com/26173e4a31c69a7c7bf843eeec70e1e0.jpeg?authorization=bce-auth-v1%2FALTAKh1mxHnNIyeO93hiasKJqq%2F2025-08-15T08%3A35%3A39Z%2F3600%2Fhost%2Fd6bff9c1010358e2a7ffd2915d3d7da2bf43bd76a9252e591ff085847855daf4'
+				icon: 'https://r2.xxmail.dpdns.org/attachments/986ea830017bdfc2c11a01f79d22eaee7f7a6b42634546ed4641798a65696cd4.png'
 			},
 			{
 				name: '微软服务',
