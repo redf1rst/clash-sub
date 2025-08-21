@@ -1635,13 +1635,15 @@
 					</div>
 				</div>
 
-				<!-- 操作输出框 - 移到按钮下方 -->
-				<div id="collectionOperationOutput" class="operation-output" style="display: none;">
+				<!-- 订阅管理输出框 -->
+				<div class="output-section">
 					<div class="output-header">
-						<span>操作输出</span>
-						<button class="btn-close" onclick="clearCollectionOperationOutput()">&times;</button>
+						<label>操作日志</label>
+						<button class="btn small" onclick="clearCollectionSubOutput()">清空日志</button>
 					</div>
-					<div id="collectionOutputContent" class="output-content"></div>
+					<div class="output-box" id="collectionSubOutputBox">
+						<div class="output-placeholder">暂无操作记录</div>
+					</div>
 				</div>
 
 				<div class="action-message">
@@ -1649,13 +1651,13 @@
 					</div>
 					<div id="collectionSubMessage" class="message"></div>
 				</div>
-			</div>
 
-			<!-- 订阅列表 -->
-			<div class="list" id="collectionSubList">
-				<div class="empty-state">
-					<div>🔗</div>
-					<p>暂无订阅，请添加订阅链接</p>
+				<!-- 订阅列表 -->
+				<div class="list" id="collectionSubList">
+					<div class="empty-state">
+						<div>🔗</div>
+						<p>暂无订阅，请添加订阅链接</p>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -3012,6 +3014,14 @@
 				return;
 			}
 
+			// 计算订阅数量
+			const urls = subscriptionUrls.split('\n').map(url => url.trim()).filter(url => url);
+			const totalUrls = urls.length;
+
+			// 清空操作日志并显示开始信息
+			clearCollectionSubOutput();
+			addCollectionSubOutput(`开始添加 ${totalUrls} 个订阅到集合: ${currentManagingSubCollection.name}`);
+
 			try {
 				const response = await fetch('/api/sub-collections', {
 					method: 'POST',
@@ -3025,19 +3035,36 @@
 					})
 				});
 
+				addCollectionSubOutput('处理完成，分析结果...');
 				const result = await response.json();
 
 				if (result.error) {
+					addCollectionSubOutput(`添加失败: ${result.error}`, 'error');
 					showCollectionSubMessage(result.error, 'error');
 				} else {
 					let message = `成功添加 ${result.successCount} 个订阅`;
+
+					// 添加成功日志
+					addCollectionSubOutput(`✓ 成功添加: ${result.successCount} 个订阅`, 'success');
+
 					if (result.duplicateCount > 0) {
 						message += `，跳过 ${result.duplicateCount} 个重复订阅`;
+						addCollectionSubOutput(`⚠ 重复跳过: ${result.duplicateCount} 个订阅`, 'warning');
 					}
 					if (result.failedCount > 0) {
 						message += `，${result.failedCount} 个订阅添加失败`;
+						addCollectionSubOutput(`✗ 添加失败: ${result.failedCount} 个订阅`, 'error');
+
+						// 显示失败订阅的详细信息
+						if (result.failedSubscriptions && result.failedSubscriptions.length > 0) {
+							result.failedSubscriptions.forEach((failed, index) => {
+								addCollectionSubOutput(`  ${index + 1}. ${failed.error}`, 'error');
+								addCollectionSubOutput(`     URL: ${failed.url}`, 'error');
+							});
+						}
 					}
-					showCollectionSubMessage(message);
+
+					showCollectionSubMessage(message, result.failedCount > 0 ? 'info' : 'success');
 
 					// 清空输入框
 					document.getElementById('collectionSubUrl').value = '';
@@ -3055,7 +3082,8 @@
 					renderCollectionSubscriptions();
 				}
 			} catch (error) {
-				showCollectionSubMessage('添加订阅失败', 'error');
+				addCollectionSubOutput(`添加订阅失败: ${error.message}`, 'error');
+				showCollectionSubMessage('添加订阅失败: ' + error.message, 'error');
 			}
 		}
 
@@ -3158,16 +3186,13 @@
 			}
 
 			const btn = document.getElementById('currentCollectionActiveDetectionBtn');
-			const progressContainer = document.getElementById('collectionProgressContainer');
-			const progressText = document.getElementById('collectionProgressText');
-			const progressPercent = document.getElementById('collectionProgressPercent');
-			const progressFill = document.getElementById('collectionProgressFill');
 
-			// 禁用按钮并显示进度条
+			// 禁用按钮并清空操作日志
 			btn.disabled = true;
 			btn.textContent = '检测中...';
-			progressContainer.style.display = 'block';
 			document.getElementById('collectionSubMessage').style.display = 'none';
+			clearCollectionSubOutput();
+			addCollectionSubOutput(`开始活跃检测集合: ${currentManagingSubCollection.name}，共 ${subscriptions.length} 个订阅`);
 
 			try {
 				// 准备检测数据
@@ -3190,9 +3215,11 @@
 					})
 				});
 
+				addCollectionSubOutput('检测完成，正在处理结果...');
 				const result = await response.json();
 
 				if (result.error) {
+					addCollectionSubOutput(`检测失败: ${result.error}`, 'error');
 					showCollectionSubMessage(result.error, 'error');
 				} else {
 					// 处理检测结果
@@ -3201,8 +3228,13 @@
 					const totalRemoved = removedSubscriptions.length;
 
 					let message = `活跃检测完成！检测了 ${totalChecked} 个订阅`;
+
+					// 添加检测完成日志
+					addCollectionSubOutput(`✓ 检测完成: ${totalChecked} 个订阅`, 'success');
+
 					if (totalRemoved > 0) {
 						message += `，移除了 ${totalRemoved} 个无效订阅`;
+						addCollectionSubOutput(`✗ 移除无效: ${totalRemoved} 个订阅`, 'error');
 
 						// 显示移除的订阅详情
 						const removedDetails = removedSubscriptions.map(sub =>
@@ -3210,11 +3242,18 @@
 						).join('\n');
 
 						message += `\n\n移除的订阅:\n${removedDetails}`;
+
+						// 添加移除详情到日志
+						removedSubscriptions.forEach((sub, index) => {
+							addCollectionSubOutput(`  ${index + 1}. ${sub.name}`, 'error');
+							addCollectionSubOutput(`     原因: ${sub.reason}`, 'error');
+						});
 					} else {
 						message += '，所有订阅都是有效的';
+						addCollectionSubOutput('✓ 所有订阅都有效', 'success');
 					}
 
-					showCollectionSubMessage(message);
+					showCollectionSubMessage(message, totalRemoved > 0 ? 'info' : 'success');
 
 					// 重新加载集合数据并渲染
 					await loadSubCollections();
@@ -3222,12 +3261,12 @@
 					renderCollectionSubscriptions();
 				}
 			} catch (error) {
-				showCollectionSubMessage('活跃检测失败', 'error');
+				addCollectionSubOutput(`活跃检测失败: ${error.message}`, 'error');
+				showCollectionSubMessage('活跃检测失败: ' + error.message, 'error');
 			} finally {
-				// 恢复按钮状态并隐藏进度条
+				// 恢复按钮状态
 				btn.disabled = false;
 				btn.textContent = '活跃检测';
-				progressContainer.style.display = 'none';
 			}
 		}
 
@@ -3915,6 +3954,33 @@
 			if (outputContent) {
 				outputContent.textContent = '';
 			}
+		}
+
+		// 添加订阅集合输出日志
+		function addCollectionSubOutput(message, type = 'info') {
+			const outputBox = document.getElementById('collectionSubOutputBox');
+			const placeholder = outputBox.querySelector('.output-placeholder');
+
+			if (placeholder) {
+				placeholder.remove();
+			}
+
+			const timestamp = new Date().toLocaleTimeString();
+			const entry = document.createElement('div');
+			entry.className = `output-entry ${type}`;
+			entry.innerHTML = `
+				<span class="output-time">[${timestamp}]</span>
+				<span class="output-message">${message}</span>
+			`;
+
+			outputBox.appendChild(entry);
+			outputBox.scrollTop = outputBox.scrollHeight;
+		}
+
+		// 清空订阅集合输出日志
+		function clearCollectionSubOutput() {
+			const outputBox = document.getElementById('collectionSubOutputBox');
+			outputBox.innerHTML = '<div class="output-placeholder">暂无操作记录</div>';
 		}
 
 		// 活跃检测

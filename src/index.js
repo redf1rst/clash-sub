@@ -448,43 +448,114 @@ async function addSubscriptionToCollection(collectionId, subscriptionUrls, env) 
 		const addedSubscriptions = [];
 		const failedSubscriptions = [];
 
-		for (const subUrl of urls) {
-			console.log(`[COLLECTION DEBUG] 处理订阅URL: ${subUrl}`);
+		// 分批处理订阅，避免超时
+		const BATCH_SIZE = 3; // 每批处理3个订阅
+		const batches = [];
+		for (let i = 0; i < urls.length; i += BATCH_SIZE) {
+			batches.push(urls.slice(i, i + BATCH_SIZE));
+		}
 
-			// 检查重复订阅
-			if (collection.subscriptions.includes(subUrl)) {
-				console.log(`[COLLECTION SKIP] 重复订阅: ${subUrl}`);
-				duplicateCount++;
-				continue;
+		for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+			const batch = batches[batchIndex];
+			console.log(`[COLLECTION BATCH] 处理第 ${batchIndex + 1}/${batches.length} 批，包含 ${batch.length} 个订阅`);
+
+			// 并行处理当前批次的订阅
+			const batchPromises = batch.map(async (subUrl, index) => {
+				const globalIndex = batchIndex * BATCH_SIZE + index;
+				console.log(`[COLLECTION ${globalIndex + 1}/${urls.length}] 处理订阅URL: ${subUrl}`);
+
+				// 检查重复订阅
+				if (collection.subscriptions.includes(subUrl)) {
+					console.log(`[COLLECTION SKIP] 重复订阅: ${subUrl}`);
+					return { type: 'duplicate', url: subUrl };
+				}
+
+				try {
+					// 添加随机延迟，避免请求过于集中
+					if (index > 0) {
+						await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
+					}
+
+					// 获取订阅信息
+					console.log(`[COLLECTION ${globalIndex + 1}/${urls.length}] 获取订阅信息: ${subUrl}`);
+					const subInfo = await getSubscriptionInfo(subUrl);
+
+					// 智能连通性判断
+					console.log(`[COLLECTION ${globalIndex + 1}/${urls.length}] 开始连通性检查: ${subUrl}`);
+					const shouldReject = await shouldRejectSubscription(subUrl, subInfo);
+					if (shouldReject.reject) {
+						console.log(`[COLLECTION FAILED] 订阅被拒绝: ${subUrl}, 原因: ${shouldReject.reason}`);
+						return {
+							type: 'failed',
+							url: subUrl,
+							error: shouldReject.reason,
+							statusCode: subInfo.statusCode
+						};
+					}
+
+					// 生成订阅名称
+					console.log(`[COLLECTION SUCCESS] 订阅通过检查，生成名称: ${subUrl}`);
+					const subName = generateSubscriptionName(subInfo, collection.subscriptionNames);
+
+					console.log(`[COLLECTION ADDED] 订阅添加成功: ${subUrl} -> ${subName}`);
+					return {
+						type: 'success',
+						url: subUrl,
+						name: subName,
+						subInfo: subInfo
+					};
+				} catch (error) {
+					console.log(`[COLLECTION ERROR] 处理订阅时出错: ${subUrl}, 错误: ${error.message}`);
+					return {
+						type: 'failed',
+						url: subUrl,
+						error: '处理失败: ' + error.message,
+						statusCode: 0
+					};
+				}
+			});
+
+			// 等待当前批次完成
+			const batchResults = await Promise.allSettled(batchPromises);
+
+			// 处理批次结果
+			for (const result of batchResults) {
+				if (result.status === 'fulfilled') {
+					const data = result.value;
+					switch (data.type) {
+						case 'duplicate':
+							duplicateCount++;
+							break;
+						case 'failed':
+							failedCount++;
+							failedSubscriptions.push({
+								url: data.url,
+								error: data.error,
+								statusCode: data.statusCode
+							});
+							break;
+						case 'success':
+							collection.subscriptions.push(data.url);
+							collection.subscriptionNames.push(data.name);
+							addedSubscriptions.push({ url: data.url, name: data.name });
+							successCount++;
+							break;
+					}
+				} else {
+					// Promise被拒绝的情况
+					failedCount++;
+					failedSubscriptions.push({
+						url: 'unknown',
+						error: '处理Promise失败: ' + result.reason,
+						statusCode: 0
+					});
+				}
 			}
 
-			// 获取订阅信息
-			console.log(`[COLLECTION DEBUG] 获取订阅信息: ${subUrl}`);
-			const subInfo = await getSubscriptionInfo(subUrl);
-
-			// 智能连通性判断
-			console.log(`[COLLECTION DEBUG] 开始连通性检查: ${subUrl}`);
-			const shouldReject = await shouldRejectSubscription(subUrl, subInfo);
-			if (shouldReject.reject) {
-				console.log(`[COLLECTION FAILED] 订阅被拒绝: ${subUrl}, 原因: ${shouldReject.reason}`);
-				failedCount++;
-				failedSubscriptions.push({
-					url: subUrl,
-					error: shouldReject.reason,
-					statusCode: subInfo.statusCode
-				});
-				continue;
+			// 批次间添加短暂延迟
+			if (batchIndex < batches.length - 1) {
+				await new Promise(resolve => setTimeout(resolve, 1000));
 			}
-
-			// 生成订阅名称
-			console.log(`[COLLECTION SUCCESS] 订阅通过检查，生成名称: ${subUrl}`);
-			const subName = generateSubscriptionName(subInfo, collection.subscriptionNames);
-
-			collection.subscriptions.push(subUrl);
-			collection.subscriptionNames.push(subName);
-			addedSubscriptions.push({ url: subUrl, name: subName });
-			successCount++;
-			console.log(`[COLLECTION ADDED] 订阅添加成功: ${subUrl} -> ${subName}`);
 		}
 
 		await env.CLASH_KV?.put('sub_collections', JSON.stringify(collections));
@@ -2667,60 +2738,21 @@ async function fetchWithUserAgentRotation(url, timeout = 5000) {
 	throw lastError || new Error('所有请求头都失败');
 }
 
-// 智能判断是否应该拒绝订阅（支持复检）
-async function shouldRejectSubscription(subUrl, subInfo, isRetry = false) {
-	console.log(`[DEBUG] 检查订阅: ${subUrl}, success: ${subInfo.success}, statusCode: ${subInfo.statusCode}, isRetry: ${isRetry}`);
+// 智能判断是否应该拒绝订阅（取消复检机制）
+async function shouldRejectSubscription(subUrl, subInfo) {
+	console.log(`[DEBUG] 检查订阅: ${subUrl}, success: ${subInfo.success}, statusCode: ${subInfo.statusCode}`);
 
-	// 1. 网络连接失败，进行复检
+	// 1. 网络连接失败，直接拒绝
 	if (!subInfo.success && (subInfo.statusCode === 0 || subInfo.statusCode === 408)) {
-		if (!isRetry) {
-			console.log(`[RETRY] 网络连接失败，进行复检: ${subUrl}, statusCode: ${subInfo.statusCode}`);
-			// 等待2秒后重试
-			await new Promise(resolve => setTimeout(resolve, 2000));
-			const retrySubInfo = await getSubscriptionInfo(subUrl);
-			return await shouldRejectSubscription(subUrl, retrySubInfo, true);
-		} else {
-			console.log(`[REJECT] 复检后仍然网络连接失败: ${subUrl}, statusCode: ${subInfo.statusCode}`);
-			return {
-				reject: true,
-				reason: subInfo.statusCode === 408 ? '请求超时（已复检）' : '网络连接失败（已复检）'
-			};
-		}
+		console.log(`[REJECT] 网络连接失败: ${subUrl}, statusCode: ${subInfo.statusCode}`);
+		return {
+			reject: true,
+			reason: subInfo.statusCode === 408 ? '请求超时' : '网络连接失败'
+		};
 	}
 
-	// 2. 对于HTTP错误状态码，进行复检
+	// 2. 对于HTTP错误状态码，直接拒绝
 	if (!subInfo.success && subInfo.statusCode > 0) {
-		// 定义关键错误状态码，遇到就直接拒绝（不复检）
-		const criticalErrorCodes = [400, 401, 403, 404, 405, 429];
-		if (criticalErrorCodes.includes(subInfo.statusCode)) {
-			const errorMessage = getErrorMessage(subInfo.statusCode, true);
-			console.log(`[REJECT] 关键错误状态码 ${subInfo.statusCode}: ${errorMessage}`);
-			return {
-				reject: true,
-				reason: errorMessage
-			};
-		}
-
-		// 对于服务器错误（5xx），进行复检
-		const serverErrorCodes = [500, 502, 503, 504];
-		if (serverErrorCodes.includes(subInfo.statusCode)) {
-			if (!isRetry) {
-				console.log(`[RETRY] 服务器错误，进行复检: ${subUrl}, statusCode: ${subInfo.statusCode}`);
-				// 等待3秒后重试
-				await new Promise(resolve => setTimeout(resolve, 3000));
-				const retrySubInfo = await getSubscriptionInfo(subUrl);
-				return await shouldRejectSubscription(subUrl, retrySubInfo, true);
-			} else {
-				console.log(`[REJECT] 复检后仍然服务器错误: ${subUrl}, statusCode: ${subInfo.statusCode}`);
-				const errorMessage = getErrorMessage(subInfo.statusCode, true);
-				return {
-					reject: true,
-					reason: errorMessage + '（已复检）'
-				};
-			}
-		}
-
-		// 其他错误状态码，直接拒绝
 		console.log(`[REJECT] 检测到HTTP错误状态码: ${subInfo.statusCode}，直接拒绝订阅: ${subUrl}`);
 		const errorMessage = getErrorMessage(subInfo.statusCode, true);
 		return {
@@ -3213,7 +3245,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 					name: 'Linux DO',
 					type: 'select',
 					proxies: ['DIRECT', '节点选择'],
-					icon: 'https://r2.xxmail.dpdns.org/attachments/986ea830017bdfc2c11a01f79d22eaee7f7a6b42634546ed4641798a65696cd4.png'
+					icon: 'https://r2.hmail.qzz.io/static/image_base/linuxdo.png'
 				},
 				{
 					name: '微软服务',
@@ -3950,7 +3982,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 					'DIRECT',
 					'🚀 默认代理'
 				],
-				icon: 'https://r2.xxmail.dpdns.org/attachments/986ea830017bdfc2c11a01f79d22eaee7f7a6b42634546ed4641798a65696cd4.png'
+				icon: 'https://r2.hmail.qzz.io/static/image_base/linuxdo.png'
 			},
 			{
 				name: '微软服务',
