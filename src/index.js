@@ -1052,6 +1052,13 @@ async function addProxyToCollection(collectionId, proxyUrls, region, env) {
 				'UY': 'UY乌拉圭',
 				'CR': 'CR哥斯达黎加',
 				'PA': 'PA巴拿马',
+				'CW': 'CW库拉索',
+				'AW': 'AW阿鲁巴',
+				'BZ': 'BZ伯利兹',
+				'GT': 'GT危地马拉',
+				'HN': 'HN洪都拉斯',
+				'NI': 'NI尼加拉瓜',
+				'SV': 'SV萨尔瓦多',
 
 				// 欧洲 - 西欧
 				'UK': 'UK英国',
@@ -1164,7 +1171,7 @@ async function addProxyToCollection(collectionId, proxyUrls, region, env) {
 				'Unknown': 'Unknown未知'
 			};
 
-			const regionName = regionNames[detectedRegion] || `${detectedRegion}未知`;
+			const regionName = regionNames[detectedRegion] || detectedRegion;
 			const isIPv6 = isIPv6Address(proxyConfig.server);
 			const suffix = isIPv6 ? '-IPv6' : '-IPv4';
 
@@ -1615,6 +1622,13 @@ async function addJSONProxiesToCollection(collectionId, proxiesToAdd, region, en
 				'UY': 'UY乌拉圭',
 				'CR': 'CR哥斯达黎加',
 				'PA': 'PA巴拿马',
+				'CW': 'CW库拉索',
+				'AW': 'AW阿鲁巴',
+				'BZ': 'BZ伯利兹',
+				'GT': 'GT危地马拉',
+				'HN': 'HN洪都拉斯',
+				'NI': 'NI尼加拉瓜',
+				'SV': 'SV萨尔瓦多',
 
 				// 欧洲 - 西欧
 				'UK': 'UK英国',
@@ -1753,7 +1767,7 @@ async function addJSONProxiesToCollection(collectionId, proxiesToAdd, region, en
 				'AF': 'AF阿富汗'
 			};
 
-			const regionName = regionNames[detectedRegion] || `${detectedRegion}未知`;
+			const regionName = regionNames[detectedRegion] || detectedRegion;
 			const isIPv6 = isIPv6Address(formattedServer);
 			const suffix = isIPv6 ? '-IPv6' : '-IPv4';
 
@@ -1951,6 +1965,13 @@ async function addProxy(data, env) {
 				'UY': 'UY乌拉圭',
 				'CR': 'CR哥斯达黎加',
 				'PA': 'PA巴拿马',
+				'CW': 'CW库拉索',
+				'AW': 'AW阿鲁巴',
+				'BZ': 'BZ伯利兹',
+				'GT': 'GT危地马拉',
+				'HN': 'HN洪都拉斯',
+				'NI': 'NI尼加拉瓜',
+				'SV': 'SV萨尔瓦多',
 
 				// 欧洲 - 西欧
 				'UK': 'UK英国',
@@ -2063,7 +2084,7 @@ async function addProxy(data, env) {
 				'Unknown': 'Unknown未知'
 			};
 
-			const regionName = regionNames[detectedRegion] || `${detectedRegion}未知`;
+			const regionName = regionNames[detectedRegion] || detectedRegion;
 			const isIPv6 = isIPv6Address(proxyConfig.server);
 			const suffix = isIPv6 ? '-IPv6' : '-IPv4';
 
@@ -2321,7 +2342,7 @@ async function addJSONProxies(proxiesToAdd, region, env) {
 				'AU': 'AU澳洲', 'NZ': 'NZ新西兰', 'RU': 'RU俄罗斯', 'IN': 'IN印度', 'TR': 'TR土耳其'
 			};
 
-			const regionName = regionNames[detectedRegion] || `${detectedRegion}未知`;
+			const regionName = regionNames[detectedRegion] || detectedRegion;
 			const isIPv6 = isIPv6Address(formattedServer);
 			const suffix = isIPv6 ? '-IPv6' : '-IPv4';
 
@@ -2395,43 +2416,114 @@ async function addSubscription(data, env) {
 		const addedSubscriptions = [];
 		const failedSubscriptions = [];
 
-		for (const subUrl of urls) {
-			console.log(`[DEBUG] 处理订阅URL: ${subUrl}`);
+		// 分批处理订阅，避免超时
+		const BATCH_SIZE = 3; // 每批处理3个订阅
+		const batches = [];
+		for (let i = 0; i < urls.length; i += BATCH_SIZE) {
+			batches.push(urls.slice(i, i + BATCH_SIZE));
+		}
 
-			// 检查重复订阅
-			if (subscriptions.includes(subUrl)) {
-				console.log(`[SKIP] 重复订阅: ${subUrl}`);
-				duplicateCount++;
-				continue; // 跳过重复的订阅
+		for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+			const batch = batches[batchIndex];
+			console.log(`[BATCH] 处理第 ${batchIndex + 1}/${batches.length} 批，包含 ${batch.length} 个订阅`);
+
+			// 并行处理当前批次的订阅
+			const batchPromises = batch.map(async (subUrl, index) => {
+				const globalIndex = batchIndex * BATCH_SIZE + index;
+				console.log(`[${globalIndex + 1}/${urls.length}] 处理订阅URL: ${subUrl}`);
+
+				// 检查重复订阅
+				if (subscriptions.includes(subUrl)) {
+					console.log(`[SKIP] 重复订阅: ${subUrl}`);
+					return { type: 'duplicate', url: subUrl };
+				}
+
+				try {
+					// 添加随机延迟，避免请求过于集中
+					if (index > 0) {
+						await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
+					}
+
+					// 获取订阅信息（包括名称、流量、到期时间）
+					console.log(`[${globalIndex + 1}/${urls.length}] 获取订阅信息: ${subUrl}`);
+					const subInfo = await getSubscriptionInfo(subUrl);
+
+					// 智能连通性判断
+					console.log(`[${globalIndex + 1}/${urls.length}] 开始连通性检查: ${subUrl}`);
+					const shouldReject = await shouldRejectSubscription(subUrl, subInfo);
+					if (shouldReject.reject) {
+						console.log(`[FAILED] 订阅被拒绝: ${subUrl}, 原因: ${shouldReject.reason}`);
+						return {
+							type: 'failed',
+							url: subUrl,
+							error: shouldReject.reason,
+							statusCode: subInfo.statusCode
+						};
+					}
+
+					// 生成订阅名称
+					console.log(`[SUCCESS] 订阅通过检查，生成名称: ${subUrl}`);
+					const subName = generateSubscriptionName(subInfo, subscriptionNames);
+
+					console.log(`[ADDED] 订阅添加成功: ${subUrl} -> ${subName}`);
+					return {
+						type: 'success',
+						url: subUrl,
+						name: subName,
+						subInfo: subInfo
+					};
+				} catch (error) {
+					console.log(`[ERROR] 处理订阅时出错: ${subUrl}, 错误: ${error.message}`);
+					return {
+						type: 'failed',
+						url: subUrl,
+						error: '处理失败: ' + error.message,
+						statusCode: 0
+					};
+				}
+			});
+
+			// 等待当前批次完成
+			const batchResults = await Promise.allSettled(batchPromises);
+
+			// 处理批次结果
+			for (const result of batchResults) {
+				if (result.status === 'fulfilled') {
+					const data = result.value;
+					switch (data.type) {
+						case 'duplicate':
+							duplicateCount++;
+							break;
+						case 'failed':
+							failedCount++;
+							failedSubscriptions.push({
+								url: data.url,
+								error: data.error,
+								statusCode: data.statusCode
+							});
+							break;
+						case 'success':
+							subscriptions.push(data.url);
+							subscriptionNames.push(data.name);
+							addedSubscriptions.push({ url: data.url, name: data.name });
+							successCount++;
+							break;
+					}
+				} else {
+					// Promise被拒绝的情况
+					failedCount++;
+					failedSubscriptions.push({
+						url: 'unknown',
+						error: '处理Promise失败: ' + result.reason,
+						statusCode: 0
+					});
+				}
 			}
 
-			// 获取订阅信息（包括名称、流量、到期时间）
-			console.log(`[DEBUG] 获取订阅信息: ${subUrl}`);
-			const subInfo = await getSubscriptionInfo(subUrl);
-
-			// 智能连通性判断
-			console.log(`[DEBUG] 开始连通性检查: ${subUrl}`);
-			const shouldReject = await shouldRejectSubscription(subUrl, subInfo);
-			if (shouldReject.reject) {
-				console.log(`[FAILED] 订阅被拒绝: ${subUrl}, 原因: ${shouldReject.reason}`);
-				failedCount++;
-				failedSubscriptions.push({
-					url: subUrl,
-					error: shouldReject.reason,
-					statusCode: subInfo.statusCode
-				});
-				continue; // 跳过无效的订阅
+			// 批次间添加短暂延迟
+			if (batchIndex < batches.length - 1) {
+				await new Promise(resolve => setTimeout(resolve, 1000));
 			}
-
-			// 生成订阅名称
-			console.log(`[SUCCESS] 订阅通过检查，生成名称: ${subUrl}`);
-			const subName = generateSubscriptionName(subInfo, subscriptionNames);
-
-			subscriptions.push(subUrl);
-			subscriptionNames.push(subName);
-			addedSubscriptions.push({ url: subUrl, name: subName });
-			successCount++;
-			console.log(`[ADDED] 订阅添加成功: ${subUrl} -> ${subName}`);
 		}
 
 		// 对订阅进行排序：按序号由小到大排序
@@ -2484,29 +2576,12 @@ async function addSubscription(data, env) {
 
 
 
-// 定义多种 Clash 客户端请求头
+// 定义三种主要 Clash 客户端请求头
 const CLASH_USER_AGENTS = [
 	{
-		name: 'Clash.Meta',
+		name: 'Clash Verge',
 		headers: {
-			'User-Agent': 'Clash.Meta',
-			'Accept': '*/*',
-			'Accept-Encoding': 'gzip'
-		}
-	},
-	{
-		name: 'mihomo',
-		headers: {
-			'User-Agent': 'mihomo',
-			'Accept': '*/*',
-			'Accept-Encoding': 'gzip, deflate',
-			'Connection': 'keep-alive'
-		}
-	},
-	{
-		name: 'clash-verge',
-		headers: {
-			'User-Agent': 'clash-verge/v2.3.0',
+			'User-Agent': 'Clash Verge',
 			'Accept': '*/*',
 			'Accept-Encoding': 'gzip'
 		}
@@ -2520,27 +2595,12 @@ const CLASH_USER_AGENTS = [
 		}
 	},
 	{
-		name: 'clash verge',
+		name: 'Mihomo',
 		headers: {
-			'User-Agent': 'clash verge',
+			'User-Agent': 'mihomo',
 			'Accept': '*/*',
-			'Accept-Encoding': 'gzip'
-		}
-	},
-	{
-		name: 'clash meta',
-		headers: {
-			'User-Agent': 'clash meta',
-			'Accept': '*/*',
-			'Accept-Encoding': 'gzip'
-		}
-	},
-	{
-		name: 'Clash Verge',
-		headers: {
-			'User-Agent': 'Clash Verge',
-			'Accept': '*/*',
-			'Accept-Encoding': 'gzip'
+			'Accept-Encoding': 'gzip, deflate',
+			'Connection': 'keep-alive'
 		}
 	}
 ];
@@ -2549,9 +2609,16 @@ const CLASH_USER_AGENTS = [
 async function fetchWithUserAgentRotation(url, timeout = 5000) {
 	let lastError = null;
 	let lastResponse = null;
+	let attemptCount = 0;
 
 	for (const userAgent of CLASH_USER_AGENTS) {
+		attemptCount++;
 		try {
+			// 为403错误添加随机延迟，避免被识别为机器人
+			if (attemptCount > 1) {
+				await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
+			}
+
 			const response = await fetch(url, {
 				method: 'GET',
 				headers: userAgent.headers,
@@ -2563,13 +2630,18 @@ async function fetchWithUserAgentRotation(url, timeout = 5000) {
 
 			// 如果是成功的HTTP状态码，返回响应
 			if (response.ok) {
+				console.log(`${userAgent.name} 请求成功: ${response.status}`);
 				return {
 					response,
 					userAgent: userAgent.name,
 					success: true
 				};
+			} else if (response.status === 403) {
+				// 403错误特殊处理，记录但继续尝试其他User-Agent
+				console.log(`${userAgent.name} 返回403禁止访问，尝试下一个User-Agent`);
+				lastError = new Error(`HTTP 403 - 访问被拒绝`);
 			} else {
-				// HTTP错误状态码，记录但继续尝试下一个User-Agent
+				// 其他HTTP错误状态码，记录但继续尝试下一个User-Agent
 				console.log(`${userAgent.name} 返回HTTP错误状态码: ${response.status}`);
 				lastError = new Error(`HTTP ${response.status}`);
 			}
@@ -2582,6 +2654,7 @@ async function fetchWithUserAgentRotation(url, timeout = 5000) {
 
 	// 如果有HTTP错误响应，返回最后一个响应（用于获取准确的状态码）
 	if (lastResponse && !lastResponse.ok) {
+		console.log(`所有User-Agent都失败，返回最后一个响应: ${lastResponse.status}`);
 		return {
 			response: lastResponse,
 			userAgent: 'multiple-attempts',
@@ -2590,28 +2663,35 @@ async function fetchWithUserAgentRotation(url, timeout = 5000) {
 	}
 
 	// 所有 User-Agent 都失败了（网络错误）
+	console.log(`所有User-Agent都失败，抛出错误: ${lastError?.message || '未知错误'}`);
 	throw lastError || new Error('所有请求头都失败');
 }
 
-// 智能判断是否应该拒绝订阅
-async function shouldRejectSubscription(subUrl, subInfo) {
-	console.log(`[DEBUG] 检查订阅: ${subUrl}, success: ${subInfo.success}, statusCode: ${subInfo.statusCode}`);
+// 智能判断是否应该拒绝订阅（支持复检）
+async function shouldRejectSubscription(subUrl, subInfo, isRetry = false) {
+	console.log(`[DEBUG] 检查订阅: ${subUrl}, success: ${subInfo.success}, statusCode: ${subInfo.statusCode}, isRetry: ${isRetry}`);
 
-	// 1. 网络连接失败，直接拒绝
+	// 1. 网络连接失败，进行复检
 	if (!subInfo.success && (subInfo.statusCode === 0 || subInfo.statusCode === 408)) {
-		console.log(`[REJECT] 网络连接失败: ${subUrl}, statusCode: ${subInfo.statusCode}`);
-		return {
-			reject: true,
-			reason: subInfo.statusCode === 408 ? '请求超时' : '网络连接失败'
-		};
+		if (!isRetry) {
+			console.log(`[RETRY] 网络连接失败，进行复检: ${subUrl}, statusCode: ${subInfo.statusCode}`);
+			// 等待2秒后重试
+			await new Promise(resolve => setTimeout(resolve, 2000));
+			const retrySubInfo = await getSubscriptionInfo(subUrl);
+			return await shouldRejectSubscription(subUrl, retrySubInfo, true);
+		} else {
+			console.log(`[REJECT] 复检后仍然网络连接失败: ${subUrl}, statusCode: ${subInfo.statusCode}`);
+			return {
+				reject: true,
+				reason: subInfo.statusCode === 408 ? '请求超时（已复检）' : '网络连接失败（已复检）'
+			};
+		}
 	}
 
-	// 2. 对于HTTP错误状态码，直接拒绝
+	// 2. 对于HTTP错误状态码，进行复检
 	if (!subInfo.success && subInfo.statusCode > 0) {
-		console.log(`[REJECT] 检测到HTTP错误状态码: ${subInfo.statusCode}，直接拒绝订阅: ${subUrl}`);
-
-		// 定义关键错误状态码，遇到就直接拒绝
-		const criticalErrorCodes = [400, 401, 403, 404, 405, 429, 500, 502, 503, 504];
+		// 定义关键错误状态码，遇到就直接拒绝（不复检）
+		const criticalErrorCodes = [400, 401, 403, 404, 405, 429];
 		if (criticalErrorCodes.includes(subInfo.statusCode)) {
 			const errorMessage = getErrorMessage(subInfo.statusCode, true);
 			console.log(`[REJECT] 关键错误状态码 ${subInfo.statusCode}: ${errorMessage}`);
@@ -2620,6 +2700,33 @@ async function shouldRejectSubscription(subUrl, subInfo) {
 				reason: errorMessage
 			};
 		}
+
+		// 对于服务器错误（5xx），进行复检
+		const serverErrorCodes = [500, 502, 503, 504];
+		if (serverErrorCodes.includes(subInfo.statusCode)) {
+			if (!isRetry) {
+				console.log(`[RETRY] 服务器错误，进行复检: ${subUrl}, statusCode: ${subInfo.statusCode}`);
+				// 等待3秒后重试
+				await new Promise(resolve => setTimeout(resolve, 3000));
+				const retrySubInfo = await getSubscriptionInfo(subUrl);
+				return await shouldRejectSubscription(subUrl, retrySubInfo, true);
+			} else {
+				console.log(`[REJECT] 复检后仍然服务器错误: ${subUrl}, statusCode: ${subInfo.statusCode}`);
+				const errorMessage = getErrorMessage(subInfo.statusCode, true);
+				return {
+					reject: true,
+					reason: errorMessage + '（已复检）'
+				};
+			}
+		}
+
+		// 其他错误状态码，直接拒绝
+		console.log(`[REJECT] 检测到HTTP错误状态码: ${subInfo.statusCode}，直接拒绝订阅: ${subUrl}`);
+		const errorMessage = getErrorMessage(subInfo.statusCode, true);
+		return {
+			reject: true,
+			reason: errorMessage
+		};
 	}
 
 	// 3. 对于成功的请求，检查内容有效性
@@ -2629,7 +2736,25 @@ async function shouldRejectSubscription(subUrl, subInfo) {
 		try {
 			// 获取订阅内容
 			const result = await fetchWithUserAgentRotation(subUrl, 8000);
+
+			// 检查响应是否成功
+			if (!result.success) {
+				console.log(`重新获取订阅内容失败: ${subUrl}, 状态码: ${result.response?.status}`);
+				return {
+					reject: true,
+					reason: `无法获取订阅内容 (HTTP ${result.response?.status || 'Unknown'})`
+				};
+			}
+
 			const content = await result.response.text();
+
+			// 检查内容是否为空
+			if (!content || content.trim().length === 0) {
+				return {
+					reject: true,
+					reason: '订阅内容为空'
+				};
+			}
 
 			// 检查是否包含proxies字段
 			if (!isValidConfigContent(content)) {
@@ -2653,7 +2778,7 @@ async function shouldRejectSubscription(subUrl, subInfo) {
 			console.log(`获取订阅内容失败: ${subUrl}, 错误: ${error.message}`);
 			return {
 				reject: true,
-				reason: '无法获取订阅内容进行验证'
+				reason: '无法获取订阅内容进行验证: ' + error.message
 			};
 		}
 	}
@@ -3440,9 +3565,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
 				'RULE-SET,Advertising-ads,REJECT',
 				// 内网
-				'IP-CIDR,224.0.0.0/24,DIRECT,no-resolve',
 				'RULE-SET,Private,DIRECT',
-				'RULE-SET,LAN,DIRECT',
 				'RULE-SET,Fakeip_Filter,DIRECT',
 
 				// 特定服务规则
@@ -3490,6 +3613,21 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				// 'RULE-SET,reject_extra_domainset,REJECT',
 				// 'RULE-SET,reject_non_ip_drop,REJECT-DROP',
 				// 'RULE-SET,reject_non_ip_no_drop,REJECT',
+
+				// Local
+				'DOMAIN-SUFFIX,local,DIRECT',
+				'IP-CIDR,127.0.0.0/8,DIRECT',
+				'IP-CIDR,172.16.0.0/12,DIRECT',
+				'IP-CIDR,192.168.0.0/16,DIRECT',
+				'IP-CIDR,10.0.0.0/8,DIRECT',
+				'IP-CIDR,17.0.0.0/8,DIRECT',
+				'IP-CIDR,100.64.0.0/10,DIRECT',
+				'IP-CIDR,224.0.0.0/4,DIRECT',
+				'RULE-SET,LAN,DIRECT',
+				'DOMAIN-SUFFIX,cn,DIRECT',
+				'DOMAIN-KEYWORD,-cn,DIRECT',
+				'GEOIP,CN,DIRECT',
+
 				// 兜底规则
 				'MATCH,节点选择'
 			]
@@ -3830,88 +3968,88 @@ async function generateSubCollectionConfig(collectionId, env) {
 				name: '♻️ 台湾自动 🇨🇳',
 				type: 'url-test',
 				'include-all': true,
-				tolerance: 30,
-				interval: 300,
+				tolerance: 80,
+				interval: 150,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇹🇼|台湾|台北|新北|高雄|\\\\b(TW|Taiwan|Tai wan)\\\\b)).*$'
 			},
 			{
 				name: '♻️ 日本自动 🇯🇵',
 				type: 'url-test',
 				'include-all': true,
-				tolerance: 30,
-				interval: 300,
+				tolerance: 80,
+				interval: 120,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇯🇵|日本|东京|大阪|京都|名古屋|埼玉|\\\\b(JP|Japan)\\\\b)).*$'
 			},
 			{
 				name: '♻️ 新加坡自动 🇸🇬',
 				type: 'url-test',
 				'include-all': true,
-				tolerance: 30,
-				interval: 300,
+				tolerance: 80,
+				interval: 120,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇸🇬|新加坡|新加坡|\\\\b(SG|Singapore)\\\\b)).*$'
 			},
 			{
 				name: '♻️ 美国自动 🇺🇲',
 				type: 'url-test',
 				'include-all': true,
-				tolerance: 30,
-				interval: 300,
+				tolerance: 80,
+				interval: 120,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|\\\\b(US|United States|America)\\\\b)).*$'
 			},
 			{
 				name: '♻️ 韩国自动 🇰🇷',
 				type: 'url-test',
 				'include-all': true,
-				tolerance: 30,
-				interval: 300,
+				tolerance: 80,
+				interval: 120,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇰🇷|韩国|韓國|首尔|釜山|\\\\b(KR|Korea)\\\\b)).*$'
 			},
 			{
 				name: '♻️ 英国自动 🇬🇧',
 				type: 'url-test',
 				'include-all': true,
-				tolerance: 30,
-				interval: 300,
+				tolerance: 80,
+				interval: 120,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇬🇧|英国|伦敦|曼彻斯特|\\\\b(UK|United Kingdom|Britain)\\\\b)).*$'
 			},
 			{
 				name: '♻️ 法国自动 🇫🇷',
 				type: 'url-test',
 				'include-all': true,
-				tolerance: 30,
-				interval: 300,
+				tolerance: 80,
+				interval: 120,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇫🇷|法国|巴黎|马赛|\\\\b(FR|France)\\\\b)).*$'
 			},
 			{
 				name: '♻️ 德国自动 🇩🇪',
 				type: 'url-test',
 				'include-all': true,
-				tolerance: 30,
-				interval: 300,
+				tolerance: 80,
+				interval: 120,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇩🇪|德国|柏林|法兰克福|慕尼黑|\\\\b(DE|Germany)\\\\b)).*$'
 			},
 			{
 				name: '♻️ 澳洲自动 🇦🇺',
 				type: 'url-test',
 				'include-all': true,
-				tolerance: 30,
-				interval: 300,
+				tolerance: 80,
+				interval: 120,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\\\b(AU|AUS|Australia)\\\\b)).*$'
 			},
 			{
 				name: '♻️ 香港自动 🇭🇰',
 				type: 'url-test',
 				'include-all': true,
-				tolerance: 30,
-				interval: 300,
+				tolerance: 80,
+				interval: 120,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇭🇰|香港|九龙|新界|\\\\b(HK|HongKong|Hong Kong)\\\\b)).*$'
 			},
 			{
 				name: '♻️ 自动选择',
 				type: 'url-test',
 				'include-all': true,
-				tolerance: 30,
-				interval: 300,
+				tolerance: 80,
+				interval: 120,
 				'exclude-filter': '^(?=.*((?i)10x|6x|过滤|客户端|不要|付款|如果|群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|建议|备用|作者|加入|\\\\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\\\\b|(\\\\d{4}-\\\\d{2}-\\\\d{2}|\\\\d+G))).*$'
 			},
 			{
@@ -4325,9 +4463,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 			'DOMAIN-SUFFIX,cdn.bcebos.com,DIRECT',
 			'RULE-SET,Advertising-ads,REJECT',
 			// 内网
-			'IP-CIDR,224.0.0.0/24,DIRECT,no-resolve',
 			'RULE-SET,Private,DIRECT',
-			'RULE-SET,LAN,DIRECT',
 			'RULE-SET,Fakeip_Filter,DIRECT',
 
 			// 特定服务规则
@@ -4375,6 +4511,21 @@ async function generateSubCollectionConfig(collectionId, env) {
 			// 'RULE-SET,reject_extra_domainset,REJECT',
 			// 'RULE-SET,reject_non_ip_drop,REJECT-DROP',
 			// 'RULE-SET,reject_non_ip_no_drop,REJECT',
+
+			// Local
+			'DOMAIN-SUFFIX,local,DIRECT',
+			'IP-CIDR,127.0.0.0/8,DIRECT',
+			'IP-CIDR,172.16.0.0/12,DIRECT',
+			'IP-CIDR,192.168.0.0/16,DIRECT',
+			'IP-CIDR,10.0.0.0/8,DIRECT',
+			'IP-CIDR,17.0.0.0/8,DIRECT',
+			'IP-CIDR,100.64.0.0/10,DIRECT',
+			'IP-CIDR,224.0.0.0/4,DIRECT',
+			'RULE-SET,LAN,DIRECT',
+			'DOMAIN-SUFFIX,cn,DIRECT',
+			'DOMAIN-KEYWORD,-cn,DIRECT',
+			'GEOIP,CN,DIRECT',
+
 			// 兜底规则
 			'MATCH,🚀 默认代理'
 		];
@@ -5111,9 +5262,17 @@ function parseHysteria(url) {
 		port: parseInt(parsed.port)
 	};
 
-	// 添加认证字符串
+	// 添加认证字符串 - 支持多种参数名
 	if (parsed.username) {
 		config['auth-str'] = parsed.username;
+	}
+	// 支持 auth 参数（映射到 auth-str）
+	if (params.get('auth')) {
+		config['auth-str'] = params.get('auth');
+	}
+	// 支持 auth_str 参数（直接映射到 auth-str）
+	if (params.get('auth_str')) {
+		config['auth-str'] = params.get('auth_str');
 	}
 
 	// 添加端口范围
@@ -5136,11 +5295,6 @@ function parseHysteria(url) {
 		config.alpn = params.get('alpn').split(',');
 	}
 
-	// 添加协议
-	if (params.get('protocol')) {
-		config.protocol = params.get('protocol');
-	}
-
 	// 添加上传下载速度
 	if (params.get('up')) {
 		config.up = params.get('up');
@@ -5148,10 +5302,40 @@ function parseHysteria(url) {
 	if (params.get('down')) {
 		config.down = params.get('down');
 	}
+	// 支持 upmbps 和 downmbps 参数
+	if (params.get('upmbps')) {
+		config.up = params.get('upmbps');
+	}
+	if (params.get('downmbps')) {
+		config.down = params.get('downmbps');
+	}
 
-	// 添加 SNI
+	// 添加 SNI - 支持多种参数名
 	if (params.get('sni')) {
 		config.sni = params.get('sni');
+	}
+	// 支持 peer 参数（映射到 sni）
+	if (params.get('peer')) {
+		config.sni = params.get('peer');
+	}
+
+	// 添加跳过证书验证 - 支持多种参数名
+	if (params.get('skip-cert-verify')) {
+		config['skip-cert-verify'] = params.get('skip-cert-verify') === 'true';
+	}
+	// 支持 insecure 参数（映射到 skip-cert-verify）
+	if (params.get('insecure')) {
+		config['skip-cert-verify'] = params.get('insecure') === '1' || params.get('insecure') === 'true';
+	}
+
+	// 添加延迟参数（虽然Clash可能不直接支持，但保留用于信息记录）
+	if (params.get('delay')) {
+		// 可以作为注释信息保存在名称中，或者忽略
+		const delay = params.get('delay');
+		if (delay && !isNaN(parseInt(delay))) {
+			// 将延迟信息添加到节点名称中
+			config.name += ` (${delay}ms)`;
+		}
 	}
 
 	// 添加 ECH 配置
@@ -5162,11 +5346,6 @@ function parseHysteria(url) {
 		if (params.get('ech-config')) {
 			config['ech-opts'].config = params.get('ech-config');
 		}
-	}
-
-	// 添加跳过证书验证
-	if (params.get('skip-cert-verify')) {
-		config['skip-cert-verify'] = params.get('skip-cert-verify') === 'true';
 	}
 
 	// 添加接收窗口配置
@@ -6822,7 +7001,9 @@ async function getSubscriptionInfo(subUrl) {
 
 		let userInfo = response.headers.get('subscription-userinfo') ||
 			response.headers.get('Subscription-Userinfo') ||
-			response.headers.get('SUBSCRIPTION-USERINFO');
+			response.headers.get('SUBSCRIPTION-USERINFO') ||
+			response.headers.get('Subscription-UserInfo') ||
+			response.headers.get('subscription-UserInfo');
 
 		// 如果还是没有找到，遍历所有头部
 		if (!contentDisposition || !userInfo) {

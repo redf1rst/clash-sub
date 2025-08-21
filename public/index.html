@@ -592,37 +592,96 @@
 		/* 进度条样式 */
 		.progress-container {
 			margin-top: 15px;
-			padding: 15px;
-			background: #f8f9fa;
-			border-radius: 8px;
-			border: 1px solid #e9ecef;
-		}
-
-		.progress-info {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			margin-bottom: 10px;
-			font-size: 14px;
-			color: #495057;
+			padding: 0;
+			background: transparent;
+			border-radius: 0;
+			border: none;
 		}
 
 		.progress-bar {
 			width: 100%;
-			height: 20px;
+			height: 30px;
 			background-color: #e9ecef;
-			border-radius: 10px;
+			border-radius: 15px;
 			overflow: hidden;
 			position: relative;
+			border: 2px solid #dee2e6;
 		}
 
 		.progress-fill {
 			height: 100%;
-			background: linear-gradient(90deg, #3498db, #2980b9);
-			border-radius: 10px;
+			background: linear-gradient(90deg, #28a745, #20c997);
+			border-radius: 13px;
 			width: 0%;
-			transition: width 0.3s ease;
+			transition: width 0.5s ease-in-out;
 			position: relative;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.progress-text {
+			color: white;
+			font-weight: bold;
+			font-size: 14px;
+			text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			padding: 0 10px;
+		}
+
+		/* 操作输出框样式 */
+		.operation-output {
+			margin: 15px 0;
+			border: 1px solid #dee2e6;
+			border-radius: 8px;
+			background: #f8f9fa;
+			max-height: 400px;
+			overflow: hidden;
+			width: 100%;
+		}
+
+		.output-header {
+			background: #e9ecef;
+			padding: 10px 15px;
+			border-bottom: 1px solid #dee2e6;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			font-weight: bold;
+			font-size: 14px;
+		}
+
+		.btn-close {
+			background: none;
+			border: none;
+			font-size: 18px;
+			cursor: pointer;
+			color: #6c757d;
+			padding: 0;
+			width: 20px;
+			height: 20px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.btn-close:hover {
+			color: #dc3545;
+		}
+
+		.output-content {
+			padding: 15px;
+			max-height: 350px;
+			overflow-y: auto;
+			font-family: 'Courier New', monospace;
+			font-size: 13px;
+			line-height: 1.5;
+			white-space: pre-wrap;
+			word-wrap: break-word;
+			background: #ffffff;
+			border-top: 1px solid #dee2e6;
 		}
 
 		.progress-fill::after {
@@ -1227,7 +1286,7 @@
 				<div class="input-group">
 					<label for="proxyUrl">添加节点（支持链接和JSON格式，支持批量添加）</label>
 					<textarea id="proxyUrl"
-						placeholder="支持以下格式：&#10;1. 节点链接：vmess://, vless://, ss://, hysteria2://, trojan://, tuic://, snell://, wg://, mieru://, anytls://, ssh:// 等，每行一个&#10;2. 标准JSON格式：{&quot;name&quot;: &quot;节点名&quot;, &quot;type&quot;: &quot;vless&quot;, ...}&#10;3. 宽松JSON格式：{name: 节点名, type: vless, uuid: abc-def-123, server: 1.2.3.4, ports: 10710-10733, ...}&#10;4. 带前缀JSON：	- {name: 节点名, type: vless, ...} （支持制表符、横杠、空格前缀）&#10;5. 混合格式：链接和JSON可以混合输入，每行一个&#10;注意：宽松格式支持UUID、域名、端口范围等复杂值，会自动处理空值语法错误"></textarea>
+						placeholder="支持以下格式：&#10;1. 链接格式 &#10;2. JSON格式 &#10;5. 混合格式：链接和JSON可以混合输入，每行一个"></textarea>
 				</div>
 
 				<div class="input-group">
@@ -1359,20 +1418,20 @@
 						<button class="btn danger" onclick="deleteSelectedSubscriptions()"
 							id="deleteSelectedSubscriptionsBtn" disabled>删除选中</button>
 					</div>
-					<div class="action-message">
-						<div id="subscriptionSelectionInfo" class="selection-info" style="display: none;"></div>
-						<div id="subMessage" class="message"></div>
-						<!-- 进度条容器 -->
-						<div id="progressContainer" class="progress-container" style="display: none;">
-							<div class="progress-info">
-								<span id="progressText">正在检测...</span>
-								<span id="progressPercent">0%</span>
-							</div>
-							<div class="progress-bar">
-								<div id="progressFill" class="progress-fill"></div>
-							</div>
-						</div>
+				</div>
+
+				<!-- 操作输出框 - 移到按钮下方 -->
+				<div id="operationOutput" class="operation-output" style="display: none;">
+					<div class="output-header">
+						<span>操作输出</span>
+						<button class="btn-close" onclick="clearOperationOutput()">&times;</button>
 					</div>
+					<div id="outputContent" class="output-content"></div>
+				</div>
+
+				<div class="action-message">
+					<div id="subscriptionSelectionInfo" class="selection-info" style="display: none;"></div>
+					<div id="subMessage" class="message"></div>
 				</div>
 
 				<div class="list" id="subList">
@@ -1429,7 +1488,7 @@
 				<div class="input-group">
 					<label for="collectionProxyUrl">添加节点（支持链接和JSON格式，支持批量添加）</label>
 					<textarea id="collectionProxyUrl"
-						placeholder="支持以下格式：&#10;1. 节点链接：vmess://, vless://, ss://, hysteria2://, trojan://, tuic://, snell://, wg://, mieru://, anytls://, ssh:// 等，每行一个&#10;2. 标准JSON格式：{&quot;name&quot;: &quot;节点名&quot;, &quot;type&quot;: &quot;vless&quot;, ...}&#10;3. 宽松JSON格式：{name: 节点名, type: vless, uuid: abc-def-123, server: 1.2.3.4, ports: 10710-10733, ...}&#10;4. 带前缀JSON：	- {name: 节点名, type: vless, ...} （支持制表符、横杠、空格前缀）&#10;5. 混合格式：链接和JSON可以混合输入，每行一个&#10;注意：宽松格式支持UUID、域名、端口范围等复杂值，会自动处理空值语法错误"></textarea>
+						placeholder="支持以下格式(每行一个)：&#10;1. 节点链接&#10;2. JSON格式&#10;3. 混合格式：链接和JSON可以混合输入"></textarea>
 				</div>
 
 				<div class="input-group">
@@ -1574,35 +1633,36 @@
 						<button class="btn danger" onclick="deleteSelectedCollectionSubscriptions()"
 							id="deleteSelectedCollectionSubscriptionsBtn" disabled>删除选中</button>
 					</div>
-					<div class="action-message">
-						<div id="collectionSubscriptionSelectionInfo" class="selection-info" style="display: none;">
-						</div>
-						<div id="collectionSubMessage" class="message"></div>
-						<!-- 进度条容器 -->
-						<div id="collectionProgressContainer" class="progress-container" style="display: none;">
-							<div class="progress-info">
-								<span id="collectionProgressText">正在检测...</span>
-								<span id="collectionProgressPercent">0%</span>
-							</div>
-							<div class="progress-bar">
-								<div id="collectionProgressFill" class="progress-fill"></div>
-							</div>
-						</div>
-					</div>
 				</div>
 
-				<!-- 订阅列表 -->
-				<div class="list" id="collectionSubList">
-					<div class="empty-state">
-						<div>🔗</div>
-						<p>暂无订阅，请添加订阅链接</p>
+				<!-- 操作输出框 - 移到按钮下方 -->
+				<div id="collectionOperationOutput" class="operation-output" style="display: none;">
+					<div class="output-header">
+						<span>操作输出</span>
+						<button class="btn-close" onclick="clearCollectionOperationOutput()">&times;</button>
 					</div>
+					<div id="collectionOutputContent" class="output-content"></div>
+				</div>
+
+				<div class="action-message">
+					<div id="collectionSubscriptionSelectionInfo" class="selection-info" style="display: none;">
+					</div>
+					<div id="collectionSubMessage" class="message"></div>
 				</div>
 			</div>
-			<div class="modal-footer">
-				<button class="btn" onclick="closeSubCollectionModal()">关闭</button>
+
+			<!-- 订阅列表 -->
+			<div class="list" id="collectionSubList">
+				<div class="empty-state">
+					<div>🔗</div>
+					<p>暂无订阅，请添加订阅链接</p>
+				</div>
 			</div>
 		</div>
+		<div class="modal-footer">
+			<button class="btn" onclick="closeSubCollectionModal()">关闭</button>
+		</div>
+	</div>
 	</div>
 
 	<script>
@@ -3245,6 +3305,14 @@
 				return;
 			}
 
+			// 计算订阅数量
+			const urls = subUrl.split('\n').map(url => url.trim()).filter(url => url);
+			const totalUrls = urls.length;
+
+			// 清空操作输出并显示开始信息
+			clearOperationOutput();
+			showOperationOutput(`开始添加 ${totalUrls} 个订阅`);
+
 			try {
 				const response = await fetch('/api/submerge', {
 					method: 'POST',
@@ -3252,28 +3320,40 @@
 					body: JSON.stringify({ action: 'add', data: subUrl })
 				});
 
+				showOperationOutput('处理完成，分析结果...', true);
 				const result = await response.json();
 
 				if (result.error) {
+					showOperationOutput(`\n✗ 添加失败: ${result.error}`, true);
 					showMessage('subMessage', result.error, 'error');
 				} else {
 					var message = '成功添加 ' + result.successCount + ' 个订阅';
+					let outputMessage = '\n=== 添加结果 ===';
+					outputMessage += `\n✓ 成功添加: ${result.successCount} 个`;
+
 					if (result.duplicateCount > 0) {
 						message += '，' + result.duplicateCount + ' 个重复订阅已跳过';
+						outputMessage += `\n⚠ 重复跳过: ${result.duplicateCount} 个`;
 					}
 					if (result.failedCount > 0) {
 						message += '，' + result.failedCount + ' 个订阅添加失败';
+						outputMessage += `\n✗ 添加失败: ${result.failedCount} 个`;
 
 						// 显示失败订阅的详细信息
 						if (result.failedSubscriptions && result.failedSubscriptions.length > 0) {
 							let failedDetails = '\n\n失败的订阅链接：\n';
+							outputMessage += '\n\n失败详情:';
 							result.failedSubscriptions.forEach((failed, index) => {
 								failedDetails += `${index + 1}. ${failed.url}\n   错误：${failed.error}\n`;
+
+								outputMessage += `\n${index + 1}. ${failed.error}`;
+								outputMessage += `\n   URL: ${failed.url}`;
 							});
 							message += failedDetails;
 						}
 					}
 
+					showOperationOutput(outputMessage, true);
 					const messageType = result.failedCount > 0 ? 'info' : 'success';
 					showMessage('subMessage', message, messageType);
 					document.getElementById('subUrl').value = '';
@@ -3288,7 +3368,10 @@
 					loadSubscriptions();
 				}
 			} catch (error) {
-				showMessage('subMessage', '添加订阅失败', 'error');
+				showOperationOutput(`\n✗ 添加订阅失败: ${error.message}`, true);
+				showMessage('subMessage', '添加订阅失败: ' + error.message, 'error');
+			} finally {
+				// 操作完成，不需要特殊处理
 			}
 		}
 
@@ -3752,33 +3835,86 @@
 			}, 3600000); // 1小时 = 3600000毫秒
 		}
 
-		// 显示进度条
+		// 显示进度信息（文字形式）
 		function showProgress(current, total, text) {
-			const progressContainer = document.getElementById('progressContainer');
-			const progressText = document.getElementById('progressText');
-			const progressPercent = document.getElementById('progressPercent');
-			const progressFill = document.getElementById('progressFill');
+			const progressText = `[${current}/${total}] ${text}`;
+			showOperationOutput(progressText, true);
+			console.log(`进度更新: ${current}/${total} - ${text}`);
+		}
 
-			// 确保所有元素都存在
-			if (!progressContainer || !progressText || !progressPercent || !progressFill) {
-				console.error('进度条元素未找到');
+		// 隐藏进度（空函数，保持兼容性）
+		function hideProgress() {
+			// 不需要隐藏，保留在操作输出中
+		}
+
+		// 显示操作输出
+		function showOperationOutput(message, append = false) {
+			const outputContainer = document.getElementById('operationOutput');
+			const outputContent = document.getElementById('outputContent');
+
+			if (!outputContainer || !outputContent) {
+				console.error('操作输出框元素未找到');
 				return;
 			}
 
-			progressContainer.style.display = 'block';
-			const percentage = Math.round((current / total) * 100);
-			progressText.textContent = text || '正在处理...';
-			progressPercent.textContent = `${percentage}%`;
-			progressFill.style.width = `${percentage}%`;
+			outputContainer.style.display = 'block';
 
-			// 添加调试日志
-			console.log(`进度更新: ${current}/${total} (${percentage}%) - ${text}`);
+			if (append) {
+				outputContent.textContent += '\n' + message;
+			} else {
+				outputContent.textContent = message;
+			}
+
+			// 滚动到底部
+			outputContent.scrollTop = outputContent.scrollHeight;
 		}
 
-		// 隐藏进度条
-		function hideProgress() {
-			const progressContainer = document.getElementById('progressContainer');
-			progressContainer.style.display = 'none';
+		// 清空操作输出
+		function clearOperationOutput() {
+			const outputContainer = document.getElementById('operationOutput');
+			const outputContent = document.getElementById('outputContent');
+
+			if (outputContainer) {
+				outputContainer.style.display = 'none';
+			}
+			if (outputContent) {
+				outputContent.textContent = '';
+			}
+		}
+
+		// 显示集合操作输出
+		function showCollectionOperationOutput(message, append = false) {
+			const outputContainer = document.getElementById('collectionOperationOutput');
+			const outputContent = document.getElementById('collectionOutputContent');
+
+			if (!outputContainer || !outputContent) {
+				console.error('集合操作输出框元素未找到');
+				return;
+			}
+
+			outputContainer.style.display = 'block';
+
+			if (append) {
+				outputContent.textContent += '\n' + message;
+			} else {
+				outputContent.textContent = message;
+			}
+
+			// 滚动到底部
+			outputContent.scrollTop = outputContent.scrollHeight;
+		}
+
+		// 清空集合操作输出
+		function clearCollectionOperationOutput() {
+			const outputContainer = document.getElementById('collectionOperationOutput');
+			const outputContent = document.getElementById('collectionOutputContent');
+
+			if (outputContainer) {
+				outputContainer.style.display = 'none';
+			}
+			if (outputContent) {
+				outputContent.textContent = '';
+			}
 		}
 
 		// 活跃检测
@@ -3790,8 +3926,9 @@
 				btn.disabled = true;
 				btn.textContent = '检测中...';
 
-				// 隐藏之前的消息
+				// 隐藏之前的消息并清空操作输出
 				document.getElementById('subMessage').style.display = 'none';
+				clearOperationOutput();
 
 				// 获取当前订阅列表
 				const response = await fetch('/api/submerge');
@@ -3802,14 +3939,14 @@
 					return;
 				}
 
-				// 显示进度条
-				showProgress(0, currentSubscriptions.length, '准备开始检测...');
+				// 显示操作输出
+				showOperationOutput(`开始活跃检测，共 ${currentSubscriptions.length} 个订阅`);
 
 				// 逐个检测订阅
 				const results = [];
 				for (let i = 0; i < currentSubscriptions.length; i++) {
 					const subUrl = currentSubscriptions[i];
-					showProgress(i, currentSubscriptions.length, `正在检测订阅 ${i + 1}/${currentSubscriptions.length}...`);
+					showOperationOutput(`[${i + 1}/${currentSubscriptions.length}] 正在检测订阅: ${subUrl.substring(0, 50)}...`, true);
 
 					try {
 						const checkResponse = await fetch('/api/submerge/check', {
@@ -3828,6 +3965,9 @@
 							total: checkResult.total,
 							expire: checkResult.expire
 						});
+
+						const status = checkResult.valid ? '✓ 有效' : `✗ 无效 (${checkResult.reason})`;
+						showOperationOutput(`    结果: ${status}`, true);
 					} catch (error) {
 						results.push({
 							url: subUrl,
@@ -3838,11 +3978,12 @@
 							total: 0,
 							expire: null
 						});
+						showOperationOutput(`    结果: ✗ 检测失败 (${error.message})`, true);
 					}
 				}
 
 				// 完成检测
-				showProgress(currentSubscriptions.length, currentSubscriptions.length, '检测完成，正在处理结果...');
+				showOperationOutput('\n检测完成，正在处理结果...', true);
 
 				// 发送批量处理请求
 				console.log('发送批量处理请求，结果数量:', results.length);
@@ -3858,24 +3999,36 @@
 					const result = await batchResponse.json();
 					if (result.success) {
 						let message = '活跃检测完成';
+						let outputMessage = '\n=== 检测结果 ===';
+
 						if (result.updated > 0) {
 							message += `，更新了 ${result.updated} 个订阅名称`;
+							outputMessage += `\n✓ 更新了 ${result.updated} 个订阅名称`;
 						}
 						if (result.removed > 0) {
 							message += `，移除了 ${result.removed} 个无效订阅`;
+							outputMessage += `\n✗ 移除了 ${result.removed} 个无效订阅`;
 						}
 						if (result.removedSubscriptions && result.removedSubscriptions.length > 0) {
 							message += '\n\n移除的订阅：\n';
+							outputMessage += '\n\n移除的订阅详情:';
 							result.removedSubscriptions.forEach((sub, index) => {
 								message += `${index + 1}. 名称：${sub.name || '未知'}\n`;
 								message += `   链接：${sub.url}\n`;
 								message += `   原因：${sub.reason}\n\n`;
+
+								outputMessage += `\n${index + 1}. ${sub.name || '未知'}`;
+								outputMessage += `\n   原因: ${sub.reason}`;
+								outputMessage += `\n   URL: ${sub.url}`;
 							});
 						}
+
+						showOperationOutput(outputMessage, true);
 						const messageType = result.removed > 0 ? 'info' : 'success';
 						showMessage('subMessage', message, messageType);
 						loadSubscriptions();
 					} else {
+						showOperationOutput(`\n✗ 处理失败: ${result.message || '未知错误'}`, true);
 						showMessage('subMessage', result.message || '活跃检测处理失败', 'error');
 					}
 				} else {
@@ -3889,16 +4042,17 @@
 					} catch (e) {
 						errorMessage += ` (HTTP ${batchResponse.status})`;
 					}
+					showOperationOutput(`\n✗ ${errorMessage}`, true);
 					showMessage('subMessage', errorMessage, 'error');
 				}
 
 			} catch (error) {
+				showOperationOutput(`\n✗ 检测失败: ${error.message}`, true);
 				showMessage('subMessage', '活跃检测失败: ' + error.message, 'error');
 			} finally {
 				// 恢复按钮状态
 				btn.disabled = false;
 				btn.textContent = '活跃检测';
-				hideProgress();
 			}
 		}
 
