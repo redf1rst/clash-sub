@@ -3587,6 +3587,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 			rules: [
 				// 自定义优先规则
 				'DOMAIN-SUFFIX,linux.do,Linux DO',
+				'DOMAIN-SUFFIX,anyrouter.top,DIRECT',
 				'DOMAIN-SUFFIX,cloudflare.com,节点选择',
 				'DOMAIN-SUFFIX,github.com,节点选择',
 				'DOMAIN-SUFFIX,githubusercontent.com,节点选择',
@@ -4485,6 +4486,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 		config.rules = [
 			// 自定义优先规则
 			'DOMAIN-SUFFIX,linux.do,Linux DO',
+			'DOMAIN-SUFFIX,anyrouter.top,DIRECT',
 			'DOMAIN-SUFFIX,cloudflare.com,🚀 默认代理',
 			'DOMAIN-SUFFIX,github.com,🚀 默认代理',
 			'DOMAIN-SUFFIX,githubusercontent.com,🚀 默认代理',

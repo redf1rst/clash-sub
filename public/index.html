@@ -4377,8 +4377,10 @@
 						headers: { 'Content-Type': 'application/json' },
 						body: JSON.stringify({
 							action: 'deleteProxy',
-							collectionId: currentManagingCollection.id,
-							index: index
+							data: {
+								collectionId: currentManagingCollection.id,
+								index: index
+							}
 						})
 					});
 					
@@ -4415,8 +4417,10 @@
 						headers: { 'Content-Type': 'application/json' },
 						body: JSON.stringify({
 							action: 'deleteSubscription',
-							collectionId: currentManagingSubCollection.id,
-							index: index
+							data: {
+								collectionId: currentManagingSubCollection.id,
+								index: index
+							}
 						})
 					});
 					
