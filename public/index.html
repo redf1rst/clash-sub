@@ -818,18 +818,49 @@
 				max-width: 100%;
 			}
 
-			/* 移动端复选框布局优化 */
-			.list-item .item-name {
-				display: flex;
-				align-items: flex-start;
-				gap: 8px;
-			}
+		/* 移动端复选框布局优化 */
+		.list-item .item-name {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
 
-			.list-item .item-name .checkbox-wrapper {
+		.list-item .item-name .checkbox-wrapper {
+			flex-shrink: 0;
+			width: 20px;
+			height: 20px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+		
+			/* 移动端管理节点删除按钮 - 改为横向排布 */
+			.node-delete-btn {
+				padding: 6px 10px !important;
+				font-size: 0.85em !important;
 				flex-shrink: 0;
-				width: 20px;
-				padding-top: 2px;
+				margin-left: 8px;
+				white-space: nowrap; /* 防止按钮文字换行 */
 			}
+		
+		/* 管理节点中限制信息宽度 */
+		#collectionProxyList .item-info {
+			max-width: calc(100% - 40px);
+		}
+		
+		/* 管理订阅按钮布局 */
+		#collectionSubList .item-actions {
+			display: flex;
+			gap: 6px;
+			margin-top: 8px;
+			width: 100%;
+		}
+		
+		#collectionSubList .item-actions .btn {
+			flex: 1;
+			padding: 6px 10px;
+			font-size: 0.85em;
+		}
 
 			.list-item .item-name .name-text {
 				flex: 1;
@@ -841,6 +872,9 @@
 			.item-info {
 				text-align: left;
 				width: 100%;
+				display: flex;
+				flex-direction: column;
+				align-items: flex-start;
 			}
 
 			.item-details {
@@ -883,10 +917,44 @@
 			cursor: pointer;
 			accent-color: #3498db;
 		}
+		
+		/* 桌面端管理订阅界面订阅链接显示优化 */
+		@media (min-width: 769px) {
+			#collectionSubList .list-item {
+				position: relative;
+				overflow: visible; /* 允许item-details溢出 */
+			}
+			
+			#collectionSubList .item-info {
+				position: relative;
+				z-index: 1; /* 确保信息区域在上层 */
+			}
+			
+			#collectionSubList .item-details {
+				max-width: calc(100% + 100px); /* 向右延伸100px */
+				width: auto;
+				word-wrap: break-word;
+				word-break: break-all;
+				white-space: normal; /* 允许换行 */
+				line-height: 1.4;
+				padding-right: 10px; /* 添加右内边距，避免贴边 */
+			}
+			
+			#collectionSubList .item-actions {
+				position: relative;
+				z-index: 2; /* 确保按钮在最上层，不被遮挡 */
+				margin-top: 10px; /* 与上方内容保持间距 */
+			}
+		}
 
 		/* 桌面端隐藏移动端复选框 */
 		.mobile-checkbox {
 			display: none;
+		}
+		
+		/* 桌面端复选框样式 */
+		.desktop-checkbox {
+			display: block;
 		}
 
 		/* 移动端复选框样式 */
@@ -896,16 +964,122 @@
 			.mobile-checkbox {
 				display: block;
 				margin: 0;
-				transform: scale(1.1);
+				transform: scale(1.2);
 				position: relative;
 				top: 0;
 				left: 0;
+				pointer-events: auto;
+				z-index: 10;
+				-webkit-tap-highlight-color: transparent;
+				touch-action: manipulation;
 			}
 
 			/* 隐藏原来位置的复选框 */
-			.list-item>.collection-proxy-checkbox,
-			.list-item>.collection-subscription-checkbox {
+			.list-item>.collection-proxy-checkbox:not(.mobile-checkbox),
+			.list-item>.collection-subscription-checkbox:not(.mobile-checkbox) {
 				display: none;
+			}
+			
+			/* 移动端节点和订阅集合中的布局 */
+			#collectionProxyList .list-item,
+			#collectionSubList .list-item {
+				display: flex;
+				flex-direction: column;
+				position: relative;
+				padding: 12px;
+			}
+			
+			/* 复选框定位在名称和详情的中间高度 */
+			#collectionProxyList .checkbox-wrapper,
+			#collectionSubList .checkbox-wrapper {
+				position: absolute;
+				left: 15px; /* 恢复复选框左边距 */
+				top: 28px; /* 调整到名称和链接的中间位置 */
+				z-index: 10;
+			}
+			
+			/* 移动端管理节点界面信息区域调整 */
+			#collectionProxyList .item-info {
+				margin-left: 0px; /* 信息区域从左边界开始 */
+				margin-right: 10px; /* 右侧留出空间 */
+				width: calc(100% - 10px); /* 占据几乎全部宽度 */
+				margin-bottom: 10px; /* 与按钮保持间距 */
+				padding-left: -15px; /* 负内边距，让内容更靠左 */
+			}
+			
+			/* 移动端管理订阅界面信息区域调整 - 需要为复选框留出空间 */
+			#collectionSubList .item-info {
+				margin-left: 40px; /* 为复选框留出空间，避免重叠 */
+				margin-right: 10px; /* 右侧留出空间 */
+				width: calc(100% - 60px); /* 减去左右边距，确保不超出卡片 */
+				margin-bottom: 10px; /* 与按钮保持间距 */
+				padding-left: 0px; /* 移除内边距 */
+			}
+			
+			/* 名称样式优化 */
+			#collectionProxyList .item-name,
+			#collectionSubList .item-name {
+				display: block;
+				font-weight: 600;
+				color: #2c3e50;
+				margin-bottom: 5px;
+				word-wrap: break-word;
+				word-break: break-all;
+				line-height: 1.4;
+			}
+			
+			/* 移动端节点详情样式优化，防止内容超出 */
+			#collectionProxyList .item-details {
+				margin-left: 0;
+				color: #7f8c8d;
+				font-size: 0.85em;
+				word-wrap: break-word;
+				word-break: break-all;
+				line-height: 1.3;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				display: -webkit-box;
+				-webkit-line-clamp: 2; /* 最多显示2行 */
+				-webkit-box-orient: vertical;
+			}
+			
+			/* 移动端订阅链接样式优化，显示完整链接 */
+			#collectionSubList .item-details {
+				margin-left: 0;
+				color: #7f8c8d;
+				font-size: 0.85em;
+				word-wrap: break-word;
+				word-break: break-all;
+				line-height: 1.3;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				display: -webkit-box;
+				-webkit-line-clamp: 4; /* 最多显示4行，确保长链接显示完整 */
+				-webkit-box-orient: vertical;
+			}
+			
+			/* 按钮区域确保不会与复选框重叠 */
+			#collectionSubList .item-actions {
+				width: 100%;
+				display: flex;
+				gap: 6px;
+				margin-top: 8px;
+				margin-left: 0;
+			}
+			
+			/* 节点集合的删除按钮 */
+			#collectionProxyList .node-delete-btn {
+				position: absolute;
+				right: 12px;
+				top: 28px; /* 与复选框同高 */
+				padding: 6px 10px;
+				font-size: 0.85em;
+			}
+			
+			/* 移动端调整节点集合信息区域宽度，为删除按钮留空间 */
+			#collectionProxyList .item-info {
+				width: calc(100% - 120px); /* 再往左20px，为删除按钮留更多空间 */
+				padding-right: 0; /* 移除右内边距 */
 			}
 		}
 
@@ -1208,12 +1382,15 @@
 
 		.modal-content {
 			background-color: white;
-			margin: 5% auto;
+			position: fixed;
+			left: 50%;
+			top: 50%;
+			transform: translate(-50%, -50%);
 			padding: 0;
 			border-radius: 12px;
 			width: 90%;
 			max-width: 800px;
-			max-height: 80vh;
+			max-height: 85vh;
 			overflow: hidden;
 			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 		}
@@ -1232,15 +1409,10 @@
 
 		.modal-body {
 			padding: 20px;
-			max-height: 60vh;
+			max-height: calc(85vh - 60px);
 			overflow-y: auto;
 		}
 
-		.modal-footer {
-			padding: 15px 20px;
-			border-top: 1px solid #ddd;
-			text-align: right;
-		}
 
 		.close {
 			color: white;
@@ -1592,9 +1764,6 @@
 					</div>
 				</div>
 			</div>
-			<div class="modal-footer">
-				<button class="btn" onclick="closeProxyCollectionModal()">关闭</button>
-			</div>
 		</div>
 	</div>
 
@@ -1660,9 +1829,6 @@
 					</div>
 				</div>
 			</div>
-		</div>
-		<div class="modal-footer">
-			<button class="btn" onclick="closeSubCollectionModal()">关闭</button>
 		</div>
 	</div>
 	</div>
@@ -2168,16 +2334,20 @@
 				}
 
 				html += '<div class="list-item' + highlightClass + '" data-index="' + i + '">';
-				html += '<input type="checkbox" class="collection-proxy-checkbox" data-index="' + i + '" onchange="updateCollectionProxySelectionUI()">';
+				// 桌面端复选框
+				html += '<input type="checkbox" class="collection-proxy-checkbox desktop-checkbox" data-index="' + i + '" onchange="syncCheckboxState(' + i + ', \'proxy\')">';
+				// 移动端复选框容器
+				html += '<div class="checkbox-wrapper">';
+				html += '<input type="checkbox" class="collection-proxy-checkbox mobile-checkbox" data-index="' + i + '" onchange="syncCheckboxState(' + i + ', \'proxy\')">';
+				html += '</div>';
 				html += '<div class="item-info">';
 				html += '<div class="item-name">';
-				html += '<div class="checkbox-wrapper">';
-				html += '<input type="checkbox" class="collection-proxy-checkbox mobile-checkbox" data-index="' + i + '" onchange="updateCollectionProxySelectionUI()">';
-				html += '</div>';
 				html += '<span class="name-text">' + proxy.name + '</span>';
 				html += '</div>';
 				html += '<div class="item-details">' + proxy.type + ' | ' + proxy.server + ':' + proxy.port + '</div>';
 				html += '</div>';
+				// 删除按钮
+				html += '<button class="btn danger node-delete-btn" onclick="deleteSingleCollectionProxy(' + i + ')">删除</button>';
 				html += '</div>';
 			}
 			listEl.innerHTML = html;
@@ -2797,18 +2967,21 @@
 				}
 
 				html += '<div class="list-item' + highlightClass + '" data-index="' + i + '">';
-				html += '<input type="checkbox" class="collection-subscription-checkbox" data-index="' + i + '" onchange="updateCollectionSubscriptionSelectionUI()">';
+				// 桌面端复选框
+				html += '<input type="checkbox" class="collection-subscription-checkbox desktop-checkbox" data-index="' + i + '" onchange="syncCheckboxState(' + i + ', \'subscription\')">';
+				// 移动端复选框容器
+				html += '<div class="checkbox-wrapper">';
+				html += '<input type="checkbox" class="collection-subscription-checkbox mobile-checkbox" data-index="' + i + '" onchange="syncCheckboxState(' + i + ', \'subscription\')">';
+				html += '</div>';
 				html += '<div class="item-info">';
 				html += '<div class="item-name" id="collectionSubName-' + i + '">';
-				html += '<div class="checkbox-wrapper">';
-				html += '<input type="checkbox" class="collection-subscription-checkbox mobile-checkbox" data-index="' + i + '" onchange="updateCollectionSubscriptionSelectionUI()">';
-				html += '</div>';
 				html += '<span class="name-text">' + name + '</span>';
 				html += '</div>';
 				html += '<div class="item-details">' + sub + '</div>';
 				html += '</div>';
 				html += '<div class="item-actions">';
 				html += '<button class="btn" onclick="editCollectionSubscriptionName(' + i + ')">编辑名称</button>';
+				html += '<button class="btn danger" onclick="deleteSingleCollectionSubscription(' + i + ')">删除</button>';
 				html += '</div>';
 				html += '</div>';
 			}
@@ -4160,6 +4333,110 @@
 				hideConfirmModal();
 			}
 		});
+		
+		// 同步桌面端和移动端复选框状态
+		function syncCheckboxState(index, type) {
+			let desktopCheckbox, mobileCheckbox;
+			
+			if (type === 'proxy') {
+				desktopCheckbox = document.querySelector(`#collectionProxyList .list-item[data-index="${index}"] .desktop-checkbox`);
+				mobileCheckbox = document.querySelector(`#collectionProxyList .list-item[data-index="${index}"] .mobile-checkbox`);
+			} else if (type === 'subscription') {
+				desktopCheckbox = document.querySelector(`#collectionSubList .list-item[data-index="${index}"] .desktop-checkbox`);
+				mobileCheckbox = document.querySelector(`#collectionSubList .list-item[data-index="${index}"] .mobile-checkbox`);
+			}
+			
+			if (desktopCheckbox && mobileCheckbox) {
+				// 同步两个复选框的状态
+				if (event.target.classList.contains('desktop-checkbox')) {
+					mobileCheckbox.checked = desktopCheckbox.checked;
+				} else {
+					desktopCheckbox.checked = mobileCheckbox.checked;
+				}
+			}
+			
+			// 更新UI
+			if (type === 'proxy') {
+				updateCollectionProxySelectionUI();
+			} else if (type === 'subscription') {
+				updateCollectionSubscriptionSelectionUI();
+			}
+		}
+		
+		// 删除单个集合节点
+		async function deleteSingleCollectionProxy(index) {
+			if (!currentManagingCollection) return;
+			
+			const proxy = currentManagingCollection.proxies[index];
+			if (!proxy) return;
+			
+			showConfirmModal(`确定要删除节点 "${proxy.name}" 吗？`, async function() {
+				try {
+					const response = await fetch('/api/proxy-collections', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							action: 'deleteProxy',
+							collectionId: currentManagingCollection.id,
+							index: index
+						})
+					});
+					
+					const result = await response.json();
+					if (result.success) {
+						showCollectionMessage(`已删除节点: ${proxy.name}`, 'success');
+						addCollectionOutput(`✗ 删除节点: ${proxy.name}`, 'warning');
+						
+						// 重新加载集合数据并渲染
+						await loadProxyCollections();
+						currentManagingCollection = proxyCollections.find(c => c.id === currentManagingCollection.id);
+						renderCollectionProxies();
+					} else {
+						showCollectionMessage(result.error || '删除失败', 'error');
+					}
+				} catch (error) {
+					showCollectionMessage('删除节点失败', 'error');
+				}
+			});
+		}
+		
+		// 删除单个集合订阅
+		async function deleteSingleCollectionSubscription(index) {
+			if (!currentManagingSubCollection) return;
+			
+			const subscription = currentManagingSubCollection.subscriptions[index];
+			const subName = currentManagingSubCollection.subscriptionNames[index] || `订阅${index + 1}`;
+			if (!subscription) return;
+			
+			showConfirmModal(`确定要删除订阅 "${subName}" 吗？`, async function() {
+				try {
+					const response = await fetch('/api/sub-collections', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							action: 'deleteSubscription',
+							collectionId: currentManagingSubCollection.id,
+							index: index
+						})
+					});
+					
+					const result = await response.json();
+					if (result.success) {
+						showCollectionSubMessage(`已删除订阅: ${subName}`, 'success');
+						addCollectionSubOutput(`✗ 删除订阅: ${subName}`, 'warning');
+						
+						// 重新加载集合数据并渲染
+						await loadSubCollections();
+						currentManagingSubCollection = subCollections.find(c => c.id === currentManagingSubCollection.id);
+						renderCollectionSubscriptions();
+					} else {
+						showCollectionSubMessage(result.error || '删除失败', 'error');
+					}
+				} catch (error) {
+					showCollectionSubMessage('删除订阅失败', 'error');
+				}
+			});
+		}
 	</script>
 
 	<!-- 确认删除弹窗 -->
