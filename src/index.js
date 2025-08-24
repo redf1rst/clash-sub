@@ -3245,7 +3245,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 					name: 'Linux DO',
 					type: 'select',
 					proxies: ['DIRECT', '节点选择'],
-					icon: 'https://r2.hmail.qzz.io/static/image_base/linuxdo.png'
+					icon: 'https://github.com/redf1rst/clash-sub/blob/main/img/linux-do.png?raw=true'
 				},
 				{
 					name: '微软服务',
@@ -3983,7 +3983,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 					'DIRECT',
 					'🚀 默认代理'
 				],
-				icon: 'https://linux.do/uploads/default/original/4X/d/1/4/d146c68151340881c884d95e0da4acdf369258c6.png'
+				icon: 'https://github.com/redf1rst/clash-sub/blob/main/img/linux-do.png?raw=true'
 			},
 			{
 				name: '微软服务',
