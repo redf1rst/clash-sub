@@ -3628,9 +3628,9 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				'RULE-SET,cn_domain,DIRECT',
 				'RULE-SET,ChinaMedia,DIRECT',
 				'RULE-SET,China,DIRECT',
-				// 为常用的CDN和规则集提供代理
-				'DOMAIN,cdn.jsdmirror.com,节点选择',
-				'DOMAIN,raw.githubusercontent.com,节点选择',
+				// CDN
+				'DOMAIN-SUFFIX,cdn.jsdmirror.com,节点选择',
+				'DOMAIN-SUFFIX,raw.githubusercontent.com,节点选择',
 				'DOMAIN-SUFFIX,cdn.jsdelivr.net,节点选择',
 				'DOMAIN-SUFFIX,cdnjs.cloudflare.com,节点选择',
 				'DOMAIN-SUFFIX,gstatic.com,节点选择',
@@ -3983,7 +3983,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 					'DIRECT',
 					'🚀 默认代理'
 				],
-				icon: 'https://r2.hmail.qzz.io/static/image_base/linuxdo.png'
+				icon: 'https://linux.do/uploads/default/original/4X/d/1/4/d146c68151340881c884d95e0da4acdf369258c6.png'
 			},
 			{
 				name: '微软服务',
@@ -4528,8 +4528,8 @@ async function generateSubCollectionConfig(collectionId, env) {
 			'RULE-SET,ChinaMedia,DIRECT',
 			'RULE-SET,China,DIRECT',
 			// 为常用的CDN和规则集提供代理
-			'DOMAIN,cdn.jsdmirror.com,🚀 默认代理',
-			'DOMAIN,raw.githubusercontent.com,🚀 默认代理',
+			'DOMAIN-SUFFIX,cdn.jsdmirror.com,🚀 默认代理',
+			'DOMAIN-SUFFIX,raw.githubusercontent.com,🚀 默认代理',
 			'DOMAIN-SUFFIX,cdn.jsdelivr.net,🚀 默认代理',
 			'DOMAIN-SUFFIX,cdnjs.cloudflare.com,🚀 默认代理',
 			'DOMAIN-SUFFIX,gstatic.com,🚀 默认代理',
