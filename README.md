@@ -74,7 +74,7 @@ wrangler login
 
 ### 3. 创建KV命名空间
 ```bash
-# 创建生产环境KV
+# 创建生产环境KV,并记下KV命名空间ID
 wrangler kv namespace create "CLASH_KV"
 ```
 
