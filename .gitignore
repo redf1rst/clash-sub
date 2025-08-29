@@ -174,3 +174,4 @@ proxy_format_check.md
 proxy_analysis_process.md
 *.yaml
 wrangler.jsonc
+anytls_link_format.md
