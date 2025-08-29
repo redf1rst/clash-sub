@@ -24,7 +24,7 @@ export default {
 		}
 
 		if (path === '/api/submerge/check') {
-			return handleSubscriptionCheck(request, env);
+			return handleSubscriptionCheck(request);
 		}
 
 		if (path === '/clash/proxies') {
@@ -110,8 +110,8 @@ async function sortExistingProxies(env) {
 		// 使用与添加节点时相同的排序逻辑，但采用优先级排序
 		proxies.sort((a, b) => {
 			// 提取地区缩写和序号 - 修正正则表达式以匹配实际的节点命名格式
-			// 实际格式: US美国01-IPv4, JP日本02-IPv6 等
-			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{2})-(IPv4|IPv6)$/;
+			// 实际格式: US美国001-IPv4, JP日本002-IPv6 等
+			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{3})-(IPv4|IPv6)$/;
 			const matchA = a.name.match(regionPatternForSort);
 			const matchB = b.name.match(regionPatternForSort);
 
@@ -318,7 +318,7 @@ async function createSubCollection(name, env) {
 		const collections = await getSubCollections(env);
 
 		// 生成唯一ID
-		const id = 'sub_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+		const id = 'sub_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
 
 		// 如果没有提供名称，生成默认名称
 		if (!name || name.trim() === '') {
@@ -449,7 +449,7 @@ async function addSubscriptionToCollection(collectionId, subscriptionUrls, env) 
 		const failedSubscriptions = [];
 
 		// 分批处理订阅，避免超时
-		const BATCH_SIZE = 3; // 每批处理3个订阅
+		const BATCH_SIZE = 3; // 每批处理3个订阅()
 		const batches = [];
 		for (let i = 0; i < urls.length; i += BATCH_SIZE) {
 			batches.push(urls.slice(i, i + BATCH_SIZE));
@@ -924,7 +924,7 @@ async function createProxyCollection(name, env) {
 		const collections = await getProxyCollections(env);
 
 		// 生成唯一ID
-		const id = 'proxy_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+		const id = 'proxy_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
 
 		// 如果没有提供名称，生成默认名称
 		if (!name || name.trim() === '') {
@@ -1247,7 +1247,7 @@ async function addProxyToCollection(collectionId, proxyUrls, region, env) {
 			const suffix = isIPv6 ? '-IPv6' : '-IPv4';
 
 			// 计算序号 - 找到该地区可用的最小序号，填补空缺
-			const regionPattern = new RegExp(`^${regionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d{2})-(IPv4|IPv6)$`);
+			const regionPattern = new RegExp(`^${regionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d{3})-(IPv4|IPv6)$`);
 			const usedNumbers = new Set();
 
 			// 检查现有节点使用的序号
@@ -1275,8 +1275,8 @@ async function addProxyToCollection(collectionId, proxyUrls, region, env) {
 			}
 			usedNumbers.add(nodeNumber);
 
-			// 使用两位数字格式
-			const nodeNumberStr = String(nodeNumber).padStart(2, '0');
+			// 使用三位数字格式
+			const nodeNumberStr = String(nodeNumber).padStart(3, '0');
 			proxyConfig.name = `${regionName}${nodeNumberStr}${suffix}`;
 
 			collection.proxies.push(proxyConfig);
@@ -1287,7 +1287,7 @@ async function addProxyToCollection(collectionId, proxyUrls, region, env) {
 		// 排序节点 - 使用与节点整合相同的排序逻辑
 		collection.proxies.sort((a, b) => {
 			// 提取地区缩写和序号 - 修正正则表达式以匹配实际的节点命名格式
-			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{2})-(IPv4|IPv6)$/;
+			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{3})-(IPv4|IPv6)$/;
 			const matchA = a.name.match(regionPatternForSort);
 			const matchB = b.name.match(regionPatternForSort);
 
@@ -1458,35 +1458,6 @@ async function batchDeleteProxiesFromCollection(collectionId, indexes, env) {
 	}
 }
 
-// 合并两个操作结果
-function combineResults(result1, result2) {
-	try {
-		// 解析两个结果
-		const data1 = typeof result1 === 'string' ? JSON.parse(result1) : result1;
-		const data2 = typeof result2 === 'string' ? JSON.parse(result2) : result2;
-
-		// 如果任一操作失败，返回错误
-		if (data1.error) return result1;
-		if (data2.error) return result2;
-
-		// 合并成功结果
-		const combinedResult = {
-			success: true,
-			successCount: (data1.successCount || 0) + (data2.successCount || 0),
-			duplicateCount: (data1.duplicateCount || 0) + (data2.duplicateCount || 0),
-			addedProxies: [...(data1.addedProxies || []), ...(data2.addedProxies || [])]
-		};
-
-		return new Response(JSON.stringify(combinedResult), {
-			headers: { 'Content-Type': 'application/json' }
-		});
-	} catch (error) {
-		return new Response(JSON.stringify({ error: '合并结果失败: ' + error.message }), {
-			status: 500,
-			headers: { 'Content-Type': 'application/json' }
-		});
-	}
-}
 
 // 添加混合格式节点到节点整合
 async function addMixedProxies(data, env) {
@@ -1843,7 +1814,7 @@ async function addJSONProxiesToCollection(collectionId, proxiesToAdd, region, en
 			const suffix = isIPv6 ? '-IPv6' : '-IPv4';
 
 			// 计算序号 - 找到该地区可用的最小序号，填补空缺
-			const regionPattern = new RegExp(`^${regionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d{2})-(IPv4|IPv6)$`);
+			const regionPattern = new RegExp(`^${regionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d{3})-(IPv4|IPv6)$`);
 			const regionKey = `${regionName}${suffix}`; // 如 "US美国-IPv4"
 
 			// 获取或创建该地区的编号集合
@@ -1881,8 +1852,8 @@ async function addJSONProxiesToCollection(collectionId, proxiesToAdd, region, en
 			}
 			usedNumbers.add(nodeNumber); // 立即添加到集合中，防止重复
 
-			// 使用两位数字格式
-			const nodeNumberStr = String(nodeNumber).padStart(2, '0');
+			// 使用三位数字格式
+			const nodeNumberStr = String(nodeNumber).padStart(3, '0');
 			const newNodeName = `${regionName}${nodeNumberStr}${suffix}`;
 			console.log(`[DEBUG] Assigned number: ${nodeNumber}, final name: ${newNodeName}`);
 
@@ -1897,7 +1868,7 @@ async function addJSONProxiesToCollection(collectionId, proxiesToAdd, region, en
 		// 排序节点 - 使用与addProxyToCollection相同的排序逻辑
 		collection.proxies.sort((a, b) => {
 			// 提取地区缩写和序号 - 修正正则表达式以匹配实际的节点命名格式
-			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{2})-(IPv4|IPv6)$/;
+			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{3})-(IPv4|IPv6)$/;
 			const matchA = a.name.match(regionPatternForSort);
 			const matchB = b.name.match(regionPatternForSort);
 
@@ -2160,7 +2131,7 @@ async function addProxy(data, env) {
 			const suffix = isIPv6 ? '-IPv6' : '-IPv4';
 
 			// 计算序号 - 找到该地区可用的最小序号，填补空缺
-			const regionPattern = new RegExp(`^${regionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d{2})-(IPv4|IPv6)$`);
+			const regionPattern = new RegExp(`^${regionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d{3})-(IPv4|IPv6)$`);
 			const usedNumbers = new Set();
 
 			// 检查现有节点使用的序号
@@ -2188,8 +2159,8 @@ async function addProxy(data, env) {
 			}
 			usedNumbers.add(nodeNumber);
 
-			// 使用两位数字格式
-			const nodeNumberStr = String(nodeNumber).padStart(2, '0');
+			// 使用三位数字格式
+			const nodeNumberStr = String(nodeNumber).padStart(3, '0');
 			proxyConfig.name = `${regionName}${nodeNumberStr}${suffix}`;
 
 			proxies.push(proxyConfig);
@@ -2200,7 +2171,7 @@ async function addProxy(data, env) {
 		// 对节点进行排序：先按地区缩写(A-Z)，再按序号排序
 		proxies.sort((a, b) => {
 			// 提取地区缩写和序号 - 修正正则表达式以匹配实际的节点命名格式
-			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{2})-(IPv4|IPv6)$/;
+			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{3})-(IPv4|IPv6)$/;
 			const matchA = a.name.match(regionPatternForSort);
 			const matchB = b.name.match(regionPatternForSort);
 
@@ -2249,7 +2220,7 @@ async function deleteProxy(index, env) {
 		// 删除后也进行排序，保持一致性
 		proxies.sort((a, b) => {
 			// 提取地区缩写和序号 - 修正正则表达式以匹配实际的节点命名格式
-			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{2})-(IPv4|IPv6)$/;
+			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{3})-(IPv4|IPv6)$/;
 			const matchA = a.name.match(regionPatternForSort);
 			const matchB = b.name.match(regionPatternForSort);
 
@@ -2418,7 +2389,7 @@ async function addJSONProxies(proxiesToAdd, region, env) {
 			const suffix = isIPv6 ? '-IPv6' : '-IPv4';
 
 			// 计算序号
-			const regionPattern = new RegExp(`^${regionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d{2})-(IPv4|IPv6)$`);
+			const regionPattern = new RegExp(`^${regionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d{3})-(IPv4|IPv6)$`);
 			const usedNumbers = new Set();
 
 			// 检查现有节点
@@ -2443,7 +2414,7 @@ async function addJSONProxies(proxiesToAdd, region, env) {
 				nodeNumber++;
 			}
 
-			const nodeNumberStr = String(nodeNumber).padStart(2, '0');
+			const nodeNumberStr = String(nodeNumber).padStart(3, '0');
 			const newNodeName = `${regionName}${nodeNumberStr}${suffix}`;
 
 			// 标准化节点数据 - 使用协议特定的解析函数
@@ -3153,7 +3124,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 		// 对节点进行排序：优先级地区 + 其他地区按字母顺序
 		proxies.sort((a, b) => {
 			// 提取地区缩写和序号 - 修正正则表达式以匹配实际的节点命名格式
-			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{2})-(IPv4|IPv6)$/;
+			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{3})-(IPv4|IPv6)$/;
 			const matchA = a.name.match(regionPatternForSort);
 			const matchB = b.name.match(regionPatternForSort);
 
@@ -4580,7 +4551,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 
 
 // 解析代理URL
-function parseProxyUrl(url, region = null) {
+function parseProxyUrl(url) {
 	try {
 		// 支持vmess, vless, ss, ssr, hysteria, hysteria2, trojan, tuic, socks5, http等协议
 		if (url.startsWith('vmess://')) {
@@ -7410,7 +7381,7 @@ function convertToYAML(obj) {
 }
 
 // 处理单个订阅检测
-async function handleSubscriptionCheck(request, env) {
+async function handleSubscriptionCheck(request) {
 	if (request.method !== 'POST') {
 		return new Response('Method not allowed', { status: 405 });
 	}
@@ -7578,7 +7549,7 @@ function isIPv6Address(address) {
 }
 
 // 格式化server字段，确保IPv6地址格式正确
-function formatServerAddress(server, port) {
+function formatServerAddress(server) {
 	if (!server) return server;
 
 	// 移除可能已存在的方括号
