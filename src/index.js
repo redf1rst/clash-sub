@@ -6102,9 +6102,21 @@ function parseAnyTLS(url) {
 		port: parseInt(parsed.port)
 	};
 
-	// 必需字段
-	if (parsed.password) {
-		config.password = decodeURIComponent(parsed.password);
+	// 必需字段 - password在URL中位于@前，被识别为username
+	if (parsed.username) {
+		config.password = decodeURIComponent(parsed.username);
+	}
+
+	// 支持peer参数作为sni的别名
+	if (params.get('peer')) {
+		config.sni = params.get('peer');
+	} else if (params.get('sni')) {
+		config.sni = params.get('sni');
+	}
+
+	// WebSocket路径支持
+	if (params.get('path')) {
+		config.path = decodeURIComponent(params.get('path'));
 	}
 
 	// 客户端指纹
@@ -6136,11 +6148,6 @@ function parseAnyTLS(url) {
 		config['min-idle-session'] = parseInt(params.get('min-idle-session'));
 	} else {
 		config['min-idle-session'] = 0; // 默认0
-	}
-
-	// SNI配置
-	if (params.get('sni')) {
-		config.sni = params.get('sni');
 	}
 
 	// ALPN配置
@@ -6273,7 +6280,7 @@ function parseLooseJSON(jsonStr) {
 
 			// 步骤5: 为复杂的无引号字符串值添加引号
 			// 处理包含连字符、点号、数字的复杂字符串值
-			processed = processed.replace(/:(\s*)([a-zA-Z0-9][a-zA-Z0-9._-]*[a-zA-Z0-9])\s*([,}])/g, function (match, space, value, ending) {
+			processed = processed.replace(/:(\s*)([a-zA-Z0-9][a-zA-Z0-9._-]*[a-zA-Z0-9])\s*([,}])/g, function (_, space, value, ending) {
 				const trimmedValue = value.trim();
 				// 排除布尔值、null、纯数字、对象、数组
 				if (trimmedValue === 'true' || trimmedValue === 'false' || trimmedValue === 'null' ||
@@ -6288,7 +6295,7 @@ function parseLooseJSON(jsonStr) {
 			processed = processed.replace(/:(\s*)(\d+-\d+)\s*([,}])/g, ':"$2"$3');
 
 			// 步骤7: 处理单个字符的字符串值
-			processed = processed.replace(/:(\s*)([a-zA-Z])\s*([,}])/g, function (match, space, value, ending) {
+			processed = processed.replace(/:(\s*)([a-zA-Z])\s*([,}])/g, function (_, space, value, ending) {
 				if (value === 'true' || value === 'false' || value === 'null') {
 					return ':' + space + value + ending;
 				}
