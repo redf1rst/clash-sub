@@ -3630,7 +3630,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				'IP-CIDR,10.0.0.0/8,Local',
 				'IP-CIDR,17.0.0.0/8,Local',
 				'IP-CIDR,100.64.0.0/10,Local',
-				'IP-CIDR,224.0.0.0/4,Local',
+				'IP-CIDR,224.0.0.0/8,Local',
 				'RULE-SET,LAN,Local',
 				// CN
 				'DOMAIN-SUFFIX,cn,DIRECT',
@@ -4534,7 +4534,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 			'IP-CIDR,10.0.0.0/8,Local',
 			'IP-CIDR,17.0.0.0/8,Local',
 			'IP-CIDR,100.64.0.0/10,Local',
-			'IP-CIDR,224.0.0.0/4,Local',
+			'IP-CIDR,224.0.0.0/8,Local',
 			'RULE-SET,LAN,Local',
 			// CN
 			'DOMAIN-SUFFIX,cn,DIRECT',
