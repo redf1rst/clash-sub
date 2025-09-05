@@ -3176,7 +3176,6 @@ async function generateProxyCollectionConfig(collectionId, env) {
 			'tproxy-port': 7894,
 			'allow-lan': true,
 			'bind-address': '*',
-			ipv6: false,
 			'unified-delay': true,
 			'tcp-concurrent': true,
 			'log-level': 'info',
@@ -3194,6 +3193,72 @@ async function generateProxyCollectionConfig(collectionId, env) {
 			'geodata-loader': 'standard',
 			'geo-auto-update': true,
 			'geo-update-interval': 24,
+
+			// 嗅探配置
+			sniffer: {
+				enable: true,
+				'force-dns-mapping': true,
+				'parse-pure-ip': true,
+				'override-destination': true,
+				sniff: {
+					HTTP: {
+						ports: [80, '8080-8880'],
+						'override-destination': true
+					},
+					TLS: {
+						ports: [443, 8443]
+					},
+					QUIC: {
+						ports: [443, 8443]
+					}
+				},
+				'force-domain': ['+.v2ex.com'],
+				'skip-domain': ['+.baidu.com', 'Mijia.Cloud.com'],
+				'skip-src-address': ['192.168.0.3/32'],
+				'skip-dst-address': ['192.168.0.3/32']
+			},
+
+			// 入站配置
+			// tun : {
+			// 	enable: true,
+			// 	stack: 'mixed',
+			// 	'dns-hijack': ['any:53', 'tcp://any:53'],
+			// 	'auto-route': true,
+			// 	'auto-redirect': true,
+			// 	'auto-detect-interface': true,
+			// 	device: 'utun0',
+			// 	mtu: 1500,
+			// 	'strict-route': true,
+			// 	gso: true,
+			// 	'gso-max-size': 65536,
+			// 	'udp-timeout': 300,
+			// 	'endpoint-independent-nat': false
+			// },
+
+			// DNS模块
+			dns: {
+				enable: true,
+				listen: '[::]:1053',
+				ipv6: true,
+				'respect-rules': true,
+				'enhanced-mode': 'redir-host',
+				'fake-ip-range': '198.18.0.1/16',
+				nameserver: [
+					'https://8.8.8.8/dns-query#disable-ipv6=true',
+					'https://1.1.1.1/dns-query#disable-ipv6=true',
+				],
+				'proxy-server-nameserver': [
+					'https://1.12.12.12/dns-query',
+					'https://223.5.5.5/dns-query',
+				],
+				'nameserver-policy': {
+					// '+.ddnsdomain.xyz': '114.114.114.114',
+					'rule-set:cn_domain': [
+						'https://1.12.12.12/dns-query',
+						'https://223.5.5.5/dns-query',
+					]
+				}
+			},
 
 			// 节点配置
 			proxies: proxies,
@@ -3640,7 +3705,6 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				// 兜底规则
 				'MATCH,节点选择'
 			]
-
 		};
 
 		const yamlContent = convertToYAML(config);
@@ -3715,7 +3779,6 @@ async function generateSubCollectionConfig(collectionId, env) {
 		config['tproxy-port'] = 7894;
 		config['allow-lan'] = true;
 		config['bind-address'] = '*';
-		config.ipv6 = false;
 		config['unified-delay'] = true;
 		config['tcp-concurrent'] = true;
 		config['log-level'] = 'info';
@@ -3759,64 +3822,44 @@ async function generateSubCollectionConfig(collectionId, env) {
 		};
 
 		// 入站配置
-		config.tun = {
-			enable: true,
-			stack: 'mixed',
-			'dns-hijack': ['any:53', 'tcp://any:53'],
-			'auto-route': true,
-			'auto-redirect': true,
-			'auto-detect-interface': true,
-			device: 'utun0',
-			mtu: 1500,
-			'strict-route': true,
-			gso: true,
-			'gso-max-size': 65536,
-			'udp-timeout': 300,
-			'endpoint-independent-nat': false
-		};
+		// config.tun = {
+		// 	enable: true,
+		// 	stack: 'mixed',
+		// 	'dns-hijack': ['any:53', 'tcp://any:53'],
+		// 	'auto-route': true,
+		// 	'auto-redirect': true,
+		// 	'auto-detect-interface': true,
+		// 	device: 'utun0',
+		// 	mtu: 1500,
+		// 	'strict-route': true,
+		// 	gso: true,
+		// 	'gso-max-size': 65536,
+		// 	'udp-timeout': 300,
+		// 	'endpoint-independent-nat': false
+		// };
 
 		// DNS模块
 		config.dns = {
 			enable: true,
-			listen: '0.0.0.0:1053',
-			ipv6: false,
+			listen: '[::]:1053',
+			ipv6: true,
 			'respect-rules': true,
-			'enhanced-mode': 'fake-ip',
-			'fake-ip-range': '28.0.0.1/8',
-			'fake-ip-filter-mode': 'blacklist',
-			'fake-ip-filter': [
-				'rule-set:private_domain,cn_domain',
-				'+.msftconnecttest.com',
-				'+.msftncsi.com',
-				'time.*.com',
-				'+.market.xiaomi.com',
-				'dns.alidns.com',
-				'cloudflare-dns.com',
-				'dns.google',
-				'dns.adguard-dns.com',
-				'dns.nextdns.io',
-				'public.dns.iij.jp',
-				'dns0.eu',
-				'dns.18bit.cn',
-				'2025.dns1.top',
-				'dns.ipv4dns.com'
-			],
-			'default-nameserver': [
-				'223.5.5.5',
-				'223.6.6.6'
+			'enhanced-mode': 'redir-host',
+			'fake-ip-range': '198.18.0.1/16',
+			nameserver: [
+				'https://8.8.8.8/dns-query#disable-ipv6=true',
+				'https://1.1.1.1/dns-query#disable-ipv6=true',
 			],
 			'proxy-server-nameserver': [
+				'https://1.12.12.12/dns-query',
 				'https://223.5.5.5/dns-query',
-				'https://223.6.6.6/dns-query'
-			],
-			nameserver: [
-				'223.5.5.5',
-				'119.29.29.29'
 			],
 			'nameserver-policy': {
-				'+.jp': ['https://public.dns.iij.jp/dns-query#h3=true'],
-				'+.hk': ['quic://dns.nextdns.io'],
-				'+.eu': ['quic://dns0.eu']
+				// '+.ddnsdomain.xyz': '114.114.114.114',
+				'rule-set:cn_domain': [
+					'https://1.12.12.12/dns-query',
+					'https://223.5.5.5/dns-query',
+				]
 			}
 		};
 
