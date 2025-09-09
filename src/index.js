@@ -3295,11 +3295,11 @@ async function generateProxyCollectionConfig(collectionId, env) {
 					proxies: ['DIRECT', '节点选择'],
 					icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Apple.png'
 				},
-				{
-					name: 'Local',
-					type: 'select',
-					proxies: ['DIRECT', '节点选择'],
-				}
+				// {
+				// 	name: 'Local',
+				// 	type: 'select',
+				// 	proxies: ['DIRECT', '节点选择'],
+				// }
 			],
 
 			// 规则提供者配置 - 参照clash.yaml
@@ -3689,14 +3689,15 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				// 'RULE-SET,reject_non_ip_no_drop,REJECT',
 
 				// Local
-				'IP-CIDR,127.0.0.0/8,Local',
-				'IP-CIDR,172.16.0.0/12,Local',
-				'IP-CIDR,192.168.0.0/16,Local',
-				'IP-CIDR,10.0.0.0/8,Local',
-				'IP-CIDR,17.0.0.0/8,Local',
-				'IP-CIDR,100.64.0.0/10,Local',
-				'IP-CIDR,224.0.0.0/8,Local',
-				'RULE-SET,LAN,Local',
+				'IP-CIDR,127.0.0.0/8,DIRECT',
+				'IP-CIDR,172.16.0.0/12,DIRECT',
+				'IP-CIDR,192.168.0.0/16,DIRECT',
+				'IP-CIDR,10.0.0.0/8,DIRECT',
+				'IP-CIDR,17.0.0.0/8,DIRECT',
+				'IP-CIDR,100.64.0.0/10,DIRECT',
+				'IP-CIDR,224.0.0.0/24,DIRECT',
+				//'RULE-SET,LAN,DIRECT',
+
 				// CN
 				'DOMAIN-SUFFIX,cn,DIRECT',
 				'DOMAIN-KEYWORD,-cn,DIRECT',
@@ -4016,11 +4017,11 @@ async function generateSubCollectionConfig(collectionId, env) {
 				proxies: ['DIRECT', '🚀 默认代理'],
 				icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Apple.png'
 			},
-			{
-				name: 'Local',
-				type: 'select',
-				proxies: ['DIRECT', '🚀 默认代理'],
-			},
+			// {
+			// 	name: 'Local',
+			// 	type: 'select',
+			// 	proxies: ['DIRECT', '🚀 默认代理'],
+			// },
 			{
 				name: '♻️ 台湾自动 🇨🇳',
 				type: 'url-test',
@@ -4571,14 +4572,15 @@ async function generateSubCollectionConfig(collectionId, env) {
 			// 'RULE-SET,reject_non_ip_no_drop,REJECT',
 
 			// Local
-			'IP-CIDR,127.0.0.0/8,Local',
-			'IP-CIDR,172.16.0.0/12,Local',
-			'IP-CIDR,192.168.0.0/16,Local',
-			'IP-CIDR,10.0.0.0/8,Local',
-			'IP-CIDR,17.0.0.0/8,Local',
-			'IP-CIDR,100.64.0.0/10,Local',
-			'IP-CIDR,224.0.0.0/8,Local',
-			'RULE-SET,LAN,Local',
+			'IP-CIDR,127.0.0.0/8,DIRECT',
+			'IP-CIDR,172.16.0.0/12,DIRECT',
+			'IP-CIDR,192.168.0.0/16,DIRECT',
+			'IP-CIDR,10.0.0.0/8,DIRECT',
+			'IP-CIDR,17.0.0.0/8,DIRECT',
+			'IP-CIDR,100.64.0.0/10,DIRECT',
+			'IP-CIDR,224.0.0.0/24,DIRECT',
+			//'RULE-SET,LAN,DIRECT',
+
 			// CN
 			'DOMAIN-SUFFIX,cn,DIRECT',
 			'DOMAIN-KEYWORD,-cn,DIRECT',
