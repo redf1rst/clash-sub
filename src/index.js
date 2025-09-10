@@ -908,6 +908,57 @@ async function handleProxyCollectionsAPI(request, env) {
 	return new Response('Method not allowed', { status: 405 });
 }
 
+// 辅助函数：深度比较两个节点是否完全相同
+function areProxiesIdentical(proxy1, proxy2) {
+	// 排除name字段的比较，因为name是自动生成的
+	const p1 = { ...proxy1 };
+	const p2 = { ...proxy2 };
+	delete p1.name;
+	delete p2.name;
+	
+	// 获取所有键
+	const keys1 = Object.keys(p1).sort();
+	const keys2 = Object.keys(p2).sort();
+	
+	// 如果键的数量不同，则不相同
+	if (keys1.length !== keys2.length) {
+		return false;
+	}
+	
+	// 检查是否有相同的键
+	if (keys1.some((key, index) => key !== keys2[index])) {
+		return false;
+	}
+	
+	// 深度比较每个字段的值
+	for (const key of keys1) {
+		const val1 = p1[key];
+		const val2 = p2[key];
+		
+		// 处理不同类型的值
+		if (val1 === val2) {
+			continue;
+		}
+		
+		// 如果值类型不同
+		if (typeof val1 !== typeof val2) {
+			return false;
+		}
+		
+		// 处理对象和数组
+		if (typeof val1 === 'object' && val1 !== null && val2 !== null) {
+			// 简单的JSON字符串比较
+			if (JSON.stringify(val1) !== JSON.stringify(val2)) {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	}
+	
+	return true;
+}
+
 // 获取所有节点集合
 async function getProxyCollections(env) {
 	try {
@@ -1066,9 +1117,9 @@ async function addProxyToCollection(collectionId, proxyUrls, region, env) {
 				continue; // 跳过解析结果不完整的节点
 			}
 
-			// 检查重复节点
+			// 检查重复节点 - 所有字段都相同才认为是重复
 			const isDuplicate = collection.proxies.some(p =>
-				p.server === proxyConfig.server && p.port === proxyConfig.port
+				areProxiesIdentical(p, proxyConfig)
 			);
 
 			if (isDuplicate) {
@@ -1607,9 +1658,11 @@ async function addJSONProxiesToCollection(collectionId, proxiesToAdd, region, en
 			// 格式化server地址
 			const formattedServer = formatServerAddress(proxyData.server.trim());
 
-			// 检查重复节点 - 基于server和port，忽略名称
+			// 检查重复节点 - 所有字段都相同才认为是重复
+			// 先构建完整的节点对象用于比较
+			const tempProxy = normalizeJSONProxy(proxyData, '', formattedServer, port);
 			const isDuplicate = collection.proxies.some(p =>
-				p.server === formattedServer && p.port === port
+				areProxiesIdentical(p, tempProxy)
 			);
 
 			if (isDuplicate) {
@@ -1950,9 +2003,9 @@ async function addProxy(data, env) {
 				continue; // 跳过无效的节点链接
 			}
 
-			// 检查重复节点
+			// 检查重复节点 - 所有字段都相同才认为是重复
 			const isDuplicate = proxies.some(p =>
-				p.server === proxyConfig.server && p.port === proxyConfig.port
+				areProxiesIdentical(p, proxyConfig)
 			);
 
 			if (isDuplicate) {
@@ -2315,6 +2368,8 @@ async function addJSONProxies(proxiesToAdd, region, env) {
 	try {
 		const proxies = JSON.parse(await env.CLASH_KV?.get('proxies') || '[]');
 		const addedProxies = [];
+		let successCount = 0;
+		let duplicateCount = 0;
 
 		// 验证和处理每个节点
 		for (const jsonData of proxiesToAdd) {
@@ -2358,9 +2413,11 @@ async function addJSONProxies(proxiesToAdd, region, env) {
 			// 格式化server地址
 			const formattedServer = formatServerAddress(proxyData.server.trim());
 
-			// 检查重复节点 - 基于server和port，忽略名称
+			// 检查重复节点 - 所有字段都相同才认为是重复
+			// 先构建完整的节点对象用于比较
+			const tempProxy = normalizeJSONProxy(proxyData, '', formattedServer, port);
 			const isDuplicate = proxies.some(p =>
-				p.server === formattedServer && p.port === port
+				areProxiesIdentical(p, tempProxy)
 			);
 
 			if (isDuplicate) {
