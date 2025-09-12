@@ -915,36 +915,36 @@ function areProxiesIdentical(proxy1, proxy2) {
 	const p2 = { ...proxy2 };
 	delete p1.name;
 	delete p2.name;
-	
+
 	// 获取所有键
 	const keys1 = Object.keys(p1).sort();
 	const keys2 = Object.keys(p2).sort();
-	
+
 	// 如果键的数量不同，则不相同
 	if (keys1.length !== keys2.length) {
 		return false;
 	}
-	
+
 	// 检查是否有相同的键
 	if (keys1.some((key, index) => key !== keys2[index])) {
 		return false;
 	}
-	
+
 	// 深度比较每个字段的值
 	for (const key of keys1) {
 		const val1 = p1[key];
 		const val2 = p2[key];
-		
+
 		// 处理不同类型的值
 		if (val1 === val2) {
 			continue;
 		}
-		
+
 		// 如果值类型不同
 		if (typeof val1 !== typeof val2) {
 			return false;
 		}
-		
+
 		// 处理对象和数组
 		if (typeof val1 === 'object' && val1 !== null && val2 !== null) {
 			// 简单的JSON字符串比较
@@ -955,7 +955,7 @@ function areProxiesIdentical(proxy1, proxy2) {
 			return false;
 		}
 	}
-	
+
 	return true;
 }
 
@@ -3686,6 +3686,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				// 自定义优先规则
 				'DOMAIN-SUFFIX,linux.do,Linux DO',
 				'DOMAIN-SUFFIX,anyrouter.top,DIRECT',
+				'DOMAIN-SUFFIX,b4u.qzz.io,DIRECT',
 				'DOMAIN-SUFFIX,cloudflare.com,节点选择',
 				'DOMAIN-SUFFIX,github.com,节点选择',
 				'DOMAIN-SUFFIX,githubusercontent.com,节点选择',
@@ -4569,6 +4570,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 			// 自定义优先规则
 			'DOMAIN-SUFFIX,linux.do,Linux DO',
 			'DOMAIN-SUFFIX,anyrouter.top,DIRECT',
+			'DOMAIN-SUFFIX,b4u.qzz.io,DIRECT',
 			'DOMAIN-SUFFIX,cloudflare.com,🚀 默认代理',
 			'DOMAIN-SUFFIX,github.com,🚀 默认代理',
 			'DOMAIN-SUFFIX,githubusercontent.com,🚀 默认代理',
