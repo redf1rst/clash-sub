@@ -3252,28 +3252,28 @@ async function generateProxyCollectionConfig(collectionId, env) {
 			'geo-update-interval': 24,
 
 			// 嗅探配置
-			sniffer: {
-				enable: true,
-				'force-dns-mapping': true,
-				'parse-pure-ip': true,
-				'override-destination': true,
-				sniff: {
-					HTTP: {
-						ports: [80, '8080-8880'],
-						'override-destination': true
-					},
-					TLS: {
-						ports: [443, 8443]
-					},
-					QUIC: {
-						ports: [443, 8443]
-					}
-				},
-				'force-domain': ['+.v2ex.com'],
-				'skip-domain': ['+.baidu.com', 'Mijia.Cloud.com'],
-				'skip-src-address': ['192.168.0.3/32'],
-				'skip-dst-address': ['192.168.0.3/32']
-			},
+			// sniffer: {
+			// 	enable: true,
+			// 	'force-dns-mapping': true,
+			// 	'parse-pure-ip': true,
+			// 	'override-destination': true,
+			// 	sniff: {
+			// 		HTTP: {
+			// 			ports: [80, '8080-8880'],
+			// 			'override-destination': true
+			// 		},
+			// 		TLS: {
+			// 			ports: [443, 8443]
+			// 		},
+			// 		QUIC: {
+			// 			ports: [443, 8443]
+			// 		}
+			// 	},
+			// 	'force-domain': ['+.v2ex.com'],
+			// 	'skip-domain': ['+.baidu.com', 'Mijia.Cloud.com'],
+			// 	'skip-src-address': ['192.168.0.3/32'],
+			// 	'skip-dst-address': ['192.168.0.3/32']
+			// },
 
 			// 入站配置
 			// tun : {
@@ -3857,28 +3857,28 @@ async function generateSubCollectionConfig(collectionId, env) {
 		config['geo-update-interval'] = 24;
 
 		// 嗅探配置
-		config.sniffer = {
-			enable: true,
-			'force-dns-mapping': true,
-			'parse-pure-ip': true,
-			'override-destination': true,
-			sniff: {
-				HTTP: {
-					ports: [80, '8080-8880'],
-					'override-destination': true
-				},
-				TLS: {
-					ports: [443, 8443]
-				},
-				QUIC: {
-					ports: [443, 8443]
-				}
-			},
-			'force-domain': ['+.v2ex.com'],
-			'skip-domain': ['+.baidu.com', 'Mijia.Cloud.com'],
-			'skip-src-address': ['192.168.0.3/32'],
-			'skip-dst-address': ['192.168.0.3/32']
-		};
+		// config.sniffer = {
+		// 	enable: true,
+		// 	'force-dns-mapping': true,
+		// 	'parse-pure-ip': true,
+		// 	'override-destination': true,
+		// 	sniff: {
+		// 		HTTP: {
+		// 			ports: [80, '8080-8880'],
+		// 			'override-destination': true
+		// 		},
+		// 		TLS: {
+		// 			ports: [443, 8443]
+		// 		},
+		// 		QUIC: {
+		// 			ports: [443, 8443]
+		// 		}
+		// 	},
+		// 	'force-domain': ['+.v2ex.com'],
+		// 	'skip-domain': ['+.baidu.com', 'Mijia.Cloud.com'],
+		// 	'skip-src-address': ['192.168.0.3/32'],
+		// 	'skip-dst-address': ['192.168.0.3/32']
+		// };
 
 		// 入站配置
 		// config.tun = {
