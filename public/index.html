@@ -548,6 +548,32 @@
 				justify-content: center;
 			}
 
+			/* 订阅集合第一行有3个按钮的特殊样式 */
+			#subCollectionList .item-actions-row-1 {
+				display: flex;
+				gap: 6px; /* 稍微缩小间距 */
+			}
+
+			#subCollectionList .item-actions-row-1 .btn {
+				flex: 1;
+				padding: 7px 6px; /* 稍微调整padding */
+				font-size: 0.8em; /* 稍微缩小字体 */
+				min-height: 36px;
+			}
+
+			/* 订阅集合第二行有3个按钮的样式 */
+			#subCollectionList .item-actions-row-2 {
+				display: flex;
+				gap: 6px;
+			}
+
+			#subCollectionList .item-actions-row-2 .btn {
+				flex: 1;
+				padding: 6px 6px; /* 保持紧凑 */
+				font-size: 0.8em;
+				min-height: 32px;
+			}
+
 			/* 操作栏优化 */
 			.action-bar {
 				flex-direction: column;
@@ -2828,11 +2854,11 @@
 				html += '<div class="item-actions-row-1">';
 				html += '<button class="btn clash-import" onclick="importSubCollectionToClash(\'' + collection.id + '\')">导入Clash</button>';
 				html += '<button class="btn" onclick="copySubCollectionLink(\'' + collection.id + '\')">复制链接</button>';
+				html += '<button class="btn" onclick="renameSubCollection(\'' + collection.id + '\')">重命名</button>';
 				html += '</div>';
 				html += '<div class="item-actions-row-2">';
 				html += '<button class="btn" onclick="manageSubCollection(\'' + collection.id + '\')">管理订阅</button>';
 			html += '<button class="btn ' + prefixClass + '" onclick="toggleSubCollectionPrefix(\'' + collection.id + '\')">' + (enablePrefix ? '关闭前缀' : '开启前缀') + '</button>';
-				html += '<button class="btn" onclick="renameSubCollection(\'' + collection.id + '\')">重命名</button>';
 				html += '<button class="btn danger" onclick="deleteSubCollection(\'' + collection.id + '\')">删除</button>';
 				html += '</div>';
 				html += '</div>';
