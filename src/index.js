@@ -1,4 +1,68 @@
 ﻿// Clash订阅生成器 - Cloudflare Worker
+
+// 统一的节点排序函数
+function sortProxiesByRegion(proxies) {
+	proxies.sort((a, b) => {
+		// 提取节点名称前两位国家代码（大小写不敏感）
+		// 只识别符合命名规范的节点：国家代码+中文/数字/特殊字符（非纯英文）
+		const extractCountryCode = (name) => {
+			// 匹配：两个字母开头 + 非英文字母（中文/数字/符号等）
+			const match = name.match(/^([A-Z]{2})(?![a-z])/i);
+			return match ? match[1].toUpperCase() : null;
+		};
+
+		const countryA = extractCountryCode(a.name);
+		const countryB = extractCountryCode(b.name);
+
+		// 如果有一个没有国家代码，没有国家代码的排在最后
+		if (countryA && !countryB) {
+			return -1; // A有国家代码，排在前面
+		}
+		if (!countryA && countryB) {
+			return 1; // B有国家代码，排在前面
+		}
+
+		// 如果两个都没有国家代码，按完整名称字母排序
+		if (!countryA && !countryB) {
+			return a.name.localeCompare(b.name);
+		}
+
+		// 以下是两个都有国家代码的情况
+		// 定义高优先级国家顺序
+		const priorityCountries = ['US', 'JP', 'SG', 'TW', 'KR', 'HK', 'UK', 'DE', 'FR', 'AU'];
+
+		// 获取优先级索引（-1表示不在优先级列表中）
+		const priorityA = priorityCountries.indexOf(countryA);
+		const priorityB = priorityCountries.indexOf(countryB);
+
+		// 情况1: 两个都是高优先级国家
+		if (priorityA !== -1 && priorityB !== -1) {
+			if (priorityA !== priorityB) {
+				return priorityA - priorityB; // 按优先级顺序排序
+			}
+			// 优先级相同，按节点名称字母排序
+			return a.name.localeCompare(b.name);
+		}
+
+		// 情况2: 只有A是高优先级国家
+		if (priorityA !== -1 && priorityB === -1) {
+			return -1; // A排在前面
+		}
+
+		// 情况3: 只有B是高优先级国家
+		if (priorityA === -1 && priorityB !== -1) {
+			return 1; // B排在前面
+		}
+
+		// 情况4: 两个都不是高优先级国家，按国家代码字母排序
+		if (countryA !== countryB) {
+			return countryA.localeCompare(countryB);
+		}
+		// 国家代码相同，按完整名称排序
+		return a.name.localeCompare(b.name);
+	});
+}
+
 export default {
 	async fetch(request, env) {
 		const url = new URL(request.url);
@@ -107,52 +171,8 @@ async function sortExistingProxies(env) {
 			});
 		}
 
-		// 使用与添加节点时相同的排序逻辑，但采用优先级排序
-		proxies.sort((a, b) => {
-			// 提取地区缩写和序号 - 修正正则表达式以匹配实际的节点命名格式
-			// 实际格式: US美国001-IPv4, JP日本002-IPv6 等
-			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{3})-(IPv4|IPv6)$/;
-			const matchA = a.name.match(regionPatternForSort);
-			const matchB = b.name.match(regionPatternForSort);
-
-			if (matchA && matchB) {
-				const regionA = matchA[1]; // 提取地区缩写，如 US, JP
-				const regionB = matchB[1];
-				const numberA = parseInt(matchA[2]); // 提取序号
-				const numberB = parseInt(matchB[2]);
-
-				// 定义优先级地区顺序
-				const priorityRegions = ['US', 'JP', 'TW', 'SG', 'KR', 'HK', 'CA', 'AU', 'FR', 'GB', 'DE'];
-				const priorityA = priorityRegions.indexOf(regionA);
-				const priorityB = priorityRegions.indexOf(regionB);
-
-				// 如果两个都是优先级地区
-				if (priorityA !== -1 && priorityB !== -1) {
-					if (priorityA !== priorityB) {
-						return priorityA - priorityB; // 按优先级顺序排序
-					}
-					return numberA - numberB; // 优先级相同时按序号排序
-				}
-
-				// 如果只有一个是优先级地区
-				if (priorityA !== -1 && priorityB === -1) {
-					return -1; // A 是优先级地区，排在前面
-				}
-				if (priorityA === -1 && priorityB !== -1) {
-					return 1; // B 是优先级地区，排在前面
-				}
-
-				// 如果都不是优先级地区，按地区缩写字母顺序排序
-				if (regionA !== regionB) {
-					return regionA.localeCompare(regionB);
-				}
-				// 地区相同时按序号排序
-				return numberA - numberB;
-			}
-
-			// 如果匹配失败，按名称排序
-			return a.name.localeCompare(b.name);
-		});
+		// 使用统一的排序逻辑
+		sortProxiesByRegion(proxies);
 
 		// 保存排序后的节点
 		await env.CLASH_KV?.put('proxies', JSON.stringify(proxies));
@@ -294,6 +314,8 @@ async function handleSubCollectionsAPI(request, env) {
 				return await activeDetectionForCollection(data.collectionId, data.results, env);
 			case 'batchDeleteSubscription':
 				return await batchDeleteSubscriptionsFromCollection(collectionId, indexes, env);
+			case 'togglePrefix':
+				return await toggleSubCollectionPrefix(collectionId, env);
 			default:
 				return new Response('Invalid action', { status: 400 });
 		}
@@ -339,6 +361,7 @@ async function createSubCollection(name, env) {
 			name: name.trim(),
 			subscriptions: [],
 			subscriptionNames: [],
+			enablePrefix: true, // 默认开启前缀
 			createdAt: Date.now()
 		};
 
@@ -390,6 +413,39 @@ async function renameSubCollection(id, newName, env) {
 		});
 	} catch (error) {
 		return new Response(JSON.stringify({ error: '重命名订阅集合失败' }), {
+			status: 500,
+			headers: { 'Content-Type': 'application/json' }
+		});
+	}
+}
+
+// 切换订阅集合前缀开关
+async function toggleSubCollectionPrefix(collectionId, env) {
+	try {
+		const collections = await getSubCollections(env);
+		const collection = collections.find(c => c.id === collectionId);
+
+		if (!collection) {
+			return new Response(JSON.stringify({ error: '订阅集合不存在' }), {
+				status: 404,
+				headers: { 'Content-Type': 'application/json' }
+			});
+		}
+
+		// 切换前缀开关（如果字段不存在，默认为true，切换后为false）
+		collection.enablePrefix = collection.enablePrefix === false ? true : false;
+
+		await env.CLASH_KV?.put('sub_collections', JSON.stringify(collections));
+
+		return new Response(JSON.stringify({
+			success: true,
+			enablePrefix: collection.enablePrefix,
+			message: collection.enablePrefix ? '已开启订阅名称前缀' : '已关闭订阅名称前缀'
+		}), {
+			headers: { 'Content-Type': 'application/json' }
+		});
+	} catch (error) {
+		return new Response(JSON.stringify({ error: '切换前缀开关失败' }), {
 			status: 500,
 			headers: { 'Content-Type': 'application/json' }
 		});
@@ -900,6 +956,10 @@ async function handleProxyCollectionsAPI(request, env) {
 				return await addJSONProxiesToCollection(collectionId, proxies, data?.region || 'auto', env);
 			case 'addMixedProxy':
 				return await addMixedProxiesToCollection(collectionId, data, env);
+			case 'updateProxyName':
+				return await updateProxyNameInCollection(data.collectionId, data.index, data.newName, env);
+			case 'updateProxyServer':
+				return await updateProxyServerInCollection(data.collectionId, data.index, data.newServer, env);
 			default:
 				return new Response('Invalid action', { status: 400 });
 		}
@@ -1127,7 +1187,7 @@ async function addProxyToCollection(collectionId, proxyUrls, region, env) {
 				continue;
 			}
 
-			// 生成节点名称 - 使用与节点整合相同的逻辑
+			// 生成节点名称 - 链接格式节点统一使用自动命名规则
 			let detectedRegion;
 			if (region === 'auto') {
 				detectedRegion = await detectRegion(proxyConfig.server);
@@ -1139,192 +1199,192 @@ async function addProxyToCollection(collectionId, proxyUrls, region, env) {
 			const regionNames = {
 				// 亚洲
 				'HK': 'HK香港',
-				'TW': 'TW台湾',
-				'JP': 'JP日本',
-				'KR': 'KR韩国',
-				'SG': 'SG新加坡',
-				'MY': 'MY马来西亚',
-				'TH': 'TH泰国',
-				'VN': 'VN越南',
-				'ID': 'ID印尼',
-				'PH': 'PH菲律宾',
-				'IN': 'IN印度',
-				'PK': 'PK巴基斯坦',
-				'BD': 'BD孟加拉',
-				'KH': 'KH柬埔寨',
-				'MM': 'MM缅甸',
-				'LK': 'LK斯里兰卡',
-				'NP': 'NP尼泊尔',
-				'KZ': 'KZ哈萨克斯坦',
-				'UZ': 'UZ乌兹别克斯坦',
+					'TW': 'TW台湾',
+					'JP': 'JP日本',
+					'KR': 'KR韩国',
+					'SG': 'SG新加坡',
+					'MY': 'MY马来西亚',
+					'TH': 'TH泰国',
+					'VN': 'VN越南',
+					'ID': 'ID印尼',
+					'PH': 'PH菲律宾',
+					'IN': 'IN印度',
+					'PK': 'PK巴基斯坦',
+					'BD': 'BD孟加拉',
+					'KH': 'KH柬埔寨',
+					'MM': 'MM缅甸',
+					'LK': 'LK斯里兰卡',
+					'NP': 'NP尼泊尔',
+					'KZ': 'KZ哈萨克斯坦',
+					'UZ': 'UZ乌兹别克斯坦',
 
-				// 美洲
-				'US': 'US美国',
-				'CA': 'CA加拿大',
-				'MX': 'MX墨西哥',
-				'BR': 'BR巴西',
-				'AR': 'AR阿根廷',
-				'CL': 'CL智利',
-				'CO': 'CO哥伦比亚',
-				'PE': 'PE秘鲁',
-				'VE': 'VE委内瑞拉',
-				'EC': 'EC厄瓜多尔',
-				'BO': 'BO玻利维亚',
-				'PY': 'PY巴拉圭',
-				'UY': 'UY乌拉圭',
-				'CR': 'CR哥斯达黎加',
-				'PA': 'PA巴拿马',
-				'CW': 'CW库拉索',
-				'AW': 'AW阿鲁巴',
-				'BZ': 'BZ伯利兹',
-				'GT': 'GT危地马拉',
-				'HN': 'HN洪都拉斯',
-				'NI': 'NI尼加拉瓜',
-				'SV': 'SV萨尔瓦多',
+					// 美洲
+					'US': 'US美国',
+					'CA': 'CA加拿大',
+					'MX': 'MX墨西哥',
+					'BR': 'BR巴西',
+					'AR': 'AR阿根廷',
+					'CL': 'CL智利',
+					'CO': 'CO哥伦比亚',
+					'PE': 'PE秘鲁',
+					'VE': 'VE委内瑞拉',
+					'EC': 'EC厄瓜多尔',
+					'BO': 'BO玻利维亚',
+					'PY': 'PY巴拉圭',
+					'UY': 'UY乌拉圭',
+					'CR': 'CR哥斯达黎加',
+					'PA': 'PA巴拿马',
+					'CW': 'CW库拉索',
+					'AW': 'AW阿鲁巴',
+					'BZ': 'BZ伯利兹',
+					'GT': 'GT危地马拉',
+					'HN': 'HN洪都拉斯',
+					'NI': 'NI尼加拉瓜',
+					'SV': 'SV萨尔瓦多',
 
-				// 欧洲 - 西欧
-				'UK': 'UK英国',
-				'GB': 'GB英国',
-				'FR': 'FR法国',
-				'DE': 'DE德国',
-				'NL': 'NL荷兰',
-				'BE': 'BE比利时',
-				'LU': 'LU卢森堡',
-				'IE': 'IE爱尔兰',
-				'AT': 'AT奥地利',
-				'CH': 'CH瑞士',
-				'LI': 'LI列支敦士登',
+					// 欧洲 - 西欧
+					'UK': 'UK英国',
+					'GB': 'GB英国',
+					'FR': 'FR法国',
+					'DE': 'DE德国',
+					'NL': 'NL荷兰',
+					'BE': 'BE比利时',
+					'LU': 'LU卢森堡',
+					'IE': 'IE爱尔兰',
+					'AT': 'AT奥地利',
+					'CH': 'CH瑞士',
+					'LI': 'LI列支敦士登',
 
-				// 欧洲 - 南欧
-				'IT': 'IT意大利',
-				'ES': 'ES西班牙',
-				'PT': 'PT葡萄牙',
-				'GR': 'GR希腊',
-				'MT': 'MT马耳他',
-				'CY': 'CY塞浦路斯',
-				'AD': 'AD安道尔',
-				'SM': 'SM圣马力诺',
-				'VA': 'VA梵蒂冈',
-				'MC': 'MC摩纳哥',
+					// 欧洲 - 南欧
+					'IT': 'IT意大利',
+					'ES': 'ES西班牙',
+					'PT': 'PT葡萄牙',
+					'GR': 'GR希腊',
+					'MT': 'MT马耳他',
+					'CY': 'CY塞浦路斯',
+					'AD': 'AD安道尔',
+					'SM': 'SM圣马力诺',
+					'VA': 'VA梵蒂冈',
+					'MC': 'MC摩纳哥',
 
-				// 欧洲 - 北欧
-				'SE': 'SE瑞典',
-				'NO': 'NO挪威',
-				'DK': 'DK丹麦',
-				'FI': 'FI芬兰',
-				'IS': 'IS冰岛',
-				'EE': 'EE爱沙尼亚',
-				'LV': 'LV拉脱维亚',
-				'LT': 'LT立陶宛',
+					// 欧洲 - 北欧
+					'SE': 'SE瑞典',
+					'NO': 'NO挪威',
+					'DK': 'DK丹麦',
+					'FI': 'FI芬兰',
+					'IS': 'IS冰岛',
+					'EE': 'EE爱沙尼亚',
+					'LV': 'LV拉脱维亚',
+					'LT': 'LT立陶宛',
 
-				// 欧洲 - 东欧
-				'RU': 'RU俄罗斯',
-				'UA': 'UA乌克兰',
-				'PL': 'PL波兰',
-				'CZ': 'CZ捷克',
-				'SK': 'SK斯洛伐克',
-				'HU': 'HU匈牙利',
-				'RO': 'RO罗马尼亚',
-				'BG': 'BG保加利亚',
-				'BY': 'BY白俄罗斯',
-				'MD': 'MD摩尔多瓦',
+					// 欧洲 - 东欧
+					'RU': 'RU俄罗斯',
+					'UA': 'UA乌克兰',
+					'PL': 'PL波兰',
+					'CZ': 'CZ捷克',
+					'SK': 'SK斯洛伐克',
+					'HU': 'HU匈牙利',
+					'RO': 'RO罗马尼亚',
+					'BG': 'BG保加利亚',
+					'BY': 'BY白俄罗斯',
+					'MD': 'MD摩尔多瓦',
 
-				// 欧洲 - 巴尔干地区
-				'RS': 'RS塞尔维亚',
-				'HR': 'HR克罗地亚',
-				'SI': 'SI斯洛文尼亚',
-				'BA': 'BA波黑',
-				'ME': 'ME黑山',
-				'MK': 'MK北马其顿',
-				'AL': 'AL阿尔巴尼亚',
-				'XK': 'XK科索沃',
+					// 欧洲 - 巴尔干地区
+					'RS': 'RS塞尔维亚',
+					'HR': 'HR克罗地亚',
+					'SI': 'SI斯洛文尼亚',
+					'BA': 'BA波黑',
+					'ME': 'ME黑山',
+					'MK': 'MK北马其顿',
+					'AL': 'AL阿尔巴尼亚',
+					'XK': 'XK科索沃',
 
-				// 欧洲 - 高加索地区
-				'GE': 'GE格鲁吉亚',
-				'AM': 'AM亚美尼亚',
-				'AZ': 'AZ阿塞拜疆',
+					// 欧洲 - 高加索地区
+					'GE': 'GE格鲁吉亚',
+					'AM': 'AM亚美尼亚',
+					'AZ': 'AZ阿塞拜疆',
 
-				// 中东
-				'TR': 'TR土耳其',
-				'AE': 'AE阿联酋',
-				'IL': 'IL以色列',
-				'SA': 'SA沙特',
-				'QA': 'QA卡塔尔',
-				'KW': 'KW科威特',
-				'BH': 'BH巴林',
-				'OM': 'OM阿曼',
-				'JO': 'JO约旦',
-				'LB': 'LB黎巴嫩',
-				'SY': 'SY叙利亚',
-				'IQ': 'IQ伊拉克',
-				'IR': 'IR伊朗',
-				'YE': 'YE也门',
+					// 中东
+					'TR': 'TR土耳其',
+					'AE': 'AE阿联酋',
+					'IL': 'IL以色列',
+					'SA': 'SA沙特',
+					'QA': 'QA卡塔尔',
+					'KW': 'KW科威特',
+					'BH': 'BH巴林',
+					'OM': 'OM阿曼',
+					'JO': 'JO约旦',
+					'LB': 'LB黎巴嫩',
+					'SY': 'SY叙利亚',
+					'IQ': 'IQ伊拉克',
+					'IR': 'IR伊朗',
+					'YE': 'YE也门',
 
-				// 非洲
-				'ZA': 'ZA南非',
-				'EG': 'EG埃及',
-				'NG': 'NG尼日利亚',
-				'KE': 'KE肯尼亚',
-				'ET': 'ET埃塞俄比亚',
-				'GH': 'GH加纳',
-				'DZ': 'DZ阿尔及利亚',
-				'MA': 'MA摩洛哥',
-				'TN': 'TN突尼斯',
-				'LY': 'LY利比亚',
-				'SD': 'SD苏丹',
-				'UG': 'UG乌干达',
-				'ZW': 'ZW津巴布韦',
-				'TZ': 'TZ坦桑尼亚',
-				'AO': 'AO安哥拉',
-				'MZ': 'MZ莫桑比克',
-				'NA': 'NA纳米比亚',
-				'BW': 'BW博茨瓦纳',
-				'MU': 'MU毛里求斯',
-				'SC': 'SC塞舌尔',
+					// 非洲
+					'ZA': 'ZA南非',
+					'EG': 'EG埃及',
+					'NG': 'NG尼日利亚',
+					'KE': 'KE肯尼亚',
+					'ET': 'ET埃塞俄比亚',
+					'GH': 'GH加纳',
+					'DZ': 'DZ阿尔及利亚',
+					'MA': 'MA摩洛哥',
+					'TN': 'TN突尼斯',
+					'LY': 'LY利比亚',
+					'SD': 'SD苏丹',
+					'UG': 'UG乌干达',
+					'ZW': 'ZW津巴布韦',
+					'TZ': 'TZ坦桑尼亚',
+					'AO': 'AO安哥拉',
+					'MZ': 'MZ莫桑比克',
+					'NA': 'NA纳米比亚',
+					'BW': 'BW博茨瓦纳',
+					'MU': 'MU毛里求斯',
+					'SC': 'SC塞舌尔',
 
-				// 大洋洲
-				'AU': 'AU澳洲',
-				'NZ': 'NZ新西兰',
-				'FJ': 'FJ斐济',
-				'PG': 'PG巴新',
-				'NC': 'NC新喀里多尼亚',
+					// 大洋洲
+					'AU': 'AU澳洲',
+					'NZ': 'NZ新西兰',
+					'FJ': 'FJ斐济',
+					'PG': 'PG巴新',
+					'NC': 'NC新喀里多尼亚',
 
-				// 其他
-				'Unknown': 'Unknown未知'
-			};
+					// 其他
+					'Unknown': 'Unknown未知'
+				};
 
-			const regionName = regionNames[detectedRegion] || detectedRegion;
-			const isIPv6 = isIPv6Address(proxyConfig.server);
-			const suffix = isIPv6 ? '-IPv6' : '-IPv4';
+				const regionName = regionNames[detectedRegion] || detectedRegion;
+				const isIPv6 = isIPv6Address(proxyConfig.server);
+				const suffix = isIPv6 ? '-IPv6' : '';
 
-			// 计算序号 - 找到该地区可用的最小序号，填补空缺
-			const regionPattern = new RegExp(`^${regionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d{3})-(IPv4|IPv6)$`);
-			const usedNumbers = new Set();
+				// 计算序号 - 找到该地区可用的最小序号，填补空缺
+				const regionPattern = new RegExp(`^${regionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d{3})(-IPv6)?$`);
+				const usedNumbers = new Set();
 
-			// 检查现有节点使用的序号
-			collection.proxies.forEach(p => {
-				const match = p.name.match(regionPattern);
-				if (match) {
-					const num = parseInt(match[1]);
-					usedNumbers.add(num);
+				// 检查现有节点使用的序号
+				collection.proxies.forEach(p => {
+					const match = p.name.match(regionPattern);
+					if (match) {
+						const num = parseInt(match[1]);
+						usedNumbers.add(num);
+					}
+				});
+
+				// 检查本次添加的节点使用的序号
+				addedProxies.forEach(p => {
+					const match = p.name.match(regionPattern);
+					if (match) {
+						const num = parseInt(match[1]);
+						usedNumbers.add(num);
+					}
+				});
+
+				// 找到最小的可用序号（填补空缺）
+				let nodeNumber = 1;
+				while (usedNumbers.has(nodeNumber)) {
+					nodeNumber++;
 				}
-			});
-
-			// 检查本次添加的节点使用的序号
-			addedProxies.forEach(p => {
-				const match = p.name.match(regionPattern);
-				if (match) {
-					const num = parseInt(match[1]);
-					usedNumbers.add(num);
-				}
-			});
-
-			// 找到最小的可用序号（填补空缺）
-			let nodeNumber = 1;
-			while (usedNumbers.has(nodeNumber)) {
-				nodeNumber++;
-			}
-			usedNumbers.add(nodeNumber);
+				usedNumbers.add(nodeNumber);
 
 			// 使用三位数字格式
 			const nodeNumberStr = String(nodeNumber).padStart(3, '0');
@@ -1335,51 +1395,8 @@ async function addProxyToCollection(collectionId, proxyUrls, region, env) {
 			successCount++;
 		}
 
-		// 排序节点 - 使用与节点整合相同的排序逻辑
-		collection.proxies.sort((a, b) => {
-			// 提取地区缩写和序号 - 修正正则表达式以匹配实际的节点命名格式
-			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{3})-(IPv4|IPv6)$/;
-			const matchA = a.name.match(regionPatternForSort);
-			const matchB = b.name.match(regionPatternForSort);
-
-			if (matchA && matchB) {
-				const regionA = matchA[1];
-				const regionB = matchB[1];
-				const numberA = parseInt(matchA[2]);
-				const numberB = parseInt(matchB[2]);
-
-				// 定义优先级地区顺序
-				const priorityRegions = ['US', 'JP', 'TW', 'SG', 'KR', 'HK', 'CA', 'AU', 'FR', 'GB', 'DE'];
-				const priorityA = priorityRegions.indexOf(regionA);
-				const priorityB = priorityRegions.indexOf(regionB);
-
-				// 如果两个都是优先级地区
-				if (priorityA !== -1 && priorityB !== -1) {
-					if (priorityA !== priorityB) {
-						return priorityA - priorityB; // 按优先级顺序排序
-					}
-					return numberA - numberB; // 优先级相同时按序号排序
-				}
-
-				// 如果只有一个是优先级地区
-				if (priorityA !== -1 && priorityB === -1) {
-					return -1; // A 是优先级地区，排在前面
-				}
-				if (priorityA === -1 && priorityB !== -1) {
-					return 1; // B 是优先级地区，排在前面
-				}
-
-				// 如果两个都不是优先级地区，按字母顺序排序
-				if (regionA !== regionB) {
-					return regionA.localeCompare(regionB);
-				}
-				// 地区相同时按序号排序
-				return numberA - numberB;
-			}
-
-			// 如果匹配失败，按名称排序
-			return a.name.localeCompare(b.name);
-		});
+		// 排序节点 - 使用统一的排序逻辑
+		sortProxiesByRegion(collection.proxies);
 
 		await env.CLASH_KV?.put('proxy_collections', JSON.stringify(collections));
 
@@ -1509,6 +1526,110 @@ async function batchDeleteProxiesFromCollection(collectionId, indexes, env) {
 	}
 }
 
+// 更新节点集合中的节点名称
+async function updateProxyNameInCollection(collectionId, index, newName, env) {
+	try {
+		const collections = await getProxyCollections(env);
+		const collection = collections.find(c => c.id === collectionId);
+
+		if (!collection) {
+			return new Response(JSON.stringify({ error: '节点集合不存在' }), {
+				status: 404,
+				headers: { 'Content-Type': 'application/json' }
+			});
+		}
+
+		// 验证索引
+		if (index < 0 || index >= collection.proxies.length) {
+			return new Response(JSON.stringify({ error: '无效的节点索引' }), {
+				status: 400,
+				headers: { 'Content-Type': 'application/json' }
+			});
+		}
+
+		// 验证新名称
+		if (!newName || newName.trim() === '') {
+			return new Response(JSON.stringify({ error: '节点名称不能为空' }), {
+				status: 400,
+				headers: { 'Content-Type': 'application/json' }
+			});
+		}
+
+		// 更新节点名称
+		collection.proxies[index].name = newName.trim();
+
+		// 保存到KV
+		await env.CLASH_KV?.put('proxy_collections', JSON.stringify(collections));
+
+		return new Response(JSON.stringify({
+			success: true,
+			message: '节点名称更新成功',
+			newName: newName.trim()
+		}), {
+			headers: { 'Content-Type': 'application/json' }
+		});
+	} catch (error) {
+		return new Response(JSON.stringify({ error: '更新节点名称失败' }), {
+			status: 500,
+			headers: { 'Content-Type': 'application/json' }
+		});
+	}
+}
+
+// 更新节点集合中的节点server (IP优选)
+async function updateProxyServerInCollection(collectionId, index, newServer, env) {
+	try {
+		const collections = await getProxyCollections(env);
+		const collection = collections.find(c => c.id === collectionId);
+
+		if (!collection) {
+			return new Response(JSON.stringify({ error: '节点集合不存在' }), {
+				status: 404,
+				headers: { 'Content-Type': 'application/json' }
+			});
+		}
+
+		// 验证索引
+		if (index < 0 || index >= collection.proxies.length) {
+			return new Response(JSON.stringify({ error: '无效的节点索引' }), {
+				status: 400,
+				headers: { 'Content-Type': 'application/json' }
+			});
+		}
+
+		// 验证新server地址
+		if (!newServer || newServer.trim() === '') {
+			return new Response(JSON.stringify({ error: 'Server地址不能为空' }), {
+				status: 400,
+				headers: { 'Content-Type': 'application/json' }
+			});
+		}
+
+		// 格式化server地址(处理IPv6)
+		const formattedServer = formatServerAddress(newServer.trim());
+
+		// 更新节点server
+		collection.proxies[index].server = formattedServer;
+
+		// 保存到KV
+		await env.CLASH_KV?.put('proxy_collections', JSON.stringify(collections));
+
+		return new Response(JSON.stringify({
+			success: true,
+			message: 'Server地址更新成功',
+			newServer: formattedServer
+		}), {
+			headers: { 'Content-Type': 'application/json' }
+		});
+	} catch (error) {
+		return new Response(JSON.stringify({ error: '更新Server地址失败' }), {
+			status: 500,
+			headers: { 'Content-Type': 'application/json' }
+		});
+	}
+}
+
+
 
 // 添加混合格式节点到节点整合
 async function addMixedProxies(data, env) {
@@ -1631,6 +1752,30 @@ async function addJSONProxiesToCollection(collectionId, proxiesToAdd, region, en
 		// 验证和处理每个节点
 		for (const jsonData of proxiesToAdd) {
 			let proxyData = jsonData;
+
+			// ���ַ���(�� YAML ��һ�� "- { ... }" ��ʽ)�����Խ���
+			if (typeof jsonData === 'string') {
+				try {
+					let inline = jsonData.trim();
+					if (inline.startsWith('-')) {
+						inline = inline.replace(/^\-\s*/, '');
+					}
+					// Ϊ name ֵ�����ԣ�ʹ�ø���ֵ�к���ַ���/CJKֵ�ܹ������
+					inline = inline.replace(/(\bname\s*:\s*)([^,}]+)/, function (_, p1, v) {
+						const t = v.trim();
+						if (t.startsWith('"') || t.startsWith('\'')) return p1 + t;
+						return p1 + '"' + t.replace(/"/g, '\\"') + '"';
+					});
+					proxyData = parseLooseJSON(inline);
+				} catch (parseError) {
+					return new Response(JSON.stringify({
+						error: `JSON����ʧ��: ${parseError.message}`
+					}), {
+						status: 400,
+						headers: { 'Content-Type': 'application/json' }
+					});
+				}
+			}
 
 			// 如果是无效JSON，尝试宽松解析
 			if (jsonData._invalid) {
@@ -1864,10 +2009,10 @@ async function addJSONProxiesToCollection(collectionId, proxiesToAdd, region, en
 
 			const regionName = regionNames[detectedRegion] || detectedRegion;
 			const isIPv6 = isIPv6Address(formattedServer);
-			const suffix = isIPv6 ? '-IPv6' : '-IPv4';
+			const suffix = isIPv6 ? '-IPv6' : '';
 
 			// 计算序号 - 找到该地区可用的最小序号，填补空缺
-			const regionPattern = new RegExp(`^${regionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d{3})-(IPv4|IPv6)$`);
+			const regionPattern = new RegExp(`^${regionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d{3})(-IPv6)?$`);
 			const regionKey = `${regionName}${suffix}`; // 如 "US美国-IPv4"
 
 			// 获取或创建该地区的编号集合
@@ -1905,64 +2050,51 @@ async function addJSONProxiesToCollection(collectionId, proxiesToAdd, region, en
 			}
 			usedNumbers.add(nodeNumber); // 立即添加到集合中，防止重复
 
-			// 使用三位数字格式
-			const nodeNumberStr = String(nodeNumber).padStart(3, '0');
-			const newNodeName = `${regionName}${nodeNumberStr}${suffix}`;
-			console.log(`[DEBUG] Assigned number: ${nodeNumber}, final name: ${newNodeName}`);
+			// JSON格式节点：优先使用原始名称，如果重复则智能处理编号
+			// 检查原始名称是否以三位数字结尾
+			const match = proxyData.name.match(/^(.+?)(\d{3})$/);
+			let baseName, hasThreeDigits;
+
+			if (match) {
+				// 名称末尾是三位数字，例如 "香港节点001"
+				baseName = match[1];  // "香港节点"
+				hasThreeDigits = true;
+			} else {
+				// 名称末尾不是三位数字
+				baseName = proxyData.name;
+				hasThreeDigits = false;
+			}
+
+			// 从001开始遍历，找到第一个可用编号
+			let counter = 1;
+			let finalName = proxyData.name;  // 先尝试原始名称
+			let isNameDuplicate = true;
+
+			while (isNameDuplicate) {
+				// 检查名称是否重复
+				isNameDuplicate = collection.proxies.some(p => p.name === finalName) ||
+				                  addedProxies.some(p => p.name === finalName);
+
+				if (isNameDuplicate) {
+					const counterStr = String(counter).padStart(3, '0');
+					// 无论末尾是否有三位数字，都直接拼接数字（如果有则替换，如果没有则添加）
+					finalName = `${baseName}${counterStr}`;
+					counter++;
+				}
+			}
+
+			console.log(`[DEBUG] JSON node original name: ${proxyData.name}, final name: ${finalName}`);
 
 			// 标准化节点数据 - 使用协议特定的解析函数
-			const normalizedProxy = normalizeJSONProxy(proxyData, newNodeName, formattedServer, port);
+			const normalizedProxy = normalizeJSONProxy(proxyData, finalName, formattedServer, port);
 
 			collection.proxies.push(normalizedProxy);
 			addedProxies.push(normalizedProxy);
 			successCount++;
 		}
 
-		// 排序节点 - 使用与addProxyToCollection相同的排序逻辑
-		collection.proxies.sort((a, b) => {
-			// 提取地区缩写和序号 - 修正正则表达式以匹配实际的节点命名格式
-			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{3})-(IPv4|IPv6)$/;
-			const matchA = a.name.match(regionPatternForSort);
-			const matchB = b.name.match(regionPatternForSort);
-
-			if (matchA && matchB) {
-				const regionA = matchA[1];
-				const regionB = matchB[1];
-				const numberA = parseInt(matchA[2]);
-				const numberB = parseInt(matchB[2]);
-
-				// 定义优先级地区顺序
-				const priorityRegions = ['US', 'JP', 'TW', 'SG', 'KR', 'HK', 'CA', 'AU', 'FR', 'GB', 'DE'];
-				const priorityA = priorityRegions.indexOf(regionA);
-				const priorityB = priorityRegions.indexOf(regionB);
-
-				// 如果两个都是优先级地区
-				if (priorityA !== -1 && priorityB !== -1) {
-					if (priorityA !== priorityB) {
-						return priorityA - priorityB; // 按优先级顺序排序
-					}
-					return numberA - numberB; // 优先级相同时按序号排序
-				}
-
-				// 如果只有一个是优先级地区
-				if (priorityA !== -1 && priorityB === -1) {
-					return -1; // A 是优先级地区，排在前面
-				}
-				if (priorityA === -1 && priorityB !== -1) {
-					return 1; // B 是优先级地区，排在前面
-				}
-
-				// 如果两个都不是优先级地区，按字母顺序排序
-				if (regionA !== regionB) {
-					return regionA.localeCompare(regionB);
-				}
-				// 地区相同时按序号排序
-				return numberA - numberB;
-			}
-
-			// 如果匹配失败，按名称排序
-			return a.name.localeCompare(b.name);
-		});
+		// 排序节点 - 使用统一的排序逻辑
+		sortProxiesByRegion(collection.proxies);
 
 		await env.CLASH_KV?.put('proxy_collections', JSON.stringify(collections));
 
@@ -2013,7 +2145,7 @@ async function addProxy(data, env) {
 				continue;
 			}
 
-			// 生成节点名称
+			// 生成节点名称 - 链接格式节点统一使用自动命名规则
 			let detectedRegion;
 			if (region === 'auto') {
 				detectedRegion = await detectRegion(proxyConfig.server);
@@ -2181,10 +2313,10 @@ async function addProxy(data, env) {
 
 			const regionName = regionNames[detectedRegion] || detectedRegion;
 			const isIPv6 = isIPv6Address(proxyConfig.server);
-			const suffix = isIPv6 ? '-IPv6' : '-IPv4';
+			const suffix = isIPv6 ? '-IPv6' : '';
 
 			// 计算序号 - 找到该地区可用的最小序号，填补空缺
-			const regionPattern = new RegExp(`^${regionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d{3})-(IPv4|IPv6)$`);
+			const regionPattern = new RegExp(`^${regionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d{3})(-IPv6)?$`);
 			const usedNumbers = new Set();
 
 			// 检查现有节点使用的序号
@@ -2221,30 +2353,8 @@ async function addProxy(data, env) {
 			successCount++;
 		}
 
-		// 对节点进行排序：先按地区缩写(A-Z)，再按序号排序
-		proxies.sort((a, b) => {
-			// 提取地区缩写和序号 - 修正正则表达式以匹配实际的节点命名格式
-			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{3})-(IPv4|IPv6)$/;
-			const matchA = a.name.match(regionPatternForSort);
-			const matchB = b.name.match(regionPatternForSort);
-
-			if (matchA && matchB) {
-				const regionA = matchA[1];
-				const regionB = matchB[1];
-				const numberA = parseInt(matchA[2]);
-				const numberB = parseInt(matchB[2]);
-
-				// 首先按地区缩写排序
-				if (regionA !== regionB) {
-					return regionA.localeCompare(regionB);
-				}
-				// 地区相同时按序号排序
-				return numberA - numberB;
-			}
-
-			// 如果匹配失败，按名称排序
-			return a.name.localeCompare(b.name);
-		});
+		// 对节点进行排序 - 使用统一的排序逻辑
+		sortProxiesByRegion(proxies);
 
 		await env.CLASH_KV?.put('proxies', JSON.stringify(proxies));
 
@@ -2271,29 +2381,7 @@ async function deleteProxy(index, env) {
 		proxies.splice(index, 1);
 
 		// 删除后也进行排序，保持一致性
-		proxies.sort((a, b) => {
-			// 提取地区缩写和序号 - 修正正则表达式以匹配实际的节点命名格式
-			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{3})-(IPv4|IPv6)$/;
-			const matchA = a.name.match(regionPatternForSort);
-			const matchB = b.name.match(regionPatternForSort);
-
-			if (matchA && matchB) {
-				const regionA = matchA[1];
-				const regionB = matchB[1];
-				const numberA = parseInt(matchA[2]);
-				const numberB = parseInt(matchB[2]);
-
-				// 首先按地区缩写排序
-				if (regionA !== regionB) {
-					return regionA.localeCompare(regionB);
-				}
-				// 地区相同时按序号排序
-				return numberA - numberB;
-			}
-
-			// 如果匹配失败，按名称排序
-			return a.name.localeCompare(b.name);
-		});
+		sortProxiesByRegion(proxies);
 
 		await env.CLASH_KV?.put('proxies', JSON.stringify(proxies));
 
@@ -2443,10 +2531,10 @@ async function addJSONProxies(proxiesToAdd, region, env) {
 
 			const regionName = regionNames[detectedRegion] || detectedRegion;
 			const isIPv6 = isIPv6Address(formattedServer);
-			const suffix = isIPv6 ? '-IPv6' : '-IPv4';
+			const suffix = isIPv6 ? '-IPv6' : '';
 
 			// 计算序号
-			const regionPattern = new RegExp(`^${regionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d{3})-(IPv4|IPv6)$`);
+			const regionPattern = new RegExp(`^${regionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d{3})(-IPv6)?$`);
 			const usedNumbers = new Set();
 
 			// 检查现有节点
@@ -2465,17 +2553,41 @@ async function addJSONProxies(proxiesToAdd, region, env) {
 				}
 			});
 
-			// 找到可用序号
-			let nodeNumber = 1;
-			while (usedNumbers.has(nodeNumber)) {
-				nodeNumber++;
+			// JSON格式节点：优先使用原始名称，如果重复则智能处理编号
+			// 检查原始名称是否以三位数字结尾
+			const matchName = proxyData.name.match(/^(.+?)(\d{3})$/);
+			let baseName, hasThreeDigits;
+
+			if (matchName) {
+				// 名称末尾是三位数字，例如 "香港节点001"
+				baseName = matchName[1];  // "香港节点"
+				hasThreeDigits = true;
+			} else {
+				// 名称末尾不是三位数字
+				baseName = proxyData.name;
+				hasThreeDigits = false;
 			}
 
-			const nodeNumberStr = String(nodeNumber).padStart(3, '0');
-			const newNodeName = `${regionName}${nodeNumberStr}${suffix}`;
+			// 从001开始遍历，找到第一个可用编号
+			let counter = 1;
+			let finalName = proxyData.name;  // 先尝试原始名称
+			let isNameDuplicate = true;
+
+			while (isNameDuplicate) {
+				// 检查名称是否重复
+				isNameDuplicate = proxies.some(p => p.name === finalName) ||
+				                  addedProxies.some(p => p.name === finalName);
+
+				if (isNameDuplicate) {
+					const counterStr = String(counter).padStart(3, '0');
+					// 无论末尾是否有三位数字，都直接拼接数字（如果有则替换，如果没有则添加）
+					finalName = `${baseName}${counterStr}`;
+					counter++;
+				}
+			}
 
 			// 标准化节点数据 - 使用协议特定的解析函数
-			const normalizedProxy = normalizeJSONProxy(proxyData, newNodeName, formattedServer, port);
+			const normalizedProxy = normalizeJSONProxy(proxyData, finalName, formattedServer, port);
 
 			proxies.push(normalizedProxy);
 			addedProxies.push(normalizedProxy);
@@ -3178,78 +3290,35 @@ async function generateProxyCollectionConfig(collectionId, env) {
 			return new Response('节点集合为空', { status: 400 });
 		}
 
-		// 对节点进行排序：优先级地区 + 其他地区按字母顺序
-		proxies.sort((a, b) => {
-			// 提取地区缩写和序号 - 修正正则表达式以匹配实际的节点命名格式
-			const regionPatternForSort = /^([A-Z]{2})[^0-9]*?(\d{3})-(IPv4|IPv6)$/;
-			const matchA = a.name.match(regionPatternForSort);
-			const matchB = b.name.match(regionPatternForSort);
-
-			if (matchA && matchB) {
-				const regionA = matchA[1];
-				const regionB = matchB[1];
-				const numberA = parseInt(matchA[2]);
-				const numberB = parseInt(matchB[2]);
-
-				// 定义优先级地区顺序
-				const priorityRegions = ['US', 'JP', 'TW', 'SG', 'KR', 'HK', 'CA', 'AU', 'FR', 'GB', 'DE'];
-				const priorityA = priorityRegions.indexOf(regionA);
-				const priorityB = priorityRegions.indexOf(regionB);
-
-				// 如果两个都是优先级地区
-				if (priorityA !== -1 && priorityB !== -1) {
-					if (priorityA !== priorityB) {
-						return priorityA - priorityB; // 按优先级顺序排序
-					}
-					return numberA - numberB; // 优先级相同时按序号排序
-				}
-
-				// 如果只有一个是优先级地区
-				if (priorityA !== -1 && priorityB === -1) {
-					return -1; // A 是优先级地区，排在前面
-				}
-				if (priorityA === -1 && priorityB !== -1) {
-					return 1; // B 是优先级地区，排在前面
-				}
-
-				// 如果两个都不是优先级地区，按字母顺序排序
-				if (regionA !== regionB) {
-					return regionA.localeCompare(regionB);
-				}
-				// 地区相同时按序号排序
-				return numberA - numberB;
-			}
-
-			// 如果匹配失败，按名称排序
-			return a.name.localeCompare(b.name);
-		});
+		// 对节点进行排序 - 使用统一的排序逻辑
+		sortProxiesByRegion(proxies);
 
 		const config = {
-			//proxysub
-			port: 7890,
-			'socks-port': 7891,
-			'redir-port': 7892,
-			'mixed-port': 7897,
-			'tproxy-port': 7894,
-			'allow-lan': true,
-			'bind-address': '*',
-			'unified-delay': true,
-			'tcp-concurrent': true,
-			'log-level': 'info',
-			'find-process-mode': 'off',
-			'global-client-fingerprint': 'chrome',
-			'keep-alive-idle': 600,
-			'keep-alive-interval': 15,
-			'disable-keep-alive': false,
-			profile: {
-				'store-selected': true,
-				'store-fake-ip': true
-			},
-			mode: 'rule',
-			'geodata-mode': false,
-			'geodata-loader': 'standard',
-			'geo-auto-update': true,
-			'geo-update-interval': 24,
+			// proxysub-节点集合
+			// port: 7890,
+			// 'socks-port': 7891,
+			// 'redir-port': 7892,
+			// 'mixed-port': 7897,
+			// 'tproxy-port': 7894,
+			// 'allow-lan': true,
+			// 'bind-address': '*',
+			// 'unified-delay': true,
+			// 'tcp-concurrent': true,
+			// 'log-level': 'info',
+			// 'find-process-mode': 'off',
+			// 'global-client-fingerprint': 'chrome',
+			// 'keep-alive-idle': 600,
+			// 'keep-alive-interval': 15,
+			// 'disable-keep-alive': false,
+			// profile: {
+			// 	'store-selected': true,
+			// 	'store-fake-ip': true
+			// },
+			// mode: 'rule',
+			// 'geodata-mode': false,
+			// 'geodata-loader': 'standard',
+			// 'geo-auto-update': true,
+			// 'geo-update-interval': 24,
 
 			// 嗅探配置
 			// sniffer: {
@@ -3305,14 +3374,14 @@ async function generateProxyCollectionConfig(collectionId, env) {
 					'https://1.1.1.1/dns-query#disable-ipv6=true',
 				],
 				'proxy-server-nameserver': [
-					'https://1.12.12.12/dns-query',
 					'https://223.5.5.5/dns-query',
+					'https://1.12.12.12/dns-query',
 				],
 				'nameserver-policy': {
 					// '+.ddnsdomain.xyz': '114.114.114.114',
 					'rule-set:cn_domain': [
-						'https://1.12.12.12/dns-query',
 						'https://223.5.5.5/dns-query',
+						'https://1.12.12.12/dns-query',
 					]
 				}
 			},
@@ -3685,8 +3754,11 @@ async function generateProxyCollectionConfig(collectionId, env) {
 			rules: [
 				// 自定义优先规则
 				'DOMAIN-SUFFIX,linux.do,Linux DO',
+				'DOMAIN-SUFFIX,idcflare.com,Linux DO',
 				'DOMAIN-SUFFIX,anyrouter.top,DIRECT',
+				'DOMAIN-SUFFIX,elysia.h-e.top,DIRECT',
 				'DOMAIN-SUFFIX,b4u.qzz.io,DIRECT',
+				'DOMAIN-SUFFIX,leaflow.net,DIRECT',
 				'DOMAIN-SUFFIX,cloudflare.com,节点选择',
 				'DOMAIN-SUFFIX,github.com,节点选择',
 				'DOMAIN-SUFFIX,githubusercontent.com,节点选择',
@@ -3831,30 +3903,30 @@ async function generateSubCollectionConfig(collectionId, env) {
 		const config = {};
 
 		// 全局规则
-		config.port = 7890;
-		config['socks-port'] = 7891;
-		config['redir-port'] = 7892;
-		config['mixed-port'] = 7897;
-		config['tproxy-port'] = 7894;
-		config['allow-lan'] = true;
-		config['bind-address'] = '*';
-		config['unified-delay'] = true;
-		config['tcp-concurrent'] = true;
-		config['log-level'] = 'info';
-		config['find-process-mode'] = 'off';
-		config['global-client-fingerprint'] = 'chrome';
-		config['keep-alive-idle'] = 600;
-		config['keep-alive-interval'] = 15;
-		config['disable-keep-alive'] = false;
-		config.profile = {
-			'store-selected': true,
-			'store-fake-ip': true
-		};
-		config.mode = 'rule';
-		config['geodata-mode'] = false;
-		config['geodata-loader'] = 'standard';
-		config['geo-auto-update'] = true;
-		config['geo-update-interval'] = 24;
+		// config.port = 7890;
+		// config['socks-port'] = 7891;
+		// config['redir-port'] = 7892;
+		// config['mixed-port'] = 7897;
+		// config['tproxy-port'] = 7894;
+		// config['allow-lan'] = true;
+		// config['bind-address'] = '*';
+		// config['unified-delay'] = true;
+		// config['tcp-concurrent'] = true;
+		// config['log-level'] = 'info';
+		// config['find-process-mode'] = 'off';
+		// config['global-client-fingerprint'] = 'chrome';
+		// config['keep-alive-idle'] = 600;
+		// config['keep-alive-interval'] = 15;
+		// config['disable-keep-alive'] = false;
+		// config.profile = {
+		// 	'store-selected': true,
+		// 	'store-fake-ip': true
+		// };
+		// config.mode = 'rule';
+		// config['geodata-mode'] = false;
+		// config['geodata-loader'] = 'standard';
+		// config['geo-auto-update'] = true;
+		// config['geo-update-interval'] = 24;
 
 		// 嗅探配置
 		// config.sniffer = {
@@ -3910,14 +3982,14 @@ async function generateSubCollectionConfig(collectionId, env) {
 				'https://1.1.1.1/dns-query#disable-ipv6=true',
 			],
 			'proxy-server-nameserver': [
-				'https://1.12.12.12/dns-query',
 				'https://223.5.5.5/dns-query',
+				'https://1.12.12.12/dns-query',
 			],
 			'nameserver-policy': {
 				// '+.ddnsdomain.xyz': '114.114.114.114',
 				'rule-set:cn_domain': [
-					'https://1.12.12.12/dns-query',
 					'https://223.5.5.5/dns-query',
+					'https://1.12.12.12/dns-query',
 				]
 			}
 		};
@@ -3977,7 +4049,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 				const providerName = generateSimpleProviderName(baseName, usedProviderNames);
 				usedProviderNames.push(providerName);
 
-				config['proxy-providers'][providerName] = {
+				const providerConfig = {
 					url: sub,
 					type: 'http',
 					interval: 3600,
@@ -3988,6 +4060,15 @@ async function generateSubCollectionConfig(collectionId, env) {
 					},
 					proxy: 'DIRECT'
 				};
+
+				// 根据集合设置决定是否添加前缀
+				if (collection.enablePrefix !== false) {
+					providerConfig.override = {
+						'additional-prefix': `[${providerName}]`
+					};
+				}
+
+				config['proxy-providers'][providerName] = providerConfig;
 			});
 		}
 
@@ -3997,83 +4078,90 @@ async function generateSubCollectionConfig(collectionId, env) {
 				name: '🚀 默认代理',
 				type: 'select',
 				proxies: [
-					'♻️ 美国自动 🇺🇲',
-					'♻️ 日本自动 🇯🇵',
-					'♻️ 新加坡自动 🇸🇬',
-					'♻️ 台湾自动 🇨🇳',
-					'♻️ 韩国自动 🇰🇷',
-					'♻️ 香港自动 🇭🇰',
-					'♻️ 法国自动 🇫🇷',
-					'♻️ 英国自动 🇬🇧',
-					'♻️ 澳洲自动 🇦🇺',
-					'♻️ 德国自动 🇩🇪',
+					'🌐 全部节点',
 					'♻️ 自动选择',
+					'♻️ 美国自动',
+					'♻️ 日本自动',
+					'♻️ 新加坡自动',
+					'♻️ 台湾自动',
+					'♻️ 韩国自动',
+					'♻️ 香港自动',
+					// '♻️ 法国自动 🇫🇷',
+					// '♻️ 英国自动 🇬🇧',
+					// '♻️ 澳洲自动 🇦🇺',
+					// '♻️ 德国自动 🇩🇪',
 					'🇺🇲 美国节点',
 					'🇯🇵 日本节点',
-					'🇨🇳 台湾节点',
 					'🇸🇬 新加坡节点',
+					'🇨🇳 台湾节点',
 					'🇰🇷 韩国节点',
 					'🇭🇰 香港节点',
-					'🇬🇧 英国节点',
-					'🇫🇷 法国节点',
-					'🇮🇳 印度节点',
-					'🇦🇺 澳洲节点',
-					'🇩🇪 德国节点',
-					'🌐 全部节点',
+					// '🇬🇧 英国节点',
+					// '🇫🇷 法国节点',
+					// '🇮🇳 印度节点',
+					// '🇦🇺 澳洲节点',
+					// '🇩🇪 德国节点',
 					'DIRECT'
 				],
 				icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Proxy.png'
+			},
+			{
+				name: '🌐 全部节点',
+				type: 'select',
+				'include-all': true,
+				'exclude-filter': '^(?=.*((?i)10x|6x|过滤|客户端|不要|付款|如果|群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|建议|备用|作者|加入|\\\\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\\\\b|(\\\\d{4}-\\\\d{2}-\\\\d{2}|\\\\d+G))).*$'
 			},
 			{
 				name: 'AI服务',
 				type: 'select',
 				proxies: [
 					'🚀 默认代理',
-					'♻️ 美国自动 🇺🇲',
-					'♻️ 日本自动 🇯🇵',
-					'♻️ 台湾自动 🇨🇳',
-					'♻️ 新加坡自动 🇸🇬',
-					'♻️ 韩国自动 🇰🇷',
-					'♻️ 英国自动 🇬🇧',
-					'♻️ 法国自动 🇫🇷',
-					'♻️ 澳洲自动 🇦🇺',
-					'♻️ 德国自动 🇩🇪',
+					'🌐 全部节点',
 					'♻️ 自动选择',
+					'♻️ 美国自动',
+					'♻️ 日本自动',
+					'♻️ 新加坡自动',
+					'♻️ 台湾自动',
+					'♻️ 韩国自动',
+					// '♻️ 英国自动 🇬🇧',
+					// '♻️ 法国自动 🇫🇷',
+					// '♻️ 澳洲自动 🇦🇺',
+					// '♻️ 德国自动 🇩🇪',
 					'🇺🇲 美国节点',
 					'🇯🇵 日本节点',
-					'🇨🇳 台湾节点',
 					'🇸🇬 新加坡节点',
+					'🇨🇳 台湾节点',
 					'🇰🇷 韩国节点',
-					'🇬🇧 英国节点',
-					'🇫🇷 法国节点',
-					'🇮🇳 印度节点',
-					'🇦🇺 澳洲节点',
-					'🇩🇪 德国节点',
-					'🌐 全部节点',
+					// '🇬🇧 英国节点',
+					// '🇫🇷 法国节点',
+					// '🇮🇳 印度节点',
+					// '🇦🇺 澳洲节点',
+					// '🇩🇪 德国节点',
+
 					'DIRECT'
 				],
 				icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ChatGPT.png'
 			},
 			{
 				name: 'Linux DO',
+				icon: 'https://github.com/redf1rst/clash-sub/blob/main/img/linux-do.png?raw=true',
 				type: 'select',
 				proxies: [
 					'DIRECT',
 					'🚀 默认代理'
-				],
-				icon: 'https://github.com/redf1rst/clash-sub/blob/main/img/linux-do.png?raw=true'
+				]
 			},
 			{
 				name: '微软服务',
+				icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Microsoft.png',
 				type: 'select',
-				proxies: ['AI服务', 'DIRECT'],
-				icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Microsoft.png'
+				proxies: ['AI服务', 'DIRECT']
 			},
 			{
 				name: '苹果服务',
+				icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Apple.png',
 				type: 'select',
-				proxies: ['DIRECT', '🚀 默认代理'],
-				icon: 'https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Apple.png'
+				proxies: ['DIRECT', '🚀 默认代理']
 			},
 			// {
 			// 	name: 'Local',
@@ -4081,31 +4169,8 @@ async function generateSubCollectionConfig(collectionId, env) {
 			// 	proxies: ['DIRECT', '🚀 默认代理'],
 			// },
 			{
-				name: '♻️ 台湾自动 🇨🇳',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 80,
-				interval: 150,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇹🇼|台湾|台北|新北|高雄|\\\\b(TW|Taiwan|Tai wan)\\\\b)).*$'
-			},
-			{
-				name: '♻️ 日本自动 🇯🇵',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 80,
-				interval: 120,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇯🇵|日本|东京|大阪|京都|名古屋|埼玉|\\\\b(JP|Japan)\\\\b)).*$'
-			},
-			{
-				name: '♻️ 新加坡自动 🇸🇬',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 80,
-				interval: 120,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇸🇬|新加坡|新加坡|\\\\b(SG|Singapore)\\\\b)).*$'
-			},
-			{
-				name: '♻️ 美国自动 🇺🇲',
+				name: '♻️ 美国自动',
+				icon: 'https://fastly.jsdelivr.net/gh/clash-verge-rev/clash-verge-rev.github.io@main/docs/assets/icons/flags/us.svg',
 				type: 'url-test',
 				'include-all': true,
 				tolerance: 80,
@@ -4113,7 +4178,35 @@ async function generateSubCollectionConfig(collectionId, env) {
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|\\\\b(US|United States|America)\\\\b)).*$'
 			},
 			{
-				name: '♻️ 韩国自动 🇰🇷',
+				name: '♻️ 日本自动',
+				icon: 'https://fastly.jsdelivr.net/gh/clash-verge-rev/clash-verge-rev.github.io@main/docs/assets/icons/flags/jp.svg',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 80,
+				interval: 120,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇯🇵|日本|东京|大阪|京都|名古屋|埼玉|\\\\b(JP|Japan)\\\\b)).*$'
+			},
+			{
+				name: '♻️ 新加坡自动',
+				icon: 'https://fastly.jsdelivr.net/gh/clash-verge-rev/clash-verge-rev.github.io@main/docs/assets/icons/flags/sg.svg',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 80,
+				interval: 120,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇸🇬|新加坡|新加坡|\\\\b(SG|Singapore)\\\\b)).*$'
+			},
+			{
+				name: '♻️ 台湾自动',
+				icon: 'https://fastly.jsdelivr.net/gh/clash-verge-rev/clash-verge-rev.github.io@main/docs/assets/icons/flags/cn.svg',
+				type: 'url-test',
+				'include-all': true,
+				tolerance: 80,
+				interval: 150,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇹🇼|台湾|台北|新北|高雄|\\\\b(TW|Taiwan|Tai wan)\\\\b)).*$'
+			},
+			{
+				name: '♻️ 韩国自动',
+				icon: 'https://fastly.jsdelivr.net/gh/clash-verge-rev/clash-verge-rev.github.io@main/docs/assets/icons/flags/kr.svg',
 				type: 'url-test',
 				'include-all': true,
 				tolerance: 80,
@@ -4121,39 +4214,8 @@ async function generateSubCollectionConfig(collectionId, env) {
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇰🇷|韩国|韓國|首尔|釜山|\\\\b(KR|Korea)\\\\b)).*$'
 			},
 			{
-				name: '♻️ 英国自动 🇬🇧',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 80,
-				interval: 120,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇬🇧|英国|伦敦|曼彻斯特|\\\\b(UK|United Kingdom|Britain)\\\\b)).*$'
-			},
-			{
-				name: '♻️ 法国自动 🇫🇷',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 80,
-				interval: 120,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇫🇷|法国|巴黎|马赛|\\\\b(FR|France)\\\\b)).*$'
-			},
-			{
-				name: '♻️ 德国自动 🇩🇪',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 80,
-				interval: 120,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇩🇪|德国|柏林|法兰克福|慕尼黑|\\\\b(DE|Germany)\\\\b)).*$'
-			},
-			{
-				name: '♻️ 澳洲自动 🇦🇺',
-				type: 'url-test',
-				'include-all': true,
-				tolerance: 80,
-				interval: 120,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\\\b(AU|AUS|Australia)\\\\b)).*$'
-			},
-			{
-				name: '♻️ 香港自动 🇭🇰',
+				name: '♻️ 香港自动',
+				icon: 'https://fastly.jsdelivr.net/gh/clash-verge-rev/clash-verge-rev.github.io@main/docs/assets/icons/flags/hk.svg',
 				type: 'url-test',
 				'include-all': true,
 				tolerance: 80,
@@ -4162,11 +4224,50 @@ async function generateSubCollectionConfig(collectionId, env) {
 			},
 			{
 				name: '♻️ 自动选择',
+				icon: 'https://fastly.jsdelivr.net/gh/Orz-3/mini@master/Color/Auto.png',
 				type: 'url-test',
 				'include-all': true,
 				tolerance: 80,
 				interval: 120,
 				'exclude-filter': '^(?=.*((?i)10x|6x|过滤|客户端|不要|付款|如果|群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|建议|备用|作者|加入|\\\\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\\\\b|(\\\\d{4}-\\\\d{2}-\\\\d{2}|\\\\d+G))).*$'
+			},
+			// {
+			// 	name: '♻️ 英国自动 🇬🇧',
+			// 	type: 'url-test',
+			// 	'include-all': true,
+			// 	tolerance: 80,
+			// 	interval: 120,
+			// 	filter: '^(?!.*(10x|6x))(?=.*((?i)🇬🇧|英国|伦敦|曼彻斯特|\\\\b(UK|United Kingdom|Britain)\\\\b)).*$'
+			// },
+			// {
+			// 	name: '♻️ 法国自动 🇫🇷',
+			// 	type: 'url-test',
+			// 	'include-all': true,
+			// 	tolerance: 80,
+			// 	interval: 120,
+			// 	filter: '^(?!.*(10x|6x))(?=.*((?i)🇫🇷|法国|巴黎|马赛|\\\\b(FR|France)\\\\b)).*$'
+			// },
+			// {
+			// 	name: '♻️ 德国自动 🇩🇪',
+			// 	type: 'url-test',
+			// 	'include-all': true,
+			// 	tolerance: 80,
+			// 	interval: 120,
+			// 	filter: '^(?!.*(10x|6x))(?=.*((?i)🇩🇪|德国|柏林|法兰克福|慕尼黑|\\\\b(DE|Germany)\\\\b)).*$'
+			// },
+			// {
+			// 	name: '♻️ 澳洲自动 🇦🇺',
+			// 	type: 'url-test',
+			// 	'include-all': true,
+			// 	tolerance: 80,
+			// 	interval: 120,
+			// 	filter: '^(?!.*(10x|6x))(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\\\b(AU|AUS|Australia)\\\\b)).*$'
+			// },
+			{
+				name: '🇺🇲 美国节点',
+				type: 'select',
+				'include-all': true,
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|\\\\b(US|United States|America)\\\\b)).*$'
 			},
 			{
 				name: '🇯🇵 日本节点',
@@ -4181,10 +4282,10 @@ async function generateSubCollectionConfig(collectionId, env) {
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇸🇬|新加坡|新加坡|\\\\b(SG|Singapore)\\\\b)).*$'
 			},
 			{
-				name: '🇺🇲 美国节点',
+				name: '🇨🇳 台湾节点',
 				type: 'select',
 				'include-all': true,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|\\\\b(US|United States|America)\\\\b)).*$'
+				filter: '^(?!.*(10x|6x))(?=.*((?i)🇹🇼|台湾|台北|新北|高雄|\\\\b(TW|Taiwan|Tai wan)\\\\b)).*$'
 			},
 			{
 				name: '🇰🇷 韩国节点',
@@ -4193,53 +4294,41 @@ async function generateSubCollectionConfig(collectionId, env) {
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇰🇷|韩国|韓國|首尔|釜山|\\\\b(KR|Korea)\\\\b)).*$'
 			},
 			{
-				name: '🇬🇧 英国节点',
-				type: 'select',
-				'include-all': true,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇬🇧|英国|伦敦|曼彻斯特|\\\\b(UK|United Kingdom|Britain)\\\\b)).*$'
-			},
-			{
-				name: '🇫🇷 法国节点',
-				type: 'select',
-				'include-all': true,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇫🇷|法国|巴黎|马赛|\\\\b(FR|France)\\\\b)).*$'
-			},
-			{
-				name: '🇩🇪 德国节点',
-				type: 'select',
-				'include-all': true,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇩🇪|德国|柏林|法兰克福|慕尼黑|\\\\b(DE|Germany)\\\\b)).*$'
-			},
-			{
-				name: '🇨🇳 台湾节点',
-				type: 'select',
-				'include-all': true,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇹🇼|台湾|台北|新北|高雄|\\\\b(TW|Taiwan|Tai wan)\\\\b)).*$'
-			},
-			{
-				name: '🇦🇺 澳洲节点',
-				type: 'select',
-				'include-all': true,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\\\b(AU|AUS|Australia)\\\\b)).*$'
-			},
-			{
 				name: '🇭🇰 香港节点',
 				type: 'select',
 				'include-all': true,
 				filter: '^(?!.*(10x|6x))(?=.*((?i)🇭🇰|香港|九龙|新界|\\\\b(HK|HongKong|Hong Kong)\\\\b)).*$'
-			},
-			{
-				name: '🇮🇳 印度节点',
-				type: 'select',
-				'include-all': true,
-				filter: '^(?!.*(10x|6x))(?=.*((?i)🇮🇳|印度|\\\\b(India|IN)\\\\b)).*$'
-			},
-			{
-				name: '🌐 全部节点',
-				type: 'select',
-				'include-all': true,
-				'exclude-filter': '^(?=.*((?i)10x|6x|过滤|客户端|不要|付款|如果|群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|建议|备用|作者|加入|\\\\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\\\\b|(\\\\d{4}-\\\\d{2}-\\\\d{2}|\\\\d+G))).*$'
 			}
+			// {
+			// 	name: '🇬🇧 英国节点',
+			// 	type: 'select',
+			// 	'include-all': true,
+			// 	filter: '^(?!.*(10x|6x))(?=.*((?i)🇬🇧|英国|伦敦|曼彻斯特|\\\\b(UK|United Kingdom|Britain)\\\\b)).*$'
+			// },
+			// {
+			// 	name: '🇫🇷 法国节点',
+			// 	type: 'select',
+			// 	'include-all': true,
+			// 	filter: '^(?!.*(10x|6x))(?=.*((?i)🇫🇷|法国|巴黎|马赛|\\\\b(FR|France)\\\\b)).*$'
+			// },
+			// {
+			// 	name: '🇩🇪 德国节点',
+			// 	type: 'select',
+			// 	'include-all': true,
+			// 	filter: '^(?!.*(10x|6x))(?=.*((?i)🇩🇪|德国|柏林|法兰克福|慕尼黑|\\\\b(DE|Germany)\\\\b)).*$'
+			// },
+			// {
+			// 	name: '🇦🇺 澳洲节点',
+			// 	type: 'select',
+			// 	'include-all': true,
+			// 	filter: '^(?!.*(10x|6x))(?=.*((?i)🇦🇺|澳大利亚|澳洲|悉尼|墨尔本|\\\\b(AU|AUS|Australia)\\\\b)).*$'
+			// },
+			// {
+			// 	name: '🇮🇳 印度节点',
+			// 	type: 'select',
+			// 	'include-all': true,
+			// 	filter: '^(?!.*(10x|6x))(?=.*((?i)🇮🇳|印度|\\\\b(India|IN)\\\\b)).*$'
+			// }
 		];
 
 		// 规则集
@@ -4569,8 +4658,11 @@ async function generateSubCollectionConfig(collectionId, env) {
 		config.rules = [
 			// 自定义优先规则
 			'DOMAIN-SUFFIX,linux.do,Linux DO',
+			'DOMAIN-SUFFIX,idcflare.com,Linux DO',
 			'DOMAIN-SUFFIX,anyrouter.top,DIRECT',
+			'DOMAIN-SUFFIX,elysia.h-e.top,DIRECT',
 			'DOMAIN-SUFFIX,b4u.qzz.io,DIRECT',
+			'DOMAIN-SUFFIX,leaflow.net,DIRECT',
 			'DOMAIN-SUFFIX,cloudflare.com,🚀 默认代理',
 			'DOMAIN-SUFFIX,github.com,🚀 默认代理',
 			'DOMAIN-SUFFIX,githubusercontent.com,🚀 默认代理',
@@ -6372,6 +6464,13 @@ function parseLooseJSON(jsonStr) {
 		try {
 			let processed = jsonStr.trim();
 
+			// 支持 YAML 行内列表格式: "- { key: value, ... }"
+			if (processed.startsWith('-')) {
+				processed = processed.replace(/^\-\s*/, '');
+			}
+			// 去除可能的尾随逗号: "},"
+			processed = processed.replace(/},\s*$/, '}');
+
 			// 确保是对象格式
 			if (!processed.startsWith('{') || !processed.endsWith('}')) {
 				throw new Error('Invalid JSON format');
@@ -6425,6 +6524,12 @@ function parseLooseJSON(jsonStr) {
 			// 如果还是失败，尝试更激进的方法
 			try {
 				let jsCode = jsonStr.trim();
+
+				// 同样支持 YAML 行内列表格式: "- { ... }"
+				if (jsCode.startsWith('-')) {
+					jsCode = jsCode.replace(/^\-\s*/, '');
+				}
+				jsCode = jsCode.replace(/},\s*$/, '}');
 
 				// 确保是对象格式
 				if (!jsCode.startsWith('{') || !jsCode.endsWith('}')) {

@@ -335,6 +335,25 @@
 			font-weight: 600;
 			color: #2c3e50;
 			margin-bottom: 5px;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.btn-icon {
+			background: none;
+			border: none;
+			cursor: pointer;
+			font-size: 16px;
+			padding: 2px 6px;
+			border-radius: 4px;
+			transition: background-color 0.2s;
+			opacity: 0.7;
+		}
+
+		.btn-icon:hover {
+			background-color: rgba(0, 0, 0, 0.05);
+			opacity: 1;
 		}
 
 		.item-details {
@@ -2343,8 +2362,12 @@
 				html += '<div class="item-info">';
 				html += '<div class="item-name">';
 				html += '<span class="name-text">' + proxy.name + '</span>';
+				html += '<button class="btn-icon" onclick="renameCollectionProxy(' + i + ')" title="重命名">✏️</button>';
 				html += '</div>';
-				html += '<div class="item-details">' + proxy.type + ' | ' + proxy.server + ':' + proxy.port + '</div>';
+				html += '<div class="item-details">' + proxy.type + ' | ';
+				html += '<span class="server-text">' + proxy.server + '</span>';
+				html += '<button class="btn-icon" onclick="changeProxyServer(' + i + ')" title="修改IP">🔧</button>';
+				html += ':' + proxy.port + '</div>';
 				html += '</div>';
 				// 删除按钮
 				html += '<button class="btn danger node-delete-btn" onclick="deleteSingleCollectionProxy(' + i + ')">删除</button>';
@@ -2790,11 +2813,16 @@
 				const subCount = collection.subscriptions.length;
 				const origin = window.location.origin;
 				const collectionUrl = `${origin}/clash/submerge/${collection.id}`;
+			
+			const enablePrefix = collection.enablePrefix !== false; // 默认为true
+			const prefixStatus = enablePrefix ? '已开启' : '已关闭';
+			const prefixClass = enablePrefix ? 'success' : '';
 
 				html += '<div class="list-item" data-index="' + i + '">';
 				html += '<div class="item-info">';
 				html += '<div class="item-name">' + collection.name + '</div>';
-				html += '<div class="item-details">订阅数量: ' + subCount + ' | 订阅链接: ' + collectionUrl + '</div>';
+				html += '<div class="item-details">订阅数量: ' + subCount + ' | 前缀功能: <span class="' + prefixClass + '">' + prefixStatus + '</span></div>';
+			html += '<div class="item-details" style="font-size: 0.85em; margin-top: 4px;">订阅链接: ' + collectionUrl + '</div>';
 				html += '</div>';
 				html += '<div class="item-actions">';
 				html += '<div class="item-actions-row-1">';
@@ -2803,6 +2831,7 @@
 				html += '</div>';
 				html += '<div class="item-actions-row-2">';
 				html += '<button class="btn" onclick="manageSubCollection(\'' + collection.id + '\')">管理订阅</button>';
+			html += '<button class="btn ' + prefixClass + '" onclick="toggleSubCollectionPrefix(\'' + collection.id + '\')">' + (enablePrefix ? '关闭前缀' : '开启前缀') + '</button>';
 				html += '<button class="btn" onclick="renameSubCollection(\'' + collection.id + '\')">重命名</button>';
 				html += '<button class="btn danger" onclick="deleteSubCollection(\'' + collection.id + '\')">删除</button>';
 				html += '</div>';
@@ -2908,7 +2937,35 @@
 			}
 		}
 
-		// 管理集合中的订阅
+		
+		// 切换订阅集合前缀开关
+		async function toggleSubCollectionPrefix(collectionId) {
+			try {
+				const response = await fetch('/api/sub-collections', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						action: 'togglePrefix',
+						collectionId: collectionId
+					})
+				});
+
+				const result = await response.json();
+
+				if (result.error) {
+					showMessage('subCollectionMessage', result.error, 'error');
+				} else {
+					showMessage('subCollectionMessage', result.message);
+					loadSubCollections();
+				}
+			} catch (error) {
+				showMessage('subCollectionMessage', '切换前缀开关失败', 'error');
+			}
+		}
+
+
+
+				// 管理集合中的订阅
 		function manageSubCollection(collectionId) {
 			const collection = subCollections.find(c => c.id === collectionId);
 			if (!collection) return;
@@ -4401,7 +4458,89 @@
 				}
 			});
 		}
-		
+
+		// 重命名集合节点
+		async function renameCollectionProxy(index) {
+			if (!currentManagingCollection) return;
+
+			const proxy = currentManagingCollection.proxies[index];
+			if (!proxy) return;
+
+			const newName = prompt('请输入新的节点名称:', proxy.name);
+			if (!newName || newName === proxy.name) return;
+
+			try {
+				const response = await fetch('/api/proxy-collections', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						action: 'updateProxyName',
+						data: {
+							collectionId: currentManagingCollection.id,
+							index: index,
+							newName: newName
+						}
+					})
+				});
+
+				const result = await response.json();
+				if (result.success) {
+					showCollectionMessage(`节点已重命名: ${proxy.name} → ${newName}`, 'success');
+					addCollectionOutput(`✓ 重命名节点: ${proxy.name} → ${newName}`, 'success');
+
+					// 重新加载集合数据并渲染
+					await loadProxyCollections();
+					currentManagingCollection = proxyCollections.find(c => c.id === currentManagingCollection.id);
+					renderCollectionProxies();
+				} else {
+					showCollectionMessage(result.error || '重命名失败', 'error');
+				}
+			} catch (error) {
+				showCollectionMessage('重命名节点失败', 'error');
+			}
+		}
+
+		// 修改集合节点IP
+		async function changeProxyServer(index) {
+			if (!currentManagingCollection) return;
+
+			const proxy = currentManagingCollection.proxies[index];
+			if (!proxy) return;
+
+			const newServer = prompt('请输入新的服务器地址 (IP或域名):', proxy.server);
+			if (!newServer || newServer === proxy.server) return;
+
+			try {
+				const response = await fetch('/api/proxy-collections', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						action: 'updateProxyServer',
+						data: {
+							collectionId: currentManagingCollection.id,
+							index: index,
+							newServer: newServer
+						}
+					})
+				});
+
+				const result = await response.json();
+				if (result.success) {
+					showCollectionMessage(`节点服务器已更新: ${proxy.server} → ${newServer}`, 'success');
+					addCollectionOutput(`✓ 更新服务器: ${proxy.name} (${proxy.server} → ${newServer})`, 'success');
+
+					// 重新加载集合数据并渲染
+					await loadProxyCollections();
+					currentManagingCollection = proxyCollections.find(c => c.id === currentManagingCollection.id);
+					renderCollectionProxies();
+				} else {
+					showCollectionMessage(result.error || '更新服务器失败', 'error');
+				}
+			} catch (error) {
+				showCollectionMessage('更新服务器失败', 'error');
+			}
+		}
+
 		// 删除单个集合订阅
 		async function deleteSingleCollectionSubscription(index) {
 			if (!currentManagingSubCollection) return;
@@ -4441,6 +4580,8 @@
 				}
 			});
 		}
+	
+
 	</script>
 
 	<!-- 确认删除弹窗 -->
