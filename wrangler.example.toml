@@ -1,0 +1,14 @@
+name = "clash-sub"
+main = "src/index.js"
+compatibility_date = "2025-08-01"
+
+[assets]
+directory = "public"
+binding = "ASSETS"
+
+[[kv_namespaces]]
+binding = "CLASH_KV"
+id = "kv_namespaces_id"
+
+[vars]
+ACCESS_TOKEN_ENABLED = "true"

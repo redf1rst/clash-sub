@@ -173,6 +173,6 @@ dist
 proxy_format_check.md
 proxy_analysis_process.md
 *.yaml
-wrangler.jsonc
+wrangler.toml
 anytls_link_format.md
 CLAUDE.md

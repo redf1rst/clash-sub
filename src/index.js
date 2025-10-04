@@ -1,5 +1,8 @@
 ﻿// Clash订阅生成器 - Cloudflare Worker
 
+// 导入访问令牌认证模块
+import { checkToken, handleTokenVerification, handleClearToken } from './token-auth.js';
+
 // 统一的节点排序函数
 function sortProxiesByRegion(proxies) {
 	proxies.sort((a, b) => {
@@ -67,6 +70,21 @@ export default {
 	async fetch(request, env) {
 		const url = new URL(request.url);
 		const path = url.pathname;
+
+		// 令牌验证路由（不需要令牌）
+		if (path === '/api/verify-token') {
+			return handleTokenVerification(request, env);
+		}
+
+		if (path === '/api/clear-token') {
+			return handleClearToken(request);
+		}
+
+		// 检查访问令牌
+		const tokenCheck = checkToken(request, env);
+		if (!tokenCheck.authenticated) {
+			return tokenCheck.response;
+		}
 
 		// 路由处理
 		// 根路径现在由静态文件处理，不需要特殊处理
