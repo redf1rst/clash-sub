@@ -59,7 +59,19 @@ function isWhitelistedPath(path) {
 		'/favicon.ico'
 	];
 
-	return whitelist.includes(path);
+	// 订阅路径白名单 - 允许Clash客户端直接访问
+	const subscriptionPaths = [
+		'/clash/proxies',      // 节点订阅
+		'/clash/submerge'      // 订阅整合
+	];
+
+	// 检查精确匹配
+	if (whitelist.includes(path)) {
+		return true;
+	}
+
+	// 检查订阅路径前缀匹配 (支持带集合ID的路径)
+	return subscriptionPaths.some(prefix => path.startsWith(prefix));
 }
 
 /**

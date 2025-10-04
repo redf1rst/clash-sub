@@ -109,19 +109,13 @@ export default {
 			return handleSubscriptionCheck(request);
 		}
 
-		if (path === '/clash/proxies') {
-			return generateProxiesConfig(env);
-		}
-
+		// 节点集合配置生成
 		if (path.startsWith('/clash/proxies/')) {
 			const collectionId = path.split('/')[3];
 			return generateProxyCollectionConfig(collectionId, env);
 		}
 
-		if (path === '/clash/submerge') {
-			return generateSubMergeConfig(env);
-		}
-
+		// 订阅集合配置生成
 		if (path.startsWith('/clash/submerge/')) {
 			const collectionId = path.split('/')[3];
 			return generateSubCollectionConfig(collectionId, env);
