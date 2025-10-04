@@ -128,7 +128,7 @@ wrangler dev
 
 ### 版本历史
 
-- **v3.5**
+- **v3.6**
   - 🔐 **访问令牌认证**：Cookie令牌认证保护管理页面
   - 🔒 **双Cookie策略**：HttpOnly后端验证 + 前端状态检测
   - ⚙️ **配置升级**：wrangler.jsonc → wrangler.toml
