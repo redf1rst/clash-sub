@@ -4,7 +4,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Clash订阅生成器</title>
+	<title>Clash Sub</title>
 	<link rel="icon" type="image/png" href="https://github.com/redf1rst/clash-sub/blob/main/img/clash-sub.png?raw=true">
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css" />
 	<!-- 访问令牌检查 - 在页面加载前执行 -->
@@ -54,9 +54,7 @@
 
 		body {
 			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', 'Apple Color Emoji', Roboto, sans-serif;
-			background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 25%, #45b7d1 50%, #96ceb4 75%, #feca57 100%);
-			background-size: 400% 400%;
-			animation: gradientShift 15s ease infinite;
+			background: #F5F5F0;
 			min-height: 100vh;
 			padding: 20px;
 		}
@@ -78,14 +76,14 @@
 		.container {
 			max-width: 1200px;
 			margin: 0 auto;
-			background: white;
+			background: #FFFFFF;
 			border-radius: 12px;
 			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 			overflow: hidden;
 		}
 
 		.header {
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			background: linear-gradient(135deg, #6B8E9F 0%, #9CAE9A 100%);
 			color: white;
 			padding: 30px;
 			text-align: center;
@@ -104,7 +102,7 @@
 
 		.tabs {
 			display: flex;
-			background: #34495e;
+			background: #958E9E;
 		}
 
 		.tab {
@@ -116,16 +114,16 @@
 			transition: background 0.3s;
 			border: none;
 			font-size: 1.1em;
-			background: #ecf0f1;
+			background: #E8E6EA;
 		}
 
 		.tab.active {
-			background: #3498db;
+			background: #6B8E9F;
 			color: white;
 		}
 
 		.tab:hover {
-			background: #2980b9;
+			background: #5A7A8A;
 			color: white;
 		}
 
@@ -162,7 +160,7 @@
 			font-size: 1em;
 			transition: border-color 0.3s;
 			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', 'Apple Color Emoji', Arial, sans-serif;
-			background: white;
+			background: #FFFFFF;
 		}
 
 		.input-group textarea {
@@ -174,7 +172,7 @@
 		.input-group textarea:focus,
 		.input-group select:focus {
 			outline: none;
-			border-color: #3498db;
+			border-color: #6B8E9F;
 		}
 
 		.input-group select {
@@ -193,7 +191,7 @@
 			border: 2px solid #e0e0e0;
 			border-radius: 8px;
 			font-size: 1em;
-			background: white;
+			background: #FFFFFF;
 			cursor: pointer;
 			display: flex;
 			justify-content: space-between;
@@ -203,11 +201,11 @@
 		}
 
 		.select-display:hover {
-			border-color: #3498db;
+			border-color: #6B8E9F;
 		}
 
 		.select-display.active {
-			border-color: #3498db;
+			border-color: #6B8E9F;
 			border-bottom-left-radius: 0;
 			border-bottom-right-radius: 0;
 		}
@@ -226,8 +224,8 @@
 			top: 100%;
 			left: 0;
 			right: 0;
-			background: white;
-			border: 2px solid #3498db;
+			background: #FFFFFF;
+			border: 2px solid #6B8E9F;
 			border-top: none;
 			border-radius: 0 0 8px 8px;
 			max-height: 200px;
@@ -258,16 +256,16 @@
 		}
 
 		.select-option:hover {
-			background-color: #f8f9fa;
+			background-color: #F5F5F0;
 		}
 
 		.select-option.selected {
-			background-color: #3498db;
+			background-color: #6B8E9F;
 			color: white;
 		}
 
 		.btn {
-			background: #3498db;
+			background: #6B8E9F;
 			color: white;
 			border: none;
 			padding: 12px 25px;
@@ -280,34 +278,34 @@
 		}
 
 		.btn:hover {
-			background: #2980b9;
+			background: #5A7A8A;
 		}
 
 		.btn.danger {
-			background: #e74c3c;
+			background: #C59292;
 		}
 
 		.btn.danger:hover {
-			background: #c0392b;
+			background: #B37F7F;
 		}
 
 		.btn.success {
-			background: #27ae60;
+			background: #9CAE9A;
 		}
 
 		.btn.success:hover {
-			background: #229954;
+			background: #8A9B88;
 		}
 
 		.list {
-			background: #f8f9fa;
+			background: #F5F5F0;
 			border-radius: 8px;
 			padding: 20px;
 			margin-top: 20px;
 		}
 
 		.list-item {
-			background: white;
+			background: #FFFFFF;
 			padding: 15px;
 			margin-bottom: 10px;
 			border-radius: 6px;
@@ -330,8 +328,8 @@
 
 		/* 新添加项目的高亮样式 */
 		.list-item.newly-added {
-			background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
-			border: 2px solid #27ae60;
+			background: #9CAE9A;
+			border: 2px solid #9CAE9A;
 			box-shadow: 0 4px 8px rgba(39, 174, 96, 0.2);
 			animation: highlightPulse 3s ease-in-out;
 			scroll-margin-top: 20px;
@@ -405,23 +403,23 @@
 		}
 
 		.subscription-links {
-			background: #e8f5e8;
+			background: #DDE8DD;
 			padding: 20px;
 			border-radius: 8px;
 			margin-top: 20px;
 		}
 
 		.subscription-links h3 {
-			color: #27ae60;
+			color: #9CAE9A;
 			margin-bottom: 15px;
 		}
 
 		.link-item {
-			background: white;
+			background: #FFFFFF;
 			padding: 15px;
 			border-radius: 6px;
 			margin-bottom: 10px;
-			border-left: 4px solid #27ae60;
+			border-left: 4px solid #9CAE9A;
 		}
 
 		.link-item:last-child {
@@ -448,21 +446,21 @@
 		}
 
 		.message.success {
-			background: #d4edda;
+			background: #DDE8DD;
 			color: #155724;
-			border: 1px solid #c3e6cb;
+			border: 1px solid #9CAE9A;
 		}
 
 		.message.error {
-			background: #f8d7da;
-			color: #721c24;
-			border: 1px solid #f5c6cb;
+			background: #E8CFCF;
+			color: #5A5A5A;
+			border: 1px solid #C59292;
 		}
 
 		.message.info {
-			background: #d1ecf1;
+			background: #D9E5E9;
 			color: #0c5460;
-			border: 1px solid #bee5eb;
+			border: 1px solid #6B8E9F;
 		}
 
 		/* 按钮和消息的横向布局 */
@@ -697,7 +695,7 @@
 
 		.progress-fill {
 			height: 100%;
-			background: linear-gradient(90deg, #28a745, #20c997);
+			background: #9CAE9A;
 			border-radius: 13px;
 			width: 0%;
 			transition: width 0.5s ease-in-out;
@@ -723,7 +721,7 @@
 			margin: 15px 0;
 			border: 1px solid #dee2e6;
 			border-radius: 8px;
-			background: #f8f9fa;
+			background: #F5F5F0;
 			max-height: 400px;
 			overflow: hidden;
 			width: 100%;
@@ -821,8 +819,8 @@
 
 		.copy-links-container .link-item,
 		.copy-link-single .link-item {
-			background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
-			border: 1px solid #bbdefb;
+			background: #6B8E9F;
+			border: 1px solid #A8BBC5;
 			border-radius: 8px;
 			padding: 10px;
 			display: flex;
@@ -845,7 +843,7 @@
 		.copy-links-container .link-item strong,
 		.copy-link-single .link-item strong {
 			font-size: 15px;
-			color: #1976d2;
+			color: #6B8E9F;
 			margin-bottom: 6px;
 			font-weight: 600;
 			text-align: center;
@@ -854,7 +852,7 @@
 		.copy-links-container .link-url,
 		.copy-link-single .link-url {
 			background: rgba(255, 255, 255, 0.8);
-			border: 1px solid #90caf9;
+			border: 1px solid #8BA4AE;
 			border-radius: 6px;
 			padding: 6px 10px;
 			font-family: 'Courier New', monospace;
@@ -871,7 +869,7 @@
 
 		.copy-links-container .btn,
 		.copy-link-single .btn {
-			background: #1976d2;
+			background: #6B8E9F;
 			color: white;
 			border: none;
 			font-size: 13px;
@@ -884,7 +882,7 @@
 
 		.copy-links-container .btn:hover,
 		.copy-link-single .btn:hover {
-			background: #1565c0;
+			background: #5A7A8A;
 			transform: translateY(-1px);
 			box-shadow: 0 2px 6px rgba(25, 118, 210, 0.3);
 		}
@@ -1003,7 +1001,7 @@
 			margin-right: 12px;
 			transform: scale(1.2);
 			cursor: pointer;
-			accent-color: #3498db;
+			accent-color: #6B8E9F;
 		}
 
 		/* 桌面端管理订阅界面订阅链接显示优化 */
@@ -1204,28 +1202,28 @@
 			border: 1px solid #e0e0e0;
 			border-radius: 8px;
 			margin-bottom: 10px;
-			background: white;
+			background: #FFFFFF;
 			transition: all 0.2s ease;
 		}
 
 		.list-item:hover {
-			border-color: #3498db;
+			border-color: #6B8E9F;
 			box-shadow: 0 2px 8px rgba(52, 152, 219, 0.1);
 		}
 
 		.list-item.selected {
-			border-color: #3498db;
-			background: #f8f9fa;
+			border-color: #6B8E9F;
+			background: #F5F5F0;
 		}
 
 		.selection-info {
 			padding: 8px 16px;
-			background: #e3f2fd;
+			background: #D9E5E9;
 			border-radius: 6px;
 			margin-bottom: 16px;
 			font-size: 14px;
-			color: #1976d2;
-			border-left: 4px solid #2196f3;
+			color: #6B8E9F;
+			border-left: 4px solid #6B8E9F;
 		}
 
 		.btn:disabled {
@@ -1241,12 +1239,12 @@
 
 		/* 导入Clash按钮特殊样式 */
 		.btn.clash-import {
-			background: #9b59b6;
+			background: #C4BDCE;
 			color: white;
 		}
 
 		.btn.clash-import:hover {
-			background: #8e44ad;
+			background: #B3AABE;
 		}
 
 		/* 桌面端按钮布局 */
@@ -1274,8 +1272,8 @@
 
 		/* 新节点高亮样式 - 统一使用绿色 */
 		.list-item.newly-added {
-			background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
-			border: 2px solid #27ae60;
+			background: #9CAE9A;
+			border: 2px solid #9CAE9A;
 			box-shadow: 0 4px 8px rgba(39, 174, 96, 0.2);
 			animation: highlightPulse 3s ease-in-out;
 			scroll-margin-top: 20px;
@@ -1307,7 +1305,7 @@
 			justify-content: space-between;
 			align-items: center;
 			padding: 12px 16px;
-			background: #f8f9fa;
+			background: #F5F5F0;
 			border-bottom: 1px solid #e0e0e0;
 		}
 
@@ -1345,20 +1343,20 @@
 			margin-bottom: 8px;
 			padding: 6px 8px;
 			border-radius: 4px;
-			border-left: 3px solid #3498db;
+			border-left: 3px solid #6B8E9F;
 			word-wrap: break-word;
 		}
 
 		.output-entry.success {
-			background: #d4edda;
-			border-left-color: #28a745;
+			background: #DDE8DD;
+			border-left-color: #9CAE9A;
 			color: #155724;
 		}
 
 		.output-entry.error {
-			background: #f8d7da;
-			border-left-color: #dc3545;
-			color: #721c24;
+			background: #E8CFCF;
+			border-left-color: #C59292;
+			color: #5A5A5A;
 		}
 
 		.output-entry.warning {
@@ -1368,8 +1366,8 @@
 		}
 
 		.output-entry.info {
-			background: #d1ecf1;
-			border-left-color: #17a2b8;
+			background: #D9E5E9;
+			border-left-color: #6B8E9F;
 			color: #0c5460;
 		}
 
@@ -1393,7 +1391,7 @@
 		}
 
 		.confirm-modal-content {
-			background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+			background: #F5F5F0;
 			margin: 15% auto;
 			padding: 0;
 			border-radius: 16px;
@@ -1417,7 +1415,7 @@
 		}
 
 		.confirm-modal-header {
-			background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+			background: #C59292;
 			color: white;
 			padding: 20px 25px;
 			text-align: center;
@@ -1459,18 +1457,18 @@
 		}
 
 		.confirm-btn.danger {
-			background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+			background: #C59292;
 			color: white;
 		}
 
 		.confirm-btn.danger:hover {
-			background: linear-gradient(135deg, #ff5252 0%, #e53935 100%);
+			background: #B37F7F;
 			transform: translateY(-2px);
 			box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
 		}
 
 		.confirm-btn.secondary {
-			background: #f8f9fa;
+			background: #F5F5F0;
 			color: #6c757d;
 			border: 2px solid #e9ecef;
 		}
@@ -1510,15 +1508,17 @@
 		}
 
 		.modal-header {
-			background: #2c3e50;
+			background: #958E9E;
 			color: white;
 			padding: 20px;
 			border-radius: 12px 12px 0 0;
+			position: relative;
 		}
 
 		.modal-header h3 {
 			margin: 0;
 			font-size: 1.5em;
+			display: inline-block;
 		}
 
 		.modal-body {
@@ -1530,15 +1530,152 @@
 
 		.close {
 			color: white;
-			float: right;
 			font-size: 28px;
 			font-weight: bold;
 			cursor: pointer;
 			line-height: 1;
+			position: absolute;
+			right: 20px;
+			top: 50%;
+			transform: translateY(-50%);
+			padding: 5px;
+			min-width: 30px;
+			text-align: center;
 		}
 
 		.close:hover {
 			opacity: 0.7;
+		}
+
+		/* 移动端优化关闭按钮 */
+		@media (max-width: 768px) {
+			.close {
+				font-size: 32px;
+				padding: 8px;
+				min-width: 40px;
+				right: 15px;
+			}
+		}
+
+		/* 订阅元信息样式 */
+		.subscription-meta {
+			margin-top: 8px;
+			padding-top: 8px;
+			border-top: 1px solid #ecf0f1;
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+		}
+
+		/* 流量信息样式 */
+		.traffic-info {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			font-size: 0.85em;
+		}
+
+		.traffic-label {
+			color: #7f8c8d;
+			font-weight: 500;
+		}
+
+		.traffic-value {
+			color: #2c3e50;
+			font-weight: 600;
+		}
+
+		/* 到期信息样式 */
+		.expire-info {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			font-size: 0.85em;
+		}
+
+		.expire-label {
+			font-size: 1.1em;
+		}
+
+		.expire-value {
+			color: #7f8c8d;
+			font-weight: 500;
+		}
+
+		/* 移动端订阅元信息优化 */
+		@media (max-width: 768px) {
+			.subscription-meta {
+				margin-top: 8px;
+				padding-top: 8px;
+				margin-left: 0;
+				border-top: 1px dashed #e0e0e0;
+				display: flex;
+				flex-direction: column;
+				gap: 6px;
+				width: 100%;
+				max-width: 100%;
+				box-sizing: border-box;
+			}
+
+			#collectionSubList .subscription-meta {
+				margin-left: 0;
+				width: 100%;
+				max-width: 100%;
+			}
+
+			.traffic-info,
+			.expire-info {
+				flex: 0 0 auto;
+				width: 100%;
+				max-width: 100%;
+				font-size: 0.75em;
+				background: #F5F5F0;
+				padding: 6px 10px;
+				border-radius: 4px;
+				box-sizing: border-box;
+				overflow: hidden;
+				word-wrap: break-word;
+			}
+
+			/* 移动端订阅项整体布局调整 - 确保不超出容器 */
+			#collectionSubList .subscription-item {
+				overflow: visible;
+			}
+
+			#collectionSubList .subscription-item .item-info {
+				margin-left: 40px;
+				margin-right: 10px;
+				width: calc(100% - 50px);
+				max-width: calc(100% - 50px);
+				box-sizing: border-box;
+			}
+
+			#collectionSubList .item-details {
+				margin-left: 0;
+				width: 100%;
+				max-width: 100%;
+				box-sizing: border-box;
+			}
+		}
+
+		/* 桌面端订阅项布局优化 */
+		@media (min-width: 769px) {
+			.subscription-item .item-info {
+				display: flex;
+				flex-direction: column;
+			}
+
+			.subscription-meta {
+				max-width: 500px;
+				flex-direction: row;
+				gap: 16px;
+			}
+
+			.traffic-info,
+			.expire-info {
+				background: transparent;
+				padding: 0;
+			}
 		}
 	</style>
 </head>
@@ -1546,7 +1683,7 @@
 <body>
 	<div class="container">
 		<div class="header">
-			<h1>🚀 Clash订阅生成器</h1>
+			<h1>Clash Sub</h1>
 			<p>轻松管理你的代理节点和订阅链接</p>
 		</div>
 
@@ -1606,8 +1743,8 @@
 	<div id="proxyCollectionModal" class="modal">
 		<div class="modal-content">
 			<div class="modal-header">
-				<span class="close" onclick="closeProxyCollectionModal()">&times;</span>
 				<h3 id="proxyCollectionModalTitle">管理节点集合</h3>
+				<span class="close" onclick="closeProxyCollectionModal()">&times;</span>
 			</div>
 			<div class="modal-body">
 				<!-- 复制链接 -->
@@ -1734,8 +1871,8 @@
 	<div id="subCollectionModal" class="modal">
 		<div class="modal-content">
 			<div class="modal-header">
-				<span class="close" onclick="closeSubCollectionModal()">&times;</span>
 				<h3 id="subCollectionModalTitle">管理订阅集合</h3>
+				<span class="close" onclick="closeSubCollectionModal()">&times;</span>
 			</div>
 			<div class="modal-body">
 				<!-- 复制链接 -->
@@ -2742,6 +2879,58 @@
 			currentManagingSubCollection = null;
 		}
 
+		// 解析订阅名称，提取基础名称、流量信息和到期时间
+		function parseSubscriptionName(fullName) {
+			const result = {
+				name: fullName,
+				traffic: null,
+				expire: null,
+				used: 0,
+				total: 0,
+				percentage: 0
+			};
+
+			// 提取流量信息 [已用/总量]
+			const trafficMatch = fullName.match(/\[([^\]]+)\]/);
+			if (trafficMatch) {
+				result.traffic = trafficMatch[1];
+				// 尝试解析已用/总量
+				const parts = trafficMatch[1].split('/');
+				if (parts.length === 2) {
+					result.used = parseTrafficValue(parts[0].trim());
+					result.total = parseTrafficValue(parts[1].trim());
+					if (result.total > 0) {
+						result.percentage = Math.min(100, (result.used / result.total) * 100);
+					}
+				}
+			}
+
+			// 提取到期时间 (YYYY-MM-DD到期)
+			const expireMatch = fullName.match(/\(([^)]+到期)\)/);
+			if (expireMatch) {
+				result.expire = expireMatch[1];
+			}
+
+			// 提取基础名称（移除流量和到期信息）
+			result.name = fullName
+				.replace(/\s*\[.*?\]/g, '')
+				.replace(/\s*\(.*?到期\)/g, '')
+				.trim();
+
+			return result;
+		}
+
+		// 解析流量值（支持GB、MB等单位）
+		function parseTrafficValue(str) {
+			const match = str.match(/([\d.]+)\s*([KMGT]?B)/i);
+			if (!match) return 0;
+
+			const value = parseFloat(match[1]);
+			const unit = match[2].toUpperCase();
+			const multipliers = { 'B': 1, 'KB': 1024, 'MB': 1024 * 1024, 'GB': 1024 * 1024 * 1024, 'TB': 1024 * 1024 * 1024 * 1024 };
+			return value * (multipliers[unit] || 1);
+		}
+
 		// 渲染集合中的订阅列表
 		function renderCollectionSubscriptions() {
 			if (!currentManagingSubCollection) return;
@@ -2761,8 +2950,9 @@
 
 			for (let i = 0; i < subscriptions.length; i++) {
 				const sub = subscriptions[i];
-				const name = subscriptionNames[i] || ('订阅' + (i + 1));
-				const isNewlyAdded = newlyAddedCollectionSubscriptions.has(name);
+				const fullName = subscriptionNames[i] || ('订阅' + (i + 1));
+				const parsed = parseSubscriptionName(fullName);
+				const isNewlyAdded = newlyAddedCollectionSubscriptions.has(fullName);
 				const highlightClass = isNewlyAdded ? ' newly-added' : '';
 
 				// 记录第一个新添加订阅的位置
@@ -2770,7 +2960,7 @@
 					firstNewlyAddedIndex = i;
 				}
 
-				html += '<div class="list-item' + highlightClass + '" data-index="' + i + '">';
+				html += '<div class="list-item subscription-item' + highlightClass + '" data-index="' + i + '">';
 				// 桌面端复选框
 				html += '<input type="checkbox" class="collection-subscription-checkbox desktop-checkbox" data-index="' + i + '" onchange="syncCheckboxState(' + i + ', \'subscription\')">';
 				// 移动端复选框容器
@@ -2779,9 +2969,33 @@
 				html += '</div>';
 				html += '<div class="item-info">';
 				html += '<div class="item-name" id="collectionSubName-' + i + '">';
-				html += '<span class="name-text">' + name + '</span>';
+				html += '<span class="name-text">' + parsed.name + '</span>';
 				html += '</div>';
 				html += '<div class="item-details">' + sub + '</div>';
+
+				// 流量和到期信息区域
+				if (parsed.traffic || parsed.expire) {
+					html += '<div class="subscription-meta">';
+
+					// 流量信息
+					if (parsed.traffic) {
+						html += '<div class="traffic-info">';
+						html += '<span class="traffic-label">📊 流量:</span>';
+						html += '<span class="traffic-value">' + parsed.traffic + '</span>';
+						html += '</div>';
+					}
+
+					// 到期时间
+					if (parsed.expire) {
+						html += '<div class="expire-info">';
+						html += '<span class="expire-label">⏰</span>';
+						html += '<span class="expire-value">' + parsed.expire + '</span>';
+						html += '</div>';
+					}
+
+					html += '</div>';
+				}
+
 				html += '</div>';
 				html += '<div class="item-actions">';
 				html += '<button class="btn" onclick="editCollectionSubscriptionName(' + i + ')">编辑名称</button>';
@@ -3079,10 +3293,10 @@
 			input.style.cssText = `
 				width: 100%;
 				padding: 4px 8px;
-				border: 1px solid #3498db;
+				border: 1px solid #6B8E9F;
 				border-radius: 4px;
 				font-size: 14px;
-				background: white;
+				background: #FFFFFF;
 			`;
 
 			// 保存原始内容
@@ -3256,7 +3470,7 @@
 				// 简单的视觉反馈
 				const originalText = linkElement.textContent;
 				linkElement.textContent = '已复制!';
-				linkElement.style.color = '#27ae60';
+				linkElement.style.color = '#9CAE9A';
 
 				setTimeout(() => {
 					linkElement.textContent = originalText;
@@ -3273,7 +3487,7 @@
 
 				const originalText = linkElement.textContent;
 				linkElement.textContent = '已复制!';
-				linkElement.style.color = '#27ae60';
+				linkElement.style.color = '#9CAE9A';
 
 				setTimeout(() => {
 					linkElement.textContent = originalText;

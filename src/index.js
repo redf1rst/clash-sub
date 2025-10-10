@@ -3,6 +3,74 @@
 // 导入访问令牌认证模块
 import { checkToken, handleTokenVerification, handleClearToken } from './token-auth.js';
 
+// 统一的国家/地区代码映射 (基于ISO 3166-1 alpha-2标准)
+const REGION_NAMES = {
+	// 亚洲 - Asia
+	'HK': 'HK香港', 'TW': 'TW台湾', 'JP': 'JP日本', 'KR': 'KR韩国', 'SG': 'SG新加坡',
+	'MY': 'MY马来西亚', 'TH': 'TH泰国', 'VN': 'VN越南', 'ID': 'ID印尼', 'PH': 'PH菲律宾',
+	'IN': 'IN印度', 'PK': 'PK巴基斯坦', 'BD': 'BD孟加拉', 'KH': 'KH柬埔寨', 'MM': 'MM缅甸',
+	'LK': 'LK斯里兰卡', 'NP': 'NP尼泊尔', 'KZ': 'KZ哈萨克斯坦', 'UZ': 'UZ乌兹别克斯坦',
+	'LA': 'LA老挝', 'BN': 'BN文莱', 'MN': 'MN蒙古', 'BT': 'BT不丹', 'MV': 'MV马尔代夫',
+	'TJ': 'TJ塔吉克斯坦', 'KG': 'KG吉尔吉斯斯坦', 'TM': 'TM土库曼斯坦',
+
+	// 美洲 - Americas
+	'US': 'US美国', 'CA': 'CA加拿大', 'MX': 'MX墨西哥', 'BR': 'BR巴西', 'AR': 'AR阿根廷',
+	'CL': 'CL智利', 'CO': 'CO哥伦比亚', 'PE': 'PE秘鲁', 'VE': 'VE委内瑞拉', 'EC': 'EC厄瓜多尔',
+	'BO': 'BO玻利维亚', 'PY': 'PY巴拉圭', 'UY': 'UY乌拉圭', 'CR': 'CR哥斯达黎加', 'PA': 'PA巴拿马',
+	'CW': 'CW库拉索', 'AW': 'AW阿鲁巴', 'BZ': 'BZ伯利兹', 'GT': 'GT危地马拉', 'HN': 'HN洪都拉斯',
+	'NI': 'NI尼加拉瓜', 'SV': 'SV萨尔瓦多', 'DO': 'DO多米尼加', 'CU': 'CU古巴', 'JM': 'JM牙买加',
+	'HT': 'HT海地', 'TT': 'TT特立尼达', 'BS': 'BS巴哈马', 'BB': 'BB巴巴多斯', 'GY': 'GY圭亚那',
+	'SR': 'SR苏里南', 'FK': 'FK福克兰群岛',
+
+	// 欧洲 - Europe
+	// 西欧
+	'UK': 'UK英国', 'GB': 'GB英国', 'FR': 'FR法国', 'DE': 'DE德国', 'NL': 'NL荷兰',
+	'BE': 'BE比利时', 'LU': 'LU卢森堡', 'IE': 'IE爱尔兰', 'AT': 'AT奥地利', 'CH': 'CH瑞士',
+	'LI': 'LI列支敦士登',
+	// 南欧
+	'IT': 'IT意大利', 'ES': 'ES西班牙', 'PT': 'PT葡萄牙', 'GR': 'GR希腊', 'MT': 'MT马耳他',
+	'CY': 'CY塞浦路斯', 'AD': 'AD安道尔', 'SM': 'SM圣马力诺', 'VA': 'VA梵蒂冈', 'MC': 'MC摩纳哥',
+	// 北欧
+	'SE': 'SE瑞典', 'NO': 'NO挪威', 'DK': 'DK丹麦', 'FI': 'FI芬兰', 'IS': 'IS冰岛',
+	'EE': 'EE爱沙尼亚', 'LV': 'LV拉脱维亚', 'LT': 'LT立陶宛',
+	// 东欧
+	'RU': 'RU俄罗斯', 'UA': 'UA乌克兰', 'PL': 'PL波兰', 'CZ': 'CZ捷克', 'SK': 'SK斯洛伐克',
+	'HU': 'HU匈牙利', 'RO': 'RO罗马尼亚', 'BG': 'BG保加利亚', 'BY': 'BY白俄罗斯', 'MD': 'MD摩尔多瓦',
+	// 巴尔干
+	'RS': 'RS塞尔维亚', 'HR': 'HR克罗地亚', 'SI': 'SI斯洛文尼亚', 'BA': 'BA波黑', 'ME': 'ME黑山',
+	'MK': 'MK北马其顿', 'AL': 'AL阿尔巴尼亚', 'XK': 'XK科索沃',
+	// 高加索
+	'GE': 'GE格鲁吉亚', 'AM': 'AM亚美尼亚', 'AZ': 'AZ阿塞拜疆',
+
+	// 中东 - Middle East
+	'TR': 'TR土耳其', 'AE': 'AE阿联酋', 'IL': 'IL以色列', 'SA': 'SA沙特', 'QA': 'QA卡塔尔',
+	'KW': 'KW科威特', 'BH': 'BH巴林', 'OM': 'OM阿曼', 'JO': 'JO约旦', 'LB': 'LB黎巴嫩',
+	'SY': 'SY叙利亚', 'IQ': 'IQ伊拉克', 'IR': 'IR伊朗', 'YE': 'YE也门', 'PS': 'PS巴勒斯坦',
+	'AF': 'AF阿富汗',
+
+	// 非洲 - Africa
+	'ZA': 'ZA南非', 'EG': 'EG埃及', 'NG': 'NG尼日利亚', 'KE': 'KE肯尼亚', 'ET': 'ET埃塞俄比亚',
+	'GH': 'GH加纳', 'DZ': 'DZ阿尔及利亚', 'MA': 'MA摩洛哥', 'TN': 'TN突尼斯', 'LY': 'LY利比亚',
+	'SD': 'SD苏丹', 'UG': 'UG乌干达', 'ZW': 'ZW津巴布韦', 'TZ': 'TZ坦桑尼亚', 'AO': 'AO安哥拉',
+	'MZ': 'MZ莫桑比克', 'NA': 'NA纳米比亚', 'BW': 'BW博茨瓦纳', 'MU': 'MU毛里求斯', 'SC': 'SC塞舌尔',
+	'CI': 'CI科特迪瓦', 'CM': 'CM喀麦隆', 'SN': 'SN塞内加尔', 'ZM': 'ZM赞比亚', 'RW': 'RW卢旺达',
+	'SO': 'SO索马里', 'CD': 'CD刚果金', 'CG': 'CG刚果布', 'GA': 'GA加蓬', 'BJ': 'BJ贝宁',
+	'BF': 'BF布基纳法索', 'ML': 'ML马里', 'NE': 'NE尼日尔', 'TD': 'TD乍得', 'ER': 'ER厄立特里亚',
+	'DJ': 'DJ吉布提', 'MG': 'MG马达加斯加', 'MW': 'MW马拉维', 'LS': 'LS莱索托', 'SZ': 'SZ斯威士兰',
+	'RE': 'RE留尼汪',
+
+	// 大洋洲 - Oceania
+	'AU': 'AU澳洲', 'NZ': 'NZ新西兰', 'FJ': 'FJ斐济', 'PG': 'PG巴新', 'NC': 'NC新喀里多尼亚',
+	'PF': 'PF法属波利尼西亚', 'GU': 'GU关岛', 'WS': 'WS萨摩亚', 'VU': 'VU瓦努阿图', 'TO': 'TO汤加',
+	'SB': 'SB所罗门群岛', 'KI': 'KI基里巴斯', 'FM': 'FM密克罗尼西亚', 'PW': 'PW帕劳',
+
+	// 中国特别行政区 (已包含在亚洲部分)
+	'CN': 'CN中国', 'MO': 'MO澳门',
+
+	// 其他
+	'Unknown': 'Unknown未知'
+};
+
 // 统一的节点排序函数
 function sortProxiesByRegion(proxies) {
 	proxies.sort((a, b) => {
@@ -1207,196 +1275,39 @@ async function addProxyToCollection(collectionId, proxyUrls, region, env) {
 				detectedRegion = region;
 			}
 
-			// 地区代码映射为英文缩写+中文格式
-			const regionNames = {
-				// 亚洲
-				'HK': 'HK香港',
-					'TW': 'TW台湾',
-					'JP': 'JP日本',
-					'KR': 'KR韩国',
-					'SG': 'SG新加坡',
-					'MY': 'MY马来西亚',
-					'TH': 'TH泰国',
-					'VN': 'VN越南',
-					'ID': 'ID印尼',
-					'PH': 'PH菲律宾',
-					'IN': 'IN印度',
-					'PK': 'PK巴基斯坦',
-					'BD': 'BD孟加拉',
-					'KH': 'KH柬埔寨',
-					'MM': 'MM缅甸',
-					'LK': 'LK斯里兰卡',
-					'NP': 'NP尼泊尔',
-					'KZ': 'KZ哈萨克斯坦',
-					'UZ': 'UZ乌兹别克斯坦',
+			// 使用统一的地区代码映射
+			const regionName = REGION_NAMES[detectedRegion] || detectedRegion;
+			const isIPv6 = isIPv6Address(proxyConfig.server);
+			const suffix = isIPv6 ? '-IPv6' : '';
 
-					// 美洲
-					'US': 'US美国',
-					'CA': 'CA加拿大',
-					'MX': 'MX墨西哥',
-					'BR': 'BR巴西',
-					'AR': 'AR阿根廷',
-					'CL': 'CL智利',
-					'CO': 'CO哥伦比亚',
-					'PE': 'PE秘鲁',
-					'VE': 'VE委内瑞拉',
-					'EC': 'EC厄瓜多尔',
-					'BO': 'BO玻利维亚',
-					'PY': 'PY巴拉圭',
-					'UY': 'UY乌拉圭',
-					'CR': 'CR哥斯达黎加',
-					'PA': 'PA巴拿马',
-					'CW': 'CW库拉索',
-					'AW': 'AW阿鲁巴',
-					'BZ': 'BZ伯利兹',
-					'GT': 'GT危地马拉',
-					'HN': 'HN洪都拉斯',
-					'NI': 'NI尼加拉瓜',
-					'SV': 'SV萨尔瓦多',
+			// 计算序号 - 找到该地区可用的最小序号，填补空缺
+			const regionPattern = new RegExp(`^${regionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d{3})(-IPv6)?$`);
+			const usedNumbers = new Set();
 
-					// 欧洲 - 西欧
-					'UK': 'UK英国',
-					'GB': 'GB英国',
-					'FR': 'FR法国',
-					'DE': 'DE德国',
-					'NL': 'NL荷兰',
-					'BE': 'BE比利时',
-					'LU': 'LU卢森堡',
-					'IE': 'IE爱尔兰',
-					'AT': 'AT奥地利',
-					'CH': 'CH瑞士',
-					'LI': 'LI列支敦士登',
-
-					// 欧洲 - 南欧
-					'IT': 'IT意大利',
-					'ES': 'ES西班牙',
-					'PT': 'PT葡萄牙',
-					'GR': 'GR希腊',
-					'MT': 'MT马耳他',
-					'CY': 'CY塞浦路斯',
-					'AD': 'AD安道尔',
-					'SM': 'SM圣马力诺',
-					'VA': 'VA梵蒂冈',
-					'MC': 'MC摩纳哥',
-
-					// 欧洲 - 北欧
-					'SE': 'SE瑞典',
-					'NO': 'NO挪威',
-					'DK': 'DK丹麦',
-					'FI': 'FI芬兰',
-					'IS': 'IS冰岛',
-					'EE': 'EE爱沙尼亚',
-					'LV': 'LV拉脱维亚',
-					'LT': 'LT立陶宛',
-
-					// 欧洲 - 东欧
-					'RU': 'RU俄罗斯',
-					'UA': 'UA乌克兰',
-					'PL': 'PL波兰',
-					'CZ': 'CZ捷克',
-					'SK': 'SK斯洛伐克',
-					'HU': 'HU匈牙利',
-					'RO': 'RO罗马尼亚',
-					'BG': 'BG保加利亚',
-					'BY': 'BY白俄罗斯',
-					'MD': 'MD摩尔多瓦',
-
-					// 欧洲 - 巴尔干地区
-					'RS': 'RS塞尔维亚',
-					'HR': 'HR克罗地亚',
-					'SI': 'SI斯洛文尼亚',
-					'BA': 'BA波黑',
-					'ME': 'ME黑山',
-					'MK': 'MK北马其顿',
-					'AL': 'AL阿尔巴尼亚',
-					'XK': 'XK科索沃',
-
-					// 欧洲 - 高加索地区
-					'GE': 'GE格鲁吉亚',
-					'AM': 'AM亚美尼亚',
-					'AZ': 'AZ阿塞拜疆',
-
-					// 中东
-					'TR': 'TR土耳其',
-					'AE': 'AE阿联酋',
-					'IL': 'IL以色列',
-					'SA': 'SA沙特',
-					'QA': 'QA卡塔尔',
-					'KW': 'KW科威特',
-					'BH': 'BH巴林',
-					'OM': 'OM阿曼',
-					'JO': 'JO约旦',
-					'LB': 'LB黎巴嫩',
-					'SY': 'SY叙利亚',
-					'IQ': 'IQ伊拉克',
-					'IR': 'IR伊朗',
-					'YE': 'YE也门',
-
-					// 非洲
-					'ZA': 'ZA南非',
-					'EG': 'EG埃及',
-					'NG': 'NG尼日利亚',
-					'KE': 'KE肯尼亚',
-					'ET': 'ET埃塞俄比亚',
-					'GH': 'GH加纳',
-					'DZ': 'DZ阿尔及利亚',
-					'MA': 'MA摩洛哥',
-					'TN': 'TN突尼斯',
-					'LY': 'LY利比亚',
-					'SD': 'SD苏丹',
-					'UG': 'UG乌干达',
-					'ZW': 'ZW津巴布韦',
-					'TZ': 'TZ坦桑尼亚',
-					'AO': 'AO安哥拉',
-					'MZ': 'MZ莫桑比克',
-					'NA': 'NA纳米比亚',
-					'BW': 'BW博茨瓦纳',
-					'MU': 'MU毛里求斯',
-					'SC': 'SC塞舌尔',
-
-					// 大洋洲
-					'AU': 'AU澳洲',
-					'NZ': 'NZ新西兰',
-					'FJ': 'FJ斐济',
-					'PG': 'PG巴新',
-					'NC': 'NC新喀里多尼亚',
-
-					// 其他
-					'Unknown': 'Unknown未知'
-				};
-
-				const regionName = regionNames[detectedRegion] || detectedRegion;
-				const isIPv6 = isIPv6Address(proxyConfig.server);
-				const suffix = isIPv6 ? '-IPv6' : '';
-
-				// 计算序号 - 找到该地区可用的最小序号，填补空缺
-				const regionPattern = new RegExp(`^${regionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d{3})(-IPv6)?$`);
-				const usedNumbers = new Set();
-
-				// 检查现有节点使用的序号
-				collection.proxies.forEach(p => {
-					const match = p.name.match(regionPattern);
-					if (match) {
-						const num = parseInt(match[1]);
-						usedNumbers.add(num);
-					}
-				});
-
-				// 检查本次添加的节点使用的序号
-				addedProxies.forEach(p => {
-					const match = p.name.match(regionPattern);
-					if (match) {
-						const num = parseInt(match[1]);
-						usedNumbers.add(num);
-					}
-				});
-
-				// 找到最小的可用序号（填补空缺）
-				let nodeNumber = 1;
-				while (usedNumbers.has(nodeNumber)) {
-					nodeNumber++;
+			// 检查现有节点使用的序号
+			collection.proxies.forEach(p => {
+				const match = p.name.match(regionPattern);
+				if (match) {
+					const num = parseInt(match[1]);
+					usedNumbers.add(num);
 				}
-				usedNumbers.add(nodeNumber);
+			});
+
+			// 检查本次添加的节点使用的序号
+			addedProxies.forEach(p => {
+				const match = p.name.match(regionPattern);
+				if (match) {
+					const num = parseInt(match[1]);
+					usedNumbers.add(num);
+				}
+			});
+
+			// 找到最小的可用序号（填补空缺）
+			let nodeNumber = 1;
+			while (usedNumbers.has(nodeNumber)) {
+				nodeNumber++;
+			}
+			usedNumbers.add(nodeNumber);
 
 			// 使用三位数字格式
 			const nodeNumberStr = String(nodeNumber).padStart(3, '0');
@@ -1835,191 +1746,8 @@ async function addJSONProxiesToCollection(collectionId, proxiesToAdd, region, en
 				detectedRegion = region;
 			}
 
-			// 地区代码映射为英文缩写+中文格式
-			const regionNames = {
-				// 亚洲
-				'HK': 'HK香港',
-				'TW': 'TW台湾',
-				'JP': 'JP日本',
-				'KR': 'KR韩国',
-				'SG': 'SG新加坡',
-				'MY': 'MY马来西亚',
-				'TH': 'TH泰国',
-				'VN': 'VN越南',
-				'ID': 'ID印尼',
-				'PH': 'PH菲律宾',
-				'IN': 'IN印度',
-				'PK': 'PK巴基斯坦',
-				'BD': 'BD孟加拉',
-				'KH': 'KH柬埔寨',
-				'MM': 'MM缅甸',
-				'LK': 'LK斯里兰卡',
-				'NP': 'NP尼泊尔',
-				'KZ': 'KZ哈萨克斯坦',
-				'UZ': 'UZ乌兹别克斯坦',
-
-				// 美洲
-				'US': 'US美国',
-				'CA': 'CA加拿大',
-				'MX': 'MX墨西哥',
-				'BR': 'BR巴西',
-				'AR': 'AR阿根廷',
-				'CL': 'CL智利',
-				'CO': 'CO哥伦比亚',
-				'PE': 'PE秘鲁',
-				'VE': 'VE委内瑞拉',
-				'EC': 'EC厄瓜多尔',
-				'BO': 'BO玻利维亚',
-				'PY': 'PY巴拉圭',
-				'UY': 'UY乌拉圭',
-				'CR': 'CR哥斯达黎加',
-				'PA': 'PA巴拿马',
-				'CW': 'CW库拉索',
-				'AW': 'AW阿鲁巴',
-				'BZ': 'BZ伯利兹',
-				'GT': 'GT危地马拉',
-				'HN': 'HN洪都拉斯',
-				'NI': 'NI尼加拉瓜',
-				'SV': 'SV萨尔瓦多',
-
-				// 欧洲 - 西欧
-				'UK': 'UK英国',
-				'GB': 'GB英国',
-				'FR': 'FR法国',
-				'DE': 'DE德国',
-				'NL': 'NL荷兰',
-				'BE': 'BE比利时',
-				'LU': 'LU卢森堡',
-				'IE': 'IE爱尔兰',
-				'AT': 'AT奥地利',
-				'CH': 'CH瑞士',
-				'LI': 'LI列支敦士登',
-
-				// 欧洲 - 北欧
-				'SE': 'SE瑞典',
-				'NO': 'NO挪威',
-				'DK': 'DK丹麦',
-				'FI': 'FI芬兰',
-				'IS': 'IS冰岛',
-
-				// 欧洲 - 南欧
-				'IT': 'IT意大利',
-				'ES': 'ES西班牙',
-				'PT': 'PT葡萄牙',
-				'GR': 'GR希腊',
-				'MT': 'MT马耳他',
-				'CY': 'CY塞浦路斯',
-				'SM': 'SM圣马力诺',
-				'VA': 'VA梵蒂冈',
-				'AD': 'AD安道尔',
-
-				// 欧洲 - 东欧
-				'RU': 'RU俄罗斯',
-				'UA': 'UA乌克兰',
-				'BY': 'BY白俄罗斯',
-				'PL': 'PL波兰',
-				'CZ': 'CZ捷克',
-				'SK': 'SK斯洛伐克',
-				'HU': 'HU匈牙利',
-				'RO': 'RO罗马尼亚',
-				'BG': 'BG保加利亚',
-				'HR': 'HR克罗地亚',
-				'SI': 'SI斯洛文尼亚',
-				'BA': 'BA波黑',
-				'RS': 'RS塞尔维亚',
-				'ME': 'ME黑山',
-				'MK': 'MK北马其顿',
-				'AL': 'AL阿尔巴尼亚',
-				'XK': 'XK科索沃',
-				'MD': 'MD摩尔多瓦',
-				'LT': 'LT立陶宛',
-				'LV': 'LV拉脱维亚',
-				'EE': 'EE爱沙尼亚',
-
-				// 大洋洲
-				'AU': 'AU澳洲',
-				'NZ': 'NZ新西兰',
-				'FJ': 'FJ斐济',
-				'PG': 'PG巴布亚新几内亚',
-				'NC': 'NC新喀里多尼亚',
-				'VU': 'VU瓦努阿图',
-				'SB': 'SB所罗门群岛',
-				'TO': 'TO汤加',
-				'WS': 'WS萨摩亚',
-				'KI': 'KI基里巴斯',
-				'TV': 'TV图瓦卢',
-				'NR': 'NR瑙鲁',
-				'PW': 'PW帕劳',
-				'FM': 'FM密克罗尼西亚',
-				'MH': 'MH马绍尔群岛',
-
-				// 非洲
-				'ZA': 'ZA南非',
-				'EG': 'EG埃及',
-				'NG': 'NG尼日利亚',
-				'KE': 'KE肯尼亚',
-				'GH': 'GH加纳',
-				'ET': 'ET埃塞俄比亚',
-				'TZ': 'TZ坦桑尼亚',
-				'UG': 'UG乌干达',
-				'DZ': 'DZ阿尔及利亚',
-				'SD': 'SD苏丹',
-				'MA': 'MA摩洛哥',
-				'AO': 'AO安哥拉',
-				'MZ': 'MZ莫桑比克',
-				'MG': 'MG马达加斯加',
-				'CM': 'CM喀麦隆',
-				'CI': 'CI科特迪瓦',
-				'NE': 'NE尼日尔',
-				'BF': 'BF布基纳法索',
-				'ML': 'ML马里',
-				'MW': 'MW马拉维',
-				'ZM': 'ZM赞比亚',
-				'SN': 'SN塞内加尔',
-				'SO': 'SO索马里',
-				'TD': 'TD乍得',
-				'SL': 'SL塞拉利昂',
-				'TG': 'TG多哥',
-				'CF': 'CF中非',
-				'LR': 'LR利比里亚',
-				'MR': 'MR毛里塔尼亚',
-				'BW': 'BW博茨瓦纳',
-				'NA': 'NA纳米比亚',
-				'GM': 'GM冈比亚',
-				'GW': 'GW几内亚比绍',
-				'GQ': 'GQ赤道几内亚',
-				'GA': 'GA加蓬',
-				'SZ': 'SZ斯威士兰',
-				'LS': 'LS莱索托',
-				'RW': 'RW卢旺达',
-				'BI': 'BI布隆迪',
-				'DJ': 'DJ吉布提',
-				'KM': 'KM科摩罗',
-				'MU': 'MU毛里求斯',
-				'SC': 'SC塞舌尔',
-				'CV': 'CV佛得角',
-				'ST': 'ST圣多美和普林西比',
-
-				// 中东
-				'TR': 'TR土耳其',
-				'IR': 'IR伊朗',
-				'IQ': 'IQ伊拉克',
-				'SA': 'SA沙特',
-				'AE': 'AE阿联酋',
-				'IL': 'IL以色列',
-				'JO': 'JO约旦',
-				'LB': 'LB黎巴嫩',
-				'SY': 'SY叙利亚',
-				'YE': 'YE也门',
-				'OM': 'OM阿曼',
-				'KW': 'KW科威特',
-				'QA': 'QA卡塔尔',
-				'BH': 'BH巴林',
-				'PS': 'PS巴勒斯坦',
-				'AF': 'AF阿富汗'
-			};
-
-			const regionName = regionNames[detectedRegion] || detectedRegion;
+			// 使用统一的地区代码映射
+			const regionName = REGION_NAMES[detectedRegion] || detectedRegion;
 			const isIPv6 = isIPv6Address(formattedServer);
 			const suffix = isIPv6 ? '-IPv6' : '';
 
@@ -2085,7 +1813,7 @@ async function addJSONProxiesToCollection(collectionId, proxiesToAdd, region, en
 			while (isNameDuplicate) {
 				// 检查名称是否重复
 				isNameDuplicate = collection.proxies.some(p => p.name === finalName) ||
-				                  addedProxies.some(p => p.name === finalName);
+					addedProxies.some(p => p.name === finalName);
 
 				if (isNameDuplicate) {
 					const counterStr = String(counter).padStart(3, '0');
@@ -2165,165 +1893,8 @@ async function addProxy(data, env) {
 				detectedRegion = region;
 			}
 
-			// 地区代码映射为英文缩写+中文格式
-			const regionNames = {
-				// 亚洲
-				'HK': 'HK香港',
-				'TW': 'TW台湾',
-				'JP': 'JP日本',
-				'KR': 'KR韩国',
-				'SG': 'SG新加坡',
-				'MY': 'MY马来西亚',
-				'TH': 'TH泰国',
-				'VN': 'VN越南',
-				'ID': 'ID印尼',
-				'PH': 'PH菲律宾',
-				'IN': 'IN印度',
-				'PK': 'PK巴基斯坦',
-				'BD': 'BD孟加拉',
-				'KH': 'KH柬埔寨',
-				'MM': 'MM缅甸',
-				'LK': 'LK斯里兰卡',
-				'NP': 'NP尼泊尔',
-				'KZ': 'KZ哈萨克斯坦',
-				'UZ': 'UZ乌兹别克斯坦',
-
-				// 美洲
-				'US': 'US美国',
-				'CA': 'CA加拿大',
-				'MX': 'MX墨西哥',
-				'BR': 'BR巴西',
-				'AR': 'AR阿根廷',
-				'CL': 'CL智利',
-				'CO': 'CO哥伦比亚',
-				'PE': 'PE秘鲁',
-				'VE': 'VE委内瑞拉',
-				'EC': 'EC厄瓜多尔',
-				'BO': 'BO玻利维亚',
-				'PY': 'PY巴拉圭',
-				'UY': 'UY乌拉圭',
-				'CR': 'CR哥斯达黎加',
-				'PA': 'PA巴拿马',
-				'CW': 'CW库拉索',
-				'AW': 'AW阿鲁巴',
-				'BZ': 'BZ伯利兹',
-				'GT': 'GT危地马拉',
-				'HN': 'HN洪都拉斯',
-				'NI': 'NI尼加拉瓜',
-				'SV': 'SV萨尔瓦多',
-
-				// 欧洲 - 西欧
-				'UK': 'UK英国',
-				'GB': 'GB英国',
-				'FR': 'FR法国',
-				'DE': 'DE德国',
-				'NL': 'NL荷兰',
-				'BE': 'BE比利时',
-				'LU': 'LU卢森堡',
-				'IE': 'IE爱尔兰',
-				'AT': 'AT奥地利',
-				'CH': 'CH瑞士',
-				'LI': 'LI列支敦士登',
-
-				// 欧洲 - 南欧
-				'IT': 'IT意大利',
-				'ES': 'ES西班牙',
-				'PT': 'PT葡萄牙',
-				'GR': 'GR希腊',
-				'MT': 'MT马耳他',
-				'CY': 'CY塞浦路斯',
-				'AD': 'AD安道尔',
-				'SM': 'SM圣马力诺',
-				'VA': 'VA梵蒂冈',
-				'MC': 'MC摩纳哥',
-
-				// 欧洲 - 北欧
-				'SE': 'SE瑞典',
-				'NO': 'NO挪威',
-				'DK': 'DK丹麦',
-				'FI': 'FI芬兰',
-				'IS': 'IS冰岛',
-				'EE': 'EE爱沙尼亚',
-				'LV': 'LV拉脱维亚',
-				'LT': 'LT立陶宛',
-
-				// 欧洲 - 东欧
-				'RU': 'RU俄罗斯',
-				'UA': 'UA乌克兰',
-				'PL': 'PL波兰',
-				'CZ': 'CZ捷克',
-				'SK': 'SK斯洛伐克',
-				'HU': 'HU匈牙利',
-				'RO': 'RO罗马尼亚',
-				'BG': 'BG保加利亚',
-				'BY': 'BY白俄罗斯',
-				'MD': 'MD摩尔多瓦',
-
-				// 欧洲 - 巴尔干地区
-				'RS': 'RS塞尔维亚',
-				'HR': 'HR克罗地亚',
-				'SI': 'SI斯洛文尼亚',
-				'BA': 'BA波黑',
-				'ME': 'ME黑山',
-				'MK': 'MK北马其顿',
-				'AL': 'AL阿尔巴尼亚',
-				'XK': 'XK科索沃',
-
-				// 欧洲 - 高加索地区
-				'GE': 'GE格鲁吉亚',
-				'AM': 'AM亚美尼亚',
-				'AZ': 'AZ阿塞拜疆',
-
-				// 中东
-				'TR': 'TR土耳其',
-				'AE': 'AE阿联酋',
-				'IL': 'IL以色列',
-				'SA': 'SA沙特',
-				'QA': 'QA卡塔尔',
-				'KW': 'KW科威特',
-				'BH': 'BH巴林',
-				'OM': 'OM阿曼',
-				'JO': 'JO约旦',
-				'LB': 'LB黎巴嫩',
-				'SY': 'SY叙利亚',
-				'IQ': 'IQ伊拉克',
-				'IR': 'IR伊朗',
-				'YE': 'YE也门',
-
-				// 非洲
-				'ZA': 'ZA南非',
-				'EG': 'EG埃及',
-				'NG': 'NG尼日利亚',
-				'KE': 'KE肯尼亚',
-				'ET': 'ET埃塞俄比亚',
-				'GH': 'GH加纳',
-				'DZ': 'DZ阿尔及利亚',
-				'MA': 'MA摩洛哥',
-				'TN': 'TN突尼斯',
-				'LY': 'LY利比亚',
-				'SD': 'SD苏丹',
-				'UG': 'UG乌干达',
-				'ZW': 'ZW津巴布韦',
-				'TZ': 'TZ坦桑尼亚',
-				'AO': 'AO安哥拉',
-				'MZ': 'MZ莫桑比克',
-				'NA': 'NA纳米比亚',
-				'BW': 'BW博茨瓦纳',
-				'MU': 'MU毛里求斯',
-				'SC': 'SC塞舌尔',
-
-				// 大洋洲
-				'AU': 'AU澳洲',
-				'NZ': 'NZ新西兰',
-				'FJ': 'FJ斐济',
-				'PG': 'PG巴新',
-				'NC': 'NC新喀里多尼亚',
-
-				// 其他
-				'Unknown': 'Unknown未知'
-			};
-
-			const regionName = regionNames[detectedRegion] || detectedRegion;
+			// 使用统一的地区代码映射
+			const regionName = REGION_NAMES[detectedRegion] || detectedRegion;
 			const isIPv6 = isIPv6Address(proxyConfig.server);
 			const suffix = isIPv6 ? '-IPv6' : '';
 
@@ -2533,15 +2104,8 @@ async function addJSONProxies(proxiesToAdd, region, env) {
 				detectedRegion = region;
 			}
 
-			// 地区代码映射
-			const regionNames = {
-				'HK': 'HK香港', 'TW': 'TW台湾', 'JP': 'JP日本', 'KR': 'KR韩国', 'SG': 'SG新加坡',
-				'US': 'US美国', 'CA': 'CA加拿大', 'MX': 'MX墨西哥', 'BR': 'BR巴西', 'AR': 'AR阿根廷',
-				'UK': 'UK英国', 'GB': 'GB英国', 'FR': 'FR法国', 'DE': 'DE德国', 'NL': 'NL荷兰',
-				'AU': 'AU澳洲', 'NZ': 'NZ新西兰', 'RU': 'RU俄罗斯', 'IN': 'IN印度', 'TR': 'TR土耳其'
-			};
-
-			const regionName = regionNames[detectedRegion] || detectedRegion;
+			// 使用统一的地区代码映射
+			const regionName = REGION_NAMES[detectedRegion] || detectedRegion;
 			const isIPv6 = isIPv6Address(formattedServer);
 			const suffix = isIPv6 ? '-IPv6' : '';
 
@@ -2588,7 +2152,7 @@ async function addJSONProxies(proxiesToAdd, region, env) {
 			while (isNameDuplicate) {
 				// 检查名称是否重复
 				isNameDuplicate = proxies.some(p => p.name === finalName) ||
-				                  addedProxies.some(p => p.name === finalName);
+					addedProxies.some(p => p.name === finalName);
 
 				if (isNameDuplicate) {
 					const counterStr = String(counter).padStart(3, '0');
@@ -3379,7 +2943,7 @@ async function generateProxyCollectionConfig(collectionId, env) {
 				listen: '[::]:1053',
 				ipv6: true,
 				'respect-rules': true,
-				'enhanced-mode': 'redir-host',
+				'enhanced-mode': 'fake-ip',
 				'fake-ip-range': '198.18.0.1/16',
 				nameserver: [
 					'https://8.8.8.8/dns-query#disable-ipv6=true',
@@ -3987,7 +3551,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 			listen: '[::]:1053',
 			ipv6: true,
 			'respect-rules': true,
-			'enhanced-mode': 'redir-host',
+			'enhanced-mode': 'fake-ip',
 			'fake-ip-range': '198.18.0.1/16',
 			nameserver: [
 				'https://8.8.8.8/dns-query#disable-ipv6=true',
@@ -4044,9 +3608,9 @@ async function generateSubCollectionConfig(collectionId, env) {
 			};
 
 			const usedProviderNames = [];
-			sortedSubscriptions.forEach((sub, index) => {
-				// 获取对应的订阅名称
-				const subscriptionName = subscriptionNames[index] || null;
+			subscriptionPairs.forEach((pair, index) => {
+				// 从排序后的 pair 中直接获取对应的名称,确保名称和URL的对应关系
+				const subscriptionName = pair.name;
 
 				// 提取基础名称（去除流量和到期信息）
 				let baseName = subscriptionName;
@@ -4062,7 +3626,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 				usedProviderNames.push(providerName);
 
 				const providerConfig = {
-					url: sub,
+					url: pair.url,
 					type: 'http',
 					interval: 3600,
 					'health-check': {
@@ -4121,7 +3685,7 @@ async function generateSubCollectionConfig(collectionId, env) {
 				name: '🌐 全部节点',
 				type: 'select',
 				'include-all': true,
-				'exclude-filter': '^(?=.*((?i)10x|6x|过滤|客户端|不要|付款|如果|群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|建议|备用|作者|加入|\\\\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\\\\b|(\\\\d{4}-\\\\d{2}-\\\\d{2}|\\\\d+G))).*$'
+				'exclude-filter': '^(?=.*((?i)10x|6x|过滤|客户端|不要|付款|如果|群|邀请|返利|循环|官网|客服|网站|网址|获取|流量|到期|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|建议|备用|作者|加入|\\\\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\\\\b)).*$'
 			},
 			{
 				name: 'AI服务',
