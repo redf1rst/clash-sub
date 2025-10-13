@@ -1,0 +1,17 @@
+name = "clash-sub"
+main = "src/index.js"
+compatibility_date = "2025-08-01"
+
+[assets]
+directory = "public"
+binding = "ASSETS"
+run_worker_first = true  # 确保本地开发时认证中间件在静态资源之前执行
+
+[[kv_namespaces]]
+binding = "CLASH_KV"
+id = "kv_namespaces_id"
+
+[vars]
+ACCESS_TOKEN_ENABLED = "true"  # 开启认证功能
+ACCESS_TOKEN_DEV = "dev-token" # 本地开发环境令牌
+# ACCESS_TOKEN = "your-token"  # 生产环境令牌 (建议通过 wrangler secret 设置)

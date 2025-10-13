@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>访问验证 - Clash订阅生成器</title>
+	<link rel="icon" type="image/png" href="https://github.com/redf1rst/clash-sub/blob/main/img/clash-sub.png?raw=true">
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', 'Apple Color Emoji', Roboto, sans-serif;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			min-height: 100vh;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 20px;
+		}
+
+		.auth-container {
+			background: white;
+			border-radius: 16px;
+			box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+			overflow: hidden;
+			max-width: 450px;
+			width: 100%;
+			animation: slideUp 0.5s ease-out;
+		}
+
+		@keyframes slideUp {
+			from {
+				opacity: 0;
+				transform: translateY(30px);
+			}
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		.auth-header {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			padding: 40px 30px;
+			text-align: center;
+			color: white;
+		}
+
+		.auth-header h1 {
+			font-size: 28px;
+			margin-bottom: 8px;
+			font-weight: 600;
+		}
+
+		.auth-header p {
+			font-size: 14px;
+			opacity: 0.9;
+		}
+
+		.auth-body {
+			padding: 40px 30px;
+		}
+
+		.info-box {
+			background: #e3f2fd;
+			border-left: 4px solid #2196f3;
+			padding: 16px;
+			margin-bottom: 24px;
+			border-radius: 4px;
+		}
+
+		.info-box p {
+			color: #1976d2;
+			font-size: 14px;
+			line-height: 1.6;
+			margin: 0;
+		}
+
+		.info-box strong {
+			display: block;
+			margin-bottom: 8px;
+			font-size: 15px;
+		}
+
+		.form-group {
+			margin-bottom: 24px;
+		}
+
+		.form-group label {
+			display: block;
+			margin-bottom: 8px;
+			color: #2c3e50;
+			font-weight: 500;
+			font-size: 14px;
+		}
+
+		.input-wrapper {
+			position: relative;
+		}
+
+		.input-icon {
+			position: absolute;
+			left: 14px;
+			top: 50%;
+			transform: translateY(-50%);
+			color: #95a5a6;
+			font-size: 18px;
+		}
+
+		.form-control {
+			width: 100%;
+			padding: 12px 14px 12px 44px;
+			border: 2px solid #e0e0e0;
+			border-radius: 8px;
+			font-size: 15px;
+			transition: all 0.3s ease;
+			background: #f8f9fa;
+			font-family: 'Courier New', monospace;
+		}
+
+		.form-control:focus {
+			outline: none;
+			border-color: #667eea;
+			background: white;
+			box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+		}
+
+		.form-control:hover {
+			border-color: #bdc3c7;
+		}
+
+		.btn-verify {
+			width: 100%;
+			padding: 14px;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			border: none;
+			border-radius: 8px;
+			font-size: 16px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.3s ease;
+			box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+		}
+
+		.btn-verify:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+		}
+
+		.btn-verify:active {
+			transform: translateY(0);
+		}
+
+		.btn-verify:disabled {
+			opacity: 0.6;
+			cursor: not-allowed;
+			transform: none;
+		}
+
+		.message {
+			margin-top: 16px;
+			padding: 12px 16px;
+			border-radius: 8px;
+			font-size: 14px;
+			display: none;
+			animation: fadeIn 0.3s ease;
+		}
+
+		@keyframes fadeIn {
+			from {
+				opacity: 0;
+				transform: translateY(-10px);
+			}
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		.message.error {
+			background: #fee;
+			color: #c0392b;
+			border: 1px solid #f5c6cb;
+		}
+
+		.message.success {
+			background: #d4edda;
+			color: #155724;
+			border: 1px solid #c3e6cb;
+		}
+
+		.auth-footer {
+			text-align: center;
+			padding: 20px;
+			background: #f8f9fa;
+			color: #7f8c8d;
+			font-size: 13px;
+		}
+
+		.loading-spinner {
+			display: inline-block;
+			width: 16px;
+			height: 16px;
+			border: 2px solid rgba(255, 255, 255, 0.3);
+			border-radius: 50%;
+			border-top-color: white;
+			animation: spin 0.8s linear infinite;
+			margin-right: 8px;
+			vertical-align: middle;
+		}
+
+		@keyframes spin {
+			to {
+				transform: rotate(360deg);
+			}
+		}
+
+		@media (max-width: 480px) {
+			.auth-container {
+				margin: 0;
+				border-radius: 12px;
+			}
+
+			.auth-header {
+				padding: 30px 20px;
+			}
+
+			.auth-header h1 {
+				font-size: 24px;
+			}
+
+			.auth-body {
+				padding: 30px 20px;
+			}
+		}
+	</style>
+</head>
+<body>
+	<div class="auth-container">
+		<div class="auth-header">
+			<h1>🔐 访问验证</h1>
+			<p>请输入访问令牌以继续使用</p>
+		</div>
+
+		<div class="auth-body">
+			<div class="info-box">
+				<strong>💡 什么是访问令牌？</strong>
+				<p>访问令牌是用于保护此应用的安全密钥。请联系管理员获取有效的访问令牌。</p>
+			</div>
+
+			<form id="authForm">
+				<div class="form-group">
+					<label for="token">访问令牌</label>
+					<div class="input-wrapper">
+						<span class="input-icon">🔑</span>
+						<input
+							type="password"
+							id="token"
+							name="token"
+							class="form-control"
+							placeholder="请输入访问令牌"
+							required
+							autocomplete="off"
+						>
+					</div>
+				</div>
+
+				<button type="submit" class="btn-verify" id="verifyBtn">
+					验证令牌
+				</button>
+
+				<div id="message" class="message"></div>
+			</form>
+		</div>
+
+		<div class="auth-footer">
+			© 2025 Clash订阅生成器 · 安全访问
+		</div>
+	</div>
+
+	<script>
+		const form = document.getElementById('authForm');
+		const verifyBtn = document.getElementById('verifyBtn');
+		const messageEl = document.getElementById('message');
+		const tokenInput = document.getElementById('token');
+
+		// 显示消息
+		function showMessage(text, type = 'error') {
+			messageEl.textContent = text;
+			messageEl.className = `message ${type}`;
+			messageEl.style.display = 'block';
+
+			if (type === 'success') {
+				setTimeout(() => {
+					messageEl.style.display = 'none';
+				}, 3000);
+			}
+		}
+
+		// 处理表单提交
+		form.addEventListener('submit', async (e) => {
+			e.preventDefault();
+
+			const token = tokenInput.value.trim();
+
+			if (!token) {
+				showMessage('请输入访问令牌');
+				return;
+			}
+
+			// 禁用按钮，显示加载状态
+			verifyBtn.disabled = true;
+			verifyBtn.innerHTML = '<span class="loading-spinner"></span>验证中...';
+
+			try {
+				const response = await fetch('/api/verify-token', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ token })
+				});
+
+				const result = await response.json();
+
+				if (result.success) {
+					showMessage('验证成功，正在跳转...', 'success');
+
+					// 获取重定向URL
+					const urlParams = new URLSearchParams(window.location.search);
+					let redirect = urlParams.get('redirect') || '/';
+
+					// 添加verified参数，避免重定向后立即被cookie检查拦截
+					const redirectUrl = new URL(redirect, window.location.origin);
+					redirectUrl.searchParams.set('verified', '1');
+
+					// 延迟跳转，让用户看到成功消息
+					setTimeout(() => {
+						window.location.href = redirectUrl.pathname + redirectUrl.search;
+					}, 500);
+				} else {
+					showMessage(result.message || '令牌验证失败，请检查令牌是否正确');
+					verifyBtn.disabled = false;
+					verifyBtn.textContent = '验证令牌';
+					tokenInput.select();
+				}
+			} catch (error) {
+				showMessage('验证失败，请稍后重试');
+				verifyBtn.disabled = false;
+				verifyBtn.textContent = '验证令牌';
+			}
+		});
+
+		// 页面加载时聚焦输入框
+		window.addEventListener('load', () => {
+			tokenInput.focus();
+		});
+
+		// Enter 键提交表单
+		tokenInput.addEventListener('keypress', (e) => {
+			if (e.key === 'Enter') {
+				form.dispatchEvent(new Event('submit'));
+			}
+		});
+	</script>
+</body>
+</html>
